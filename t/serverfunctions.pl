@@ -24,7 +24,7 @@ sub run_echo_server
 {
 	my $port = shift || DEFAULT_PORT;
 
-	my $pid = open(SERVER, "| perl ./t/testserver.pl -e -p $port")
+	my $pid = open(SERVER, "| perl ./t/testserver.pl -p $port -e")
 		or die "Couldn't launch the test server: $!.\n";
 
 	return $TEST_SERVER_PID = $pid;

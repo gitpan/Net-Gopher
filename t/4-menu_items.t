@@ -946,8 +946,8 @@ ok(run_server()); # 13
 		ok($fatal_errors[0],
 			join(' ',
 				'Menu item 2 lacks the following required',
-				'fields: a selector string field, a host',
-				'field, a port field. The response either',
+				'fields: a selector string field; a host',
+				'field; a port field. The response either',
 				'does not contain a Gopher menu or contains',
 				'a malformed Gopher menu.'
 			)
@@ -972,8 +972,8 @@ ok(run_server()); # 13
 		ok($fatal_errors[0],
 			join(' ',
 				'Menu item 1 lacks the following required',
-				'fields: a selector string field, a host',
-				'field, a port field. The response either',
+				'fields: a selector string field; a host',
+				'field; a port field. The response either',
 				'does not contain a Gopher menu or contains',
 				'a malformed Gopher menu.'
 			)

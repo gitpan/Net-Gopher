@@ -1,21 +1,42 @@
 #!/usr/bin/perl -w
 # testserver.pl - a bare-bones test server for Net::Gopher.
 
-package testserver;
-
 use strict;
 use Cwd;
 use Errno 'EINTR';
 use Getopt::Std;
 use IO::Socket 'SOCK_STREAM';
 use IO::Select;
-use Net::Gopher::Utility qw($CRLF size_in_bytes);
 
-use constant HOSTNAME                => 'localhost';
 use constant DEFAULT_PORT            => 70;
 use constant BUFFER_SIZE             => 4096;
 use constant TIMEOUT                 => 60;
 use constant MAX_PENDING_CONNECTIONS => 32;
+
+use vars qw($CRLF);
+$CRLF = "\015\012";
+
+
+
+BEGIN
+{
+	# this hack allows us to "use bytes" or fake it for older (pre-5.6.1)
+	# versions of Perl (thanks to Liz from PerlMonks):
+	eval { require bytes };
+
+	if ($@)
+	{
+		# couldn't find it, but pretend we did anyway:
+		$INC{'bytes.pm'} = 1;
+
+		# 5.005_03 doesn't inherit UNIVERSAL::unimport:
+		eval "sub bytes::unimport { return 1 }";
+	}
+}
+
+
+
+
 
 my $error;
 my %opts;
@@ -24,7 +45,6 @@ getopts('ep:', \%opts);
 my $server = new IO::Socket::INET (
 	Type      => SOCK_STREAM,
 	Proto     => 'tcp',
-	LocalHost => HOSTNAME,
 	LocalPort => $opts{'p'} || DEFAULT_PORT,
 	Timeout   => TIMEOUT,
 	Listen    => MAX_PENDING_CONNECTIONS,
@@ -158,4 +178,15 @@ sub error
 	{
 		return $error;
 	}
+}
+
+
+
+
+
+sub size_in_bytes ($)
+{
+	use bytes;
+
+	return length shift;
 }

@@ -26,7 +26,7 @@ my $socket = new IO::Socket::INET (
 	Timeout  => TIMEOUT
 );
 
-ok(!$@); # 2
+ok($socket); # 2
 
 eval {
 	$socket->autoflush(1);

@@ -638,7 +638,7 @@ sub extract_items
 				'contain a Gopher menu or contains a '.
 				'malformed Gopher menu.',
 				$current_item,
-				join(', ', @missing_fields)
+				join('; ', @missing_fields)
 			)
 		) if (@missing_fields);
 

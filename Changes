@@ -1,5 +1,11 @@
 Revision history for Perl extension Net::Gopher.
 
+0.99 - Ok, I think I finally figured out what's wrong with the test server  and
+       why all tests that utilize  it  fail  on  a  variety  of  platforms:  it
+       imports a function from a package that hasn't been installed yet.  After
+       being wrong several times in row, I'm not going to proclaim  it  "fixed"
+       yet, but with this release, I'm cautiously optimistic.
+
 0.98 - *Really*  fixed  the  test  server  this  time,  and  also   fixed   the
        extract_date_*() methods  and  their  corresponding  tests  to  use  the
        Time::Local::timegm()    and    gmtime()    functions     instead     of
