@@ -9,43 +9,46 @@ Net::Gopher::Request - Class encapsulating Gopher requests
 
  use Net::Gopher::Request;
  
+ # to create a Gopher rerquest:
  my $request = new Net::Gopher::Request ('Gopher',
  	Host     => 'gopher.host.com',
- 	Port     => 70,
- 	Selector => '/menu'
+ 	Selector => '/menu',
  	ItemType => 1
  );
  
- # or:
+ # or, to create a Gopher+ request:
  my $request = new Net::Gopher::Request ('GopherPlus',
  	Host           => 'gopher.host.com',
- 	Port           => 70,
  	Selector       => '/item',
  	Representation => 'text/plain',
  	ItemType       => 0
  );
  
- # or:
+ # or, to create a Gopher+ item attribute information request:
  $request = new Net::Gopher::Request ('ItemAttribute',
  	Host       => 'gopher.host.com',
- 	Port       => 70,
- 	Selector   => '/some_item.txt' 
+ 	Selector   => '/some_item.txt',
  	Attributes => ['+INFO', '+VIEWS']
  );
  
- # or:
+ # or, to create a Gopher+ directory attribute information request:
  $request = new Net::Gopher::Request ('DirectoryAttribute',
  	Host       => 'gopher.host.com',
- 	Port       => 70,
- 	Selector   => '/some_dir' 
+ 	Selector   => '/some_dir',
  	Attributes => ['+INFO', '+ADMIN']
  );
  
- # or:
+ # or, use a URL to create one of the above types of requesnt:
  $request = new Net::Gopher::Request ('URL', 'gopher://gopher.host.com/1');
 
  # you can also send arguments as a hashref instead:
- $request -
+ my $request = new Net::Gopher::Request (
+ 	'Gopher' => {
+ 		Host     => 'gopher.host.com',
+ 		Selector => '/menu',
+ 		ItemType => 1
+ 	}
+ );
  
  # all of the possible parameters to new() have accessor methods:
  $request->selector('/another_item');      # change the selector string
@@ -54,15 +57,16 @@ Net::Gopher::Request - Class encapsulating Gopher requests
 
 =head1 DESCRIPTION
 
-This module allows you to create and manipulate Goopher/Gopher+ requests. Your
-typical usage of this module will most likely only entail you calling the
-C<new()> method to create a request object, then passing that on to the
-B<Net::Gopher> C<request()> method. However, there are times when you need to
-be able to store, as well as manipulate Gopher and Gopher+ requests. Thus, this
-module provides accessor methods to change elements of a request object.
+This module encapsulates Gopher and Gopher+ requests. Typical usage of this
+module is calling the C<new()> method to create a new request object, then
+passing it on to the B<Net::Gopher> C<request()> method.
 
-Besides new(), there are several named constructors which you can import and
-call like functions.
+An aternative to C<new()> are the five named constructors detailed below in
+L<FUNCTIONS|Net::Gopher::Request/FUNCTIONS>. You can also import them and call
+them like functions.
+
+For storing and manipulating requests, this class also provides accessor
+methods to manipulate each element of a request object.
 
 =head1 METHODS
 
@@ -91,34 +95,11 @@ use URI;
 	]
 );
 
-sub Gopher
-{
-	return new Net::Gopher::Request ('Gopher', @_);
-}
-
-sub GopherPlus
-{
-	return new Net::Gopher::Request ('GopherPlus', @_);
-}
-
-sub ItemAttribute
-{
-	return new Net::Gopher::Request ('ItemAttribute', @_);
-}
-
-sub DirectoryAttribute
-{
-	return new Net::Gopher::Request ('DirectoryAttribute', @_);
-}
-
-sub URL
-{
-	return new Net::Gopher::Request ('URL', @_);
-}
 
 
 
 
+#==============================================================================#
 
 =head2 new($type, [%args | \%args | $url])
 
@@ -340,7 +321,7 @@ sub new
 			}
 			else
 			{
-				croak "Bad ref type $ref_type for parameters"
+				croak "Bad ref type ($ref_type) for parameters"
 			}
 		}
 		else
@@ -351,7 +332,7 @@ sub new
 
 
 
-	# now fill the request object:
+	# now create and fill the request object:
 	my $self = {};
 	bless($self, $class);
 
@@ -428,20 +409,48 @@ sub new
 	}
 	else
 	{
-		croak "$type is not a valid request type";
+		croak "Request type ($type) is not valid";
 	}
 
 	return $self;
 }
 
+sub Gopher
+{
+	return new Net::Gopher::Request ('Gopher', @_);
+}
+
+sub GopherPlus
+{
+	return new Net::Gopher::Request ('GopherPlus', @_);
+}
+
+sub ItemAttribute
+{
+	return new Net::Gopher::Request ('ItemAttribute', @_);
+}
+
+sub DirectoryAttribute
+{
+	return new Net::Gopher::Request ('DirectoryAttribute', @_);
+}
+
+sub URL
+{
+	return new Net::Gopher::Request ('URL', @_);
+}
 
 
+
+
+
+#==============================================================================#
 
 =head2 as_string()
 
 This method returns a string containing a textual representation of the
-request (B<Net::Gopher> C<request()> calls this method and sends the result to
-the server).
+request. (The B<Net::Gopher> C<request()> method calls this method and sends
+the result to the server.)
 
 =cut
 
@@ -511,6 +520,8 @@ sub as_string
 
 
 
+#==============================================================================#
+
 =head2 request_type()
 
 This method returns the current request type: either "Gopher," "GopherPlus,"
@@ -524,6 +535,8 @@ sub request_type { return shift->{'request_type'} }
 
 
 
+
+#==============================================================================#
 
 =head2 host([$hostname])
 
@@ -552,6 +565,8 @@ sub host
 
 
 
+#==============================================================================#
+
 =head2 port([$port_num])
 
 This is a get/set method for the Port parameter. You can change the port number
@@ -579,6 +594,8 @@ sub port
 
 
 
+#==============================================================================#
+
 =head2 selector([$selector])
 
 This is a get/set method for the Selector parameter. You can change the
@@ -605,6 +622,8 @@ sub selector
 
 
 
+
+#==============================================================================#
 
 =head2 search_words([$words | @words])
 
@@ -641,6 +660,8 @@ sub search_words
 
 
 
+#==============================================================================#
+
 =head2 representation([$mime_type])
 
 With GopherPlus type requests, this is a get/set method for the Representation
@@ -673,6 +694,8 @@ sub representation
 
 
 
+#==============================================================================#
+
 =head2 data_block([$data])
 
 With GopherPlus type requests, this is a get/set method for the DataBlock
@@ -704,11 +727,13 @@ sub data_block
 
 
 
+#==============================================================================#
+
 =head2 attributes([$attributes | @attributes])
 
-With ItemAttribute and DirectoryAttribute type requests, this is a get/set
-method for the Attributes parameter. You can supply new block names in one of
-two formats: as a string containing the block names or as a reference to a list
+With item attribute and directory attribute requests, this is a get/set method
+for the Attributes parameter. You can supply new block names in one of two
+formats: as a string containing the block names or as a reference to a list
 containing individual block names (with optional leading pluses, which will be
 added for you if you don't). If you don't supply new block names, then the
 current block names will be returned to you as either a list containing the
@@ -740,6 +765,8 @@ sub attributes
 
 
 
+#==============================================================================#
+
 =head2 item_type([$type])
 
 This is a get/set method for the ItemType parameter. You can change the item
@@ -767,6 +794,8 @@ sub item_type
 
 
 
+################################################################################
+
 sub _parse_words
 {
 	my $self      = shift;
@@ -792,6 +821,8 @@ sub _parse_words
 
 
 
+
+################################################################################
 
 sub _parse_attributes
 {
@@ -833,13 +864,17 @@ do:
 
  my $request = Gopher(
  	Host     => 'gopher.host.com',
- 	Selector => '/'
+ 	Selector => '/',
  	ItemType => 1
  );
 
-Or:
+is the same as:
 
- my $request = URL('gopher://gopher.host.com/1');
+ my $request = new Net::Gopher::Request ('Gopher',
+ 	Host     => 'gopher.host.com',
+ 	Selector => '/',
+ 	ItemType => 1
+ );
 
 If you don't want to import each one explicitly, then you can use one of the
 following export tags:

@@ -9,7 +9,7 @@ Net::Gopher::Response - Class encapsulating Gopher responses
 
  use Net::Gopher;
  ...
- my $response = $gopher->request($request);
+ my $response = $ng->request($request);
  
  if ($response->is_success) {
  	if ($response->is_menu) {
@@ -49,9 +49,9 @@ Net::Gopher::Response - Class encapsulating Gopher responses
 
 =head1 DESCRIPTION
 
-Both the L<Net::Gopher|Net::Gopher> C<request()> and C<request_url()> methods
-return B<Net::Gopher::Response> objects. These objects encapsulate responses
-from Gopher and Gopher+ servers.
+The L<Net::Gopher|Net::Gopher> C<request()>, C<gopher()>, C<gopher_plus()>,
+C<item()>, and C<directory()> methods all return B<Net::Gopher::Response>
+objects. These objects encapsulate responses from Gopher and Gopher+ servers.
 
 In Gopher, a response is just a series of bytes terminated by a period on a
 line by itself. In Gopher+, a response consists of a status line (the first
@@ -100,7 +100,7 @@ sub new
 		# receiving the response:
 		error       => $error,
 
-		# the request object:
+		# the Net::Gopher::Request object:
 		request     => $request,
 
 		# the entire response--every single byte:
@@ -1165,10 +1165,6 @@ tab delimited fields in the same format as described above
 (see L<as_menu()|Net::Gopher::Response/as_menu()>):
 
  my %info = $response->item_blocks('INFO')->as_info;
- 
- $gopher->connect($info{'host'}, Port => $info{'port'}) or die $gopher->error;
- 
- my $another_response = $gopher->request($info{'selector'});
 
 Note that this method is inherited by B<Net::Gopher::Response>. You can call
 this method directly on a B<Net::Gopher::Response> object, in which case
@@ -1202,9 +1198,12 @@ an integer; the total size in bytes (e.g., <80> becomes 80, <40K> becomes
  foreach my $view (@views) {
  	print "$view->{'type'} ($view->{'size'} bytes) ($type->{'language'})\n";
  ...
- 	my $another_response = $gopher->request(
- 		$selector,
- 		Representation => $view->{'type'}
+ 	my $another_response = $ng->request(
+ 		Gopher => {
+			Host           => $host,
+ 			Selector       => $selector,
+ 			Representation => $view->{'type'}
+ 		}
  	);
  ...
  }

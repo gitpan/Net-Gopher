@@ -11,34 +11,60 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  
  my $ng = new Net::Gopher;
  
- # request something from the server:
- my $response = $ng->request(
- 	new Net::Gopher::Request(
- 		Gopher => {
- 			Host     => 'gopher.host.com'
- 			Port     => 70,
- 			Selector => '/menu',
- 			ItemType => 1
- 		}
- 	)
+ # create a new Net::Gopher::Request object:
+ my $request = new Net::Gopher::Request(
+ 	Gopher => {
+ 		Host     => 'gopher.host.com',
+ 		Selector => '/menu',
+ 		ItemType => 1
+ 	}
  );
  
- # ...
+ # request something from the server and get the Net::Gopher::Response object:
+ my $response = $ng->request($request);
+ 
+ # ...or store the content of the response in a separate file:
+ $ng->request($request, File => 'somefile.txt');
+
+ # ...or process the response as it's received:
+ $ng->request($request, Callback => \&some_sub);
+
+ sub some_sub
+ {
+ 	my $content = shift;
+ 	# do something with $content...	
+ }
+ 
+ # See Net::Gopher::Request to find out how to create request objects for any
+ # type of request, as well as methods to manipulate them.
+ 
+ 
+ 
+ # Besides the Net::Gopher::Request object/request() combination, Net::Gopher
+ # has shortcut methods for each type of request, which all return
+ # Net::Gopher::Response objects:
  $response = $ng->gopher(
- 	Host     => 'gopher.host.com'
- 	Port     => 70,
+ 	Host     => 'gopher.host.com',
  	Selector => '/menu',
  	ItemType => 1
  );
+
+ $response = $ng->gopher_plus(
+ 	Host           => 'gopher.host.com',
+ 	Selector       => '/doc.txt',
+	Representation => 'text/plain'
+ 	ItemType       => 0
+ );
  
- # ...
- $response = $ng->url('gopher://gopher.host.com:70/1/menu');
  
+ 
+ # After sending a request and getting a Net::Gopher::Response object:
  if ($response->is_success) {
  	# use the content() method to get the content of the response:
  	print $repsonse->content;
  
- 	# or just get the entire (unmodified) response as a string:
+	# or use the as_string() method to get the entire (unmodified) response
+	# as a string:
  	my $raw_response = $response->as_string;
  } else {
  	# if their was an error, call the error() method on the response object
@@ -77,7 +103,7 @@ use Net::Gopher::Request;
 use Net::Gopher::Response;
 use Net::Gopher::Utility qw(check_params $CRLF);
 
-$VERSION = '0.77';
+$VERSION = '0.78';
 
 
 
@@ -147,6 +173,8 @@ sub new
 		# enable debugging?
 		debug       => $debug ? 1 : 0,
 
+		# This stores internal error messages. It's accessed using the
+		# internal _error() method
 		error       => undef,
 	};
 
@@ -167,11 +195,18 @@ disconnects from the server.
 
 This method takes one required argument, a Net::Gopher::Request object
 encapsulating a Gopher or Gopher+ request. Some typical usage of request
-objects in conjunction with this method is illustrated in the L<SYNOPSIS>. For
-a more detailed description, see L<Net::Gopher::Request>.
+objects in conjunction with this method is illustrated in the
+L<Net::Gopher/SYNOPSIS|SYNOPSIS>. For a more detailed description, see
+L<Net::Gopher::Request>.
+
+If you never specified the I<Port> parameter for your request object (and never
+set it later on with the C<port()>), then the default IANA designated port of
+70 will be used when connecting to the server. If you didn't specify the
+I<ItemType> parameter for Gopher or GopherPlus type requests (and never set it
+using C<item_type()>), then '1', Gopher menu type, will be assumed.
 
 In addition to the request object, this method takes two optional named
-parameters.
+parameters:
 
 The first named parameter, I<File>, specifies an output filename. When
 specified, Net::Gopher will output the content of the response to this file,
@@ -215,10 +250,21 @@ sub request
 		Proto    => 'tcp',
 		Type     => SOCK_STREAM
 	) or return new Net::Gopher::Response (
-		Error => "Couldn't connect to " .
-		         $request->host .
-			 " at port ${port}: $@"
+		Error => "Couldn't connect to " . $request->host .
+		         " at port ${port}: $@"
 	);
+
+	# If you know when blocking/non-blocking socket support was added to
+	# IO::Socket, please email me:
+	eval { $self->_socket->blocking(0); };
+	if ($@)
+	{
+		croak(
+			"Your version of IO::Socket does not support " .
+			"non-blocking mode. Please upgrade to a more " .
+			"recent version"
+		);
+	}
 
 	# show the hostname, IP address, and port number for debugging:
 	$self->_debug_start(
@@ -288,8 +334,8 @@ sub request
 			# send a series of bytes, which may (-1) or may not (-2)
 			# be terminated by a period on a line by itself, and
 			# then close the connection. So we'll read the server's
-			# response as a series of buffers using _get_buffer(),
-			# and add each buffer to the response content:
+			# response as a series of buffers using _read(), and
+			# add each buffer to the response content:
 			while ($self->_read($callback))
 			{
 				$content .= $self->_buffer;
@@ -665,7 +711,7 @@ sub url
 
 ################################################################################
 # 
-# The following subroutines are accessor methods. Each one is get/set:
+# The following methods are accessor methods. Each one is get/set:
 # 
 
 
@@ -775,12 +821,14 @@ sub _error
 
 
 
-##############################################################################
+################################################################################
 # 
-# The followinh methods are private accessor methods. They are 'get' only:
+# The following methods are private accessor methods. They are 'get' only:
 #
 
 
+
+################################################################################
 
 sub _socket
 {
@@ -788,16 +836,26 @@ sub _socket
 }
 
 
+
+################################################################################
+
 sub _select
 {
 	return shift->{'select'};
 }
 
 
+
+################################################################################
+
 sub _buffer
 {
 	return shift->{'buffer'};
 }
+
+
+
+################################################################################
 
 sub _data_read
 {
@@ -874,6 +932,7 @@ sub _debug_print
 		      "\n", '-' x 79, "\n";
 	}
 }
+
 
 
 
@@ -1014,9 +1073,9 @@ sub _write
 #		_empty()
 #
 #	Purpose
-#		Use this method empties the socket buffer
-#		($self->{'buffer'}), and all the data that's been read
-#		from the socket ($self->{'data_read'}).
+#		This method empties the socket buffer ($self->_buffer) and all
+#		of the data that's been read from the socket
+#		($self->_data_read).
 #
 #	Parameters
 #		None.
@@ -1041,7 +1100,7 @@ sub _empty
 #
 #	Purpose
 #		This method fills the buffer stored in $self->{'buffer'}
-#		(using _get_buffer()) and removes character after character
+#		(using _read()) and removes character after character
 #		from the the buffer looking for the the newline, refilling
 #		the buffer if it gets empty. Once it finds the newline, it
 #		checks to make sure the line is in the format of a Gopher+
@@ -1059,7 +1118,7 @@ sub _get_status_line
 	my $self     = shift;
 	my $callback = shift;
 
-	# To get the status line (the first line), we'll use the _get_buffer()
+	# To get the status line (the first line), we'll use the _read()
 	# method to read and store a buffer in $self->{'buffer'}, then
 	# remove character after character from the beginning of the buffer and
 	# add them to $first_line, checking for the CRLF in $first_line. If
