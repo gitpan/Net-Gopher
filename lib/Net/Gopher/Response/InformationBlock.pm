@@ -223,8 +223,8 @@ sub get_attribute
 		return unless ($self->_parse_attributes);
 	}
 
-	return $self->{'attributes'}->{$name}
-		if (exists $self->{'attributes'}->{$name});
+	return $self->{'attributes'}{$name}
+		if (exists $self->{'attributes'}{$name});
 }
 
 
@@ -233,32 +233,55 @@ sub get_attribute
 
 #==============================================================================#
 
-=head2 get_attributes()
+=head2 get_attributes([NAMES])
 
 If the block value contains a series of C<Name: value> attributes on lines by
-themselves, then you can use this method to retrieve them all as a hash. This
-method will return a hash (in list context) or a reference to a hash (in scalar
-context) containing the attribute names and values.
+themselves, then you can use this method to retrieve multipule attribute values
+at once. If you specify one or more attribute names as arguments, then this
+method will return a list containing the corressponding attribute values. If
+you don't specify any attribute names, them all of the attributes for the
+particular block will be returned to you at once as a hash (in list context) or
+as a reference to a hash (in scalar context).
 
 =cut
 
 sub get_attributes
 {
-	my $self = shift;
+	my $self  = shift;
+	my @names = @_;
 
 	unless (defined $self->{'attributes'})
 	{
 		$self->_parse_attributes || return;
 	}
 
-	# if it was called in scalar context, then rather than just returning
-	# the reference to the hash in $self->{'attributes'}, we create a new
-	# hash with the same elements as the one in $self->{'attributes'} and
-	# return that instead to prevent the user from directly manipulating
-	# $self->{'attributes'}:
-	return wantarray
-		? %{ $self->{'attributes'} }
-		: { %{ $self->{'attributes'} } };
+	if (@names)
+	{
+		# we go searching through $self->{'attributes'} for each name
+		# rather than just using a hash slice because that would end
+		# up autovivifying hash keys that don't already exist,
+		# potentially corrupting has_attribute():
+		my @values;
+		foreach my $name (@names)
+		{
+			push(@values,
+				(exists $self->{'attributes'}{$name})
+					? $self->{'attributes'}{$name}
+					: undef
+			);
+		}
+	}
+	else
+	{
+		# if it was called in scalar context, then rather than just
+		# returning the reference to the hash in $self->{'attributes'},
+		# we create a new hash with the same elements as the one in
+		# $self->{'attributes'} and return that instead to prevent the
+		# user from directly manipulating $self->{'attributes'}:
+		return wantarray
+			? %{ $self->{'attributes'} }
+			: { %{ $self->{'attributes'} } };
+	}
 }
 
 
@@ -394,10 +417,15 @@ sub as_url
 
 =head1 METHODS SPECIFIC TO +ABSTRACT BLOCKS
 
-C<+ABSTRACT> blocks contain a short synopsis of the item, or a description of
-where the synopsis can be found.
+C<+ABSTRACT> blocks contain a short synopsis of the item, or a item description
+indicating where the abstract can be downloaded from.
 
 =head2 extract_abstract()
+
+The C<extract_abstract()> (sorry for the name) method extracts an item
+abstract, either directly from the block value if the block value contains it,
+or if the block value contains an item description of where the abstract can be
+downloaded from, it will download the item containing the abstract, and returns it.
 
 =cut
 

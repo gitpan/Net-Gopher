@@ -1,3 +1,8 @@
+# Copyright 2003 by William G. Davis.
+#
+# This class contains methods for generating and reporting diagnostic messages.
+# You really don't need to be looking in here unless you plan on hacking
+# Net::Gopher. See the POD for Net::Gopher new() and debug().
 
 package Net::Gopher::Debugging;
 

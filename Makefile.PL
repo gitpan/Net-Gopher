@@ -4,14 +4,15 @@ use ExtUtils::MakeMaker;
 
 # don't prompt the user if we're not being called interactively (e.g., if we're
 # being called from cron or some such program instead of directly by the user):
-my $interactive;
-$interactive = 1 if (-t STDIN and -t STDOUT);
+# don't prompt the user if we're not being called interactively (e.g., if we're
+# being called from cron or some such program instead of directly by the user):
+my $interactive = 1;
 
 # first, make sure the line endings in the test items are correct:
 my %files_and_newlines = (
 	'index'          => 'LF',
 	gp_index         => 'CRLF',
-	gp_s_byte_term   => 'CRLF',
+	gp_s_byte_term   => 'LF',
 	gp_s_period_term => 'CRLF',
 	gp_s_no_term     => 'CRLF',
 	gp_byte_term     => 'CR',

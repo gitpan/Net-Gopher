@@ -134,9 +134,9 @@ object for you to manipulate.
 As far as requests go, there are four different kinds you can send using this
 module: Gopher requests,[3] Gopher+ requests,[4] item attribute information
 requests,[5] and directory attribute information requests.[6] This class also
-has shortcut methods for each type of request (for example, C<gopher()>,
+has shortcut methods for each type of request (for example, C<gopher()> and
 C<gopher_plus()>) which create the request object for you, send the request,
-and return the response object.
+and return the corresponding response object.
 
 Just like the modules in I<libnet> (e.g., L<Net::NNTP|Net::NNTP>,
 L<Net::FTP|Net::FTP>), many of the methods in the B<Net::Gopher> distribution
@@ -147,7 +147,7 @@ C<param_name =E<gt> "value"> style can be used instead; nether case nor
 underscores matter: "param_name", "Param_Name", "ParamName", "PaRaMnAmE", and
 "PARAM_name" will all be accepted and treated as the same thing. You can even
 add leading dashes to parameter names a la Tk if you want, but please don't do
-that. Choose which ever style you prefer, but make sure you stick with it.
+that. Choose which ever style you prefer and stick with it.
 
 The named parameters, for every method that takes them, can be sent optionally
 as either a hash or array reference--though few methods, like
@@ -187,9 +187,7 @@ use constant MAX_STATUS_LINE_SIZE => 64;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '0.95';
-
-
+$VERSION = '0.96';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -318,22 +316,18 @@ sub new
 					? $buffer_size
 					: DEFAULT_BUFFER_SIZE,
 
-		# the number seconds before a timeout occurs:
+		# the number seconds before a timeout occurs when connecting,
+		# reading, writing, etc., etc.:
 		timeout           => (defined $timeout)
 					? $timeout
 					: DEFAULT_TIMEOUT,
 
-		# silently handle Gopher responses to Gopher+ requests?
+		# silently handle Gopher responses to Gopher+ type requests?
 		upward_compatible => ($upward_compatible) ? 1 : 0,
 
-		# When we read from the socket, we'll do so using a series of
-		# buffers. Each buffer is stored here before getting added to
-		# _data_read (see the _read() and _buffer() methods below):
+		# when we read from the socket, we'll do so using a series of
+		# buffers:
 		_buffer           => undef,
-
-		# every single byte read from the socket (see the_read()
-		# and _data_read() methods below):
-		_data_read        => undef,
 
 		# the IO::Select object for the socket stored in _socket:
 		_select           => undef,
@@ -474,10 +468,10 @@ sub request
 	# make sure we connected successfully:
 	if ($@)
 	{
-		# (we pass the message returned by sprintf() through
+		# (We pass the message returned by sprintf() through
 		# _network_error() rather than just adding it to $response
 		# outright so _network_error() can remove the
-		# "IO::Socket::INET: " prefix from the message)
+		# "IO::Socket::INET: " prefix from the error message.)
 		$self->_network_error(
 			sprintf("Couldn't connect to \"%s\" at port %d: %s",
 				$request->host,
@@ -510,20 +504,21 @@ sub request
 
 
 
+	# send the request to the server:
 	my $request_string = $request->as_string;
 
-	# send the request to the server:
 	$self->_write($request_string);
 
 	return $response->error($self->_network_error)
 		if ($self->_network_error);
 
-	$self->debug_print("Sent this request:\n[$request_string]");
+	$self->debug_print("Sent this request: [$request_string]");
+
+
 
 	# we sent the request and we have nothing else to send, so we're
 	# finished writing:
 	$self->_socket->shutdown(SHUT_WR);
-
 
 
 
@@ -532,15 +527,13 @@ sub request
 	$self->_clear;
 
 	# is this a Gopher+ style request/response cycle? (Complete with
-	# additional tab delimited fields in the request and a status line in
-	# the response.)
+	# additional tab delimited fields in the request string that we sent
+	# and a status line prefixing the response?)
 	my $is_gopher_plus;
-	if ($request->request_type == GOPHER_PLUS_REQUEST
-		or $request->request_type == ITEM_ATTRIBUTE_REQUEST
-		or $request->request_type == DIRECTORY_ATTRIBUTE_REQUEST)
-	{
-		$is_gopher_plus = 1;
-	}
+	$is_gopher_plus = 1
+		if ($request->request_type == GOPHER_PLUS_REQUEST
+			or $request->request_type == ITEM_ATTRIBUTE_REQUEST
+			or $request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
 
 	# this sub is used to store the received response inside of the
 	# response object and make sure any user-defined response handler is
@@ -551,24 +544,41 @@ sub request
 	my $store_response = sub {
 		my $buffer = shift;
 
+
 		$response->_add_raw($buffer);
 		$response->_add_content($buffer);
 
 		$handler->($buffer, $request, $response)
 			if (ref $handler eq 'CODE');
 
+
+		# show how many bytes we stored for debugging:
+		my $bytes_stored =
+			(defined $buffer) ? size_in_bytes($buffer) : 0;
+
 		$self->debug_print(
-			sprintf("Saved %d bytes of response.",
-				(defined $buffer) ? size_in_bytes($buffer) : 0
+			sprintf("Stored %d %s of response.",
+				$bytes_stored,
+				($bytes_stored == 1) ? 'byte' : 'bytes'
 			)
 		);
 	};
 
-	# if we sent a Gopher+ request or item/directory attribute information
-	# request, we need to get the status line (the first line) of the
-	# response. Otherwise, we just receive the Gopher response like normal:
+	# This branch of code below is used to receive the response. It does so
+	# in one of two ways: either as a Gopher+ style request/response cycle
+	# or as a plain-old Gopher request/response cycle. For Gopher+, we
+	# first need to obtain the status line prefixing the response so we can
+	# look at the transfer type and decide how to receive the response. For
+	# Gopher, we just read from the stream until the server closes the
+	# connection.
+	# 
+	# For Gopher+, $remainder will store any additional bytes we end up
+	# reading beyond the status line, or if we don't find the status line,
+	# everything we've read while looking for it:
+	my $remainder;
+
 	if ($is_gopher_plus
-		and my ($status_line, $remainder) = $self->_get_status_line)
+		and my $status_line = $self->_get_status_line(\$remainder))
 	{
 		$response->_add_raw($status_line);
 
@@ -602,25 +612,17 @@ sub request
 		{
 			# a transfer type other than -1 or -2 is the total
 			# length of the response content in bytes:
-			my $bytes_left = $transfer_type;
-			while (my $bytes_read = $self->_read())
+			my $content_length = $transfer_type;
+			my $bytes_stored   =
+				(defined $response->content)
+					? size_in_bytes($response->content)
+					: 0;
+			while ($bytes_stored < $content_length
+				and my $bytes_read = $self->_read)
 			{
-				# if the remaining bytes couldn't fit in the
-				# buffer, then just read enough to fill the
-				# buffer:
-				my $bytes_to_remove =
-					($bytes_left > $bytes_read)
-						? $bytes_read
-						: $bytes_left;
+				$store_response->($self->_buffer);
 
-				# remove bytes from the buffer:
-				my $bytes = remove_bytes(
-					$self->{'_buffer'}, $bytes_to_remove
-				);
-
-				$store_response->($bytes);
-
-				$bytes_left -= size_in_bytes($bytes);
+				$bytes_stored += $bytes_read;
 			}
 		}
 
@@ -634,8 +636,34 @@ sub request
 		) unless (defined $response->raw_response
 			and size_in_bytes($response->raw_response));
 
+		# If the transfer type was not -1 or -2 and instead contained
+		# the length of the response content, then we'll make sure we
+		# received a response containing that many bytes, but--since
+		# we live in a world structured by things such as NULL
+		# terminators--it makes sense to allow for at least a one byte
+		# discrepancy between the length in the transfer type and
+		# actual length of the response content:
+		if ($transfer_type != PERIOD_TERMINATED
+			and $transfer_type != NOT_TERMINATED)
+		{
+			my $supposed_size = $transfer_type;
+			my $actual_size   = size_in_bytes($response->content);
+
+			return $response->error(
+				sprintf('Incomplete response received: only ' .
+				        '%d %s of a suppossedly %d byte ' .
+					'response',
+				        $actual_size,
+					($actual_size == 1) ? 'byte' : 'bytes',
+					$supposed_size
+				)
+			) unless ($actual_size <= $supposed_size + 1
+				and $actual_size >= $supposed_size - 1);
+		}
+
 		# If the response was terminated by a period on a line by
-		# itself, we need to unescape escaped periods:
+		# itself, we need to unescape escaped periods at the start of a
+		# line:
 		$response->_unescape_periods
 			if ($transfer_type == PERIOD_TERMINATED);
 
@@ -666,11 +694,9 @@ sub request
 
 		if ($is_gopher_plus)
 		{
-			# if we got here, then either we couldn't get the
-			# status line of the response or got the first line but
-			# it wasn't in the proper format (wasn't a status line)
-			# or, while getting the status line, we ran into
-			# a network error:
+			# if we got here, then either some network error
+			# occurred or the response wasn't prefixed with a valid
+			# status line:
 			return $response->error($self->_network_error)
 				if ($self->_network_error);
 
@@ -683,7 +709,9 @@ sub request
 				'non-Gopher+ server'
 			) unless ($self->upward_compatible);
 
-			$store_response->($self->_data_read);
+			$store_response->($remainder)
+				if (defined $remainder
+					and size_in_bytes($remainder));
 		}
 
 
@@ -695,9 +723,7 @@ sub request
 		{
 			$store_response->($self->_buffer);
 		}
-	
-		# if we ran into any errors receiving the response, save
-		# the error to the Net::Gopher::Response object and exit:
+
 		return $response->error($self->_network_error)
 			if ($self->_network_error);
 
@@ -1140,36 +1166,44 @@ it will be created. If it does exist, anything in it will be overwritten.
 #
 # The following subroutines are private accessor methods.
 
-sub _socket {
+sub _socket
+{
 	my $self = shift;
-	if (@_) {
-		$self->{'_socket'} = shift
-	} else {
-		return $self->{'_socket'}
+
+	if (@_)
+	{
+		$self->{'_socket'} = shift;
+	}
+	else
+	{
+		return $self->{'_socket'};
 	}
 }
+
 sub _select {
 	my $self = shift;
-	if (@_) {
-		$self->{'_select'} = shift
-	} else {
-		return $self->{'_select'}
+
+	if (@_)
+	{
+		$self->{'_select'} = shift;
+	}
+	else
+	{
+		return $self->{'_select'};
 	}
 }
-sub _buffer {
+
+sub _buffer
+{
 	my $self = shift;
-	if (@_) {
-		$self->{'_buffer'} = shift
-	} else {
-		return $self->{'_buffer'}
+
+	if (@_)
+	{
+		$self->{'_buffer'} = shift;
 	}
-}
-sub _data_read {
-	my $self = shift;
-	if (@_) {
-		$self->{'_data_read'} = shift
-	} else {
-		return $self->{'_data_read'}
+	else
+	{
+		return $self->{'_buffer'};
 	}
 }
 
@@ -1190,9 +1224,7 @@ sub _data_read {
 #		_clear()
 #
 #	Purpose
-#		This method empties the socket buffer ($self->_buffer) and all
-#		of the data that's been read from the socket
-#		($self->_data_read).
+#		This method empties the socket buffer ($self->_buffer).
 #
 #	Parameters
 #		None.
@@ -1203,7 +1235,6 @@ sub _clear
 	my $self = shift;
 
 	$self->_buffer(undef);
-	$self->_data_read(undef);
 }
 
 
@@ -1220,8 +1251,7 @@ sub _clear
 #		one $self->buffer_size length and stores the result in
 #		$self->_buffer.	If successful, the number of bytes read is
 #		returned. If not, call $self->_network_error to retrieve the
-#		error message. This method also prepends the $self->_buffer
-#		buffer it filled to $self->_data_read.
+#		error message.
 #
 #	Parameters
 #		None.
@@ -1229,7 +1259,8 @@ sub _clear
 
 sub _read
 {
-	my $self = shift;
+	my $self   = shift;
+	my $length = shift || $self->buffer_size;
 
 	while (1)
 	{
@@ -1240,9 +1271,8 @@ sub _read
 
 		# try to read part of the response from the socket into the
 		# buffer:
-		my $bytes_read = $self->_socket->sysread(
-			$self->{'_buffer'}, $self->buffer_size
-		);
+		my $bytes_read =
+			$self->_socket->sysread($self->{'_buffer'}, $length);
 
 		unless (defined $bytes_read)
 		{
@@ -1252,12 +1282,18 @@ sub _read
 
 			# a network error occurred and there's nothing we can
 			# do about it:
-			return $self->_network_error("No response received: $!");
+			return $self->_network_error(
+				"Couldn't receive response: $!"
+			);
 		}
 
-		# add the buffer to $self->_data_read, which will store every
-		# single byte read from the socket:
-		$self->{'_data_read'} .= $self->_buffer;
+		# show how many bytes we wrote for debugging:
+		$self->debug_print(
+			sprintf('Received %d %s of data from server.',
+				$bytes_read,
+				($bytes_read == 1) ? 'byte' : 'bytes'
+			)
+		);
 
 		return $bytes_read;
 	}
@@ -1273,9 +1309,10 @@ sub _read
 #		_write($data)
 #
 #	Purpose
-#		This method writes to the socket stored in $self->_socket. If
-#		successful, it returns the number of bytes written. If not,
-#		then call $self->_network_error to find out why.
+#		This method writes $data to the socket stored in
+#		$self->_socket. If successful, it returns the number of bytes
+#		written. If not, then call $self->_network_error to find out
+#		why.
 #
 #	Parameters
 #		$data - A scalar containing bytes to send to the server.
@@ -1283,7 +1320,9 @@ sub _read
 
 sub _write
 {
-	my ($self, $data) = @_;
+	my $self   = shift;
+	my $data   = shift;
+	my $length = shift || size_in_bytes($data);
 
 	while (1)
 	{
@@ -1293,8 +1332,7 @@ sub _write
 			unless ($self->_select->can_write($self->timeout));
 
 		# try to send the data to the server:
-		my $bytes_written =
-			$self->_socket->syswrite($data, size_in_bytes($data));
+		my $bytes_written = $self->_socket->syswrite($data, $length);
 
 		unless (defined $bytes_written)
 		{
@@ -1313,12 +1351,18 @@ sub _write
 			        "%s of a %d byte request): %s",
 				$bytes_written,
 				($bytes_written == 1) ? 'byte' : 'bytes',
-				size_in_bytes($data),
+				$length,
 				$!
 			)
-		) unless (size_in_bytes($data) == $bytes_written);
+		) unless ($length == $bytes_written);
 
-
+		# show how many bytes we wrote for debugging:
+		$self->debug_print(
+			sprintf('Sent %d %s of data to server.',
+				$bytes_written,
+				($bytes_written == 1) ? 'byte' : 'bytes'
+			)
+		);
 
 		return $bytes_written;
 	}
@@ -1334,8 +1378,7 @@ sub _write
 #		_get_status_line()
 #
 #	Purpose
-#		This method calls _read() and looks for a CRLF in the buffer,
-#		calling _read() over and over again until it finds the CRLF or
+#		This calls _read() over and over again until it finds a CRLF or
 #		the number bytes read has met or exceeded the maximum allowed
 #		length of a status line (as specified by MAX_STATUS_LINE_SIZE).
 #		If it finds the newline (CRLF), it checks to make sure the line
@@ -1345,7 +1388,7 @@ sub _write
 #		a string containing the remainder, any bytes after the status
 #		line that we're also read, as elements. If there was no CRLF or
 #		if there was but the line wasn't a status line or if the line
-#		was too big, this method will return undef.
+#		was too large, then this method will return undef.
 #
 #	Parameters
 #		None.
@@ -1353,13 +1396,12 @@ sub _write
 
 sub _get_status_line
 {
-	my $self = shift;
+	my ($self, $remainder_ref) = @_;
 
 	my $response;
-
 	while (1)
 	{
-		$self->_read || return;
+		$self->_read(MAX_STATUS_LINE_SIZE) || return;
 		return if ($self->_network_error);
 
 		$response .= $self->_buffer;
@@ -1367,27 +1409,52 @@ sub _get_status_line
 		# look, starting from the end, for the CRLF terminator:
 		if (rindex($response, $CRLF) >= 0)
 		{
-			if ($response =~ /^([\+\-](?:\-1|\-2|\d+)$CRLF)(.*)/so)
+			if ($response =~ s/(^[\+\-]-1$CRLF)//o
+				or $response =~ s/(^[\+\-]-2$CRLF)//o
+				or $response =~ s/(^[\+\-]\d+$CRLF)//o)
 			{
 				my $status_line = $1;
-				my $remainder   = $2;
+
+				$$remainder_ref = $response;
 
 				# show the status line for debugging:
 				$self->debug_print(
-					"Got this status line:\n[$status_line]"
+					"Got this status line: [$status_line]"
 				);
 
-				return($status_line, $remainder);
+				return $status_line;
 			}
 			else
 			{
-				# a line, yes, but not a status line:
+				# it's a line, yes, but not a Gopher+ status
+				# line:
+				$self->debug_print('Not a valid status line.');
+
+				$$remainder_ref = $response;
+
 				return;
 			}
 		}
 		else
 		{
-			return if (size_in_bytes($response) >= MAX_STATUS_LINE_SIZE);
+			if (size_in_bytes($response) >= MAX_STATUS_LINE_SIZE)
+			{
+				$self->debug_print(
+					sprintf('Read %d %s and found no ' .
+					        'status line; exceeding the ' .
+						'%d byte limit',
+						size_in_bytes($response),
+						(size_in_bytes($response) == 1)
+							? 'byte'
+							: 'bytes',
+						MAX_STATUS_LINE_SIZE
+					)
+				);
+
+				$$remainder_ref = $response;
+
+				return;
+			}
 		}
 	}
 }
@@ -1399,15 +1466,21 @@ sub _get_status_line
 ################################################################################
 #
 #	Method
-#		_network_error()
+#		_network_error([$error_message])
 #
 #	Purpose
 #		This method is used to set and retrieve the last network error.
-#		It removes those annoying IO::Socket::* package prefixes from
-#		error messages too (e.g. "IO::Socket::INET: Bad hostname").
+#		When you supply $error_message, it stores it in the Net::Gopher
+#		object and returns undef. (Allowing private methods to
+#		"return $self->_network_error('Something')"). It also removes
+#		any IO::Socket::* package prefixes from $error_message too (for
+#		example, "IO::Socket::INET: Bad hostname" becomes "Bad
+#		hostname"). If you don't supply $error_message, then it returns
+#		the last error message supplied to it.
 #
 #	Parameters
-#		None.
+#		$error_message - A string containing a network error message of
+#		                 some sort.
 #
 
 sub _network_error
@@ -1420,7 +1493,7 @@ sub _network_error
 		# (IO::Socket::* modules put them in):
 		($self->{'_network_error'} = shift) =~ s/IO::Socket::\w+: //g;
 
-		# return so the caller can do
+		# return nothing so the caller can do
 		# "return $self->_network_error($msg);" and their sub will exit
 		# correctly, returning nothing:
 		return;
@@ -1462,8 +1535,8 @@ available at gopher://gopher.floodgap.com/0/gopher/tech/Gopher+ (Jul. 1993)
 
 [10] I<See> note 6.
 
-[11] I<See> Berners-Lee et al., I<RFC 1738: Uniform Resource Locators (URL)>,
-available at http://www.w3.org/Addressing/rfc1738.txt (Dec. 1994).
+[11] I<See> Berners-Lee et al., I<RFC 1738: Uniform Resource Locators (URL)>
+§ 3.4, available at http://www.w3.org/Addressing/rfc1738.txt (Dec. 1994).
 
 =head1 BUGS
 

@@ -21,7 +21,7 @@ my %opts;
 getopts('ep:', \%opts);
 
 my $server = new IO::Socket::INET (
-	LocalPort => $opts{'p'},
+	LocalPort => $opts{'p'} || DEFAULT_PORT,
 	Type      => SOCK_STREAM,
 	Reuse     => 1,
 	Listen    => 1

@@ -36,8 +36,14 @@ BEGIN
 @EXPORT_OK = qw(
 	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS
 
-	check_params size_in_bytes remove_bytes get_os_name chars_to_entities
-	strip_status_line strip_terminator
+	check_params
+	size_in_bytes
+	remove_bytes
+	get_os_name
+	chars_to_entities
+	convert_newlines
+	strip_status_line
+	strip_terminator
 );
 
 
@@ -152,6 +158,9 @@ sub check_params
 	}
 	else
 	{
+		croak("Odd number elements for what should be named parameters")
+			if (@args % 2);
+
 		%params = @args;
 	}
 
@@ -325,6 +334,29 @@ sub size_in_bytes ($)
 
 
 
+sub convert_newlines
+{
+	my $converted;
+	if (get_os_name() =~ /^MacOS/i)
+	{
+		# convert Windows CRLF and Unix LF line endings to MacOS CR:
+		$converted += $_[0] =~ s/\015\012/\015/g;
+		$converted += $_[0] =~ s/\012/\015/g;
+	}
+	else
+	{
+		# convert Windows CRLF and MacOS CR line endings to Unix LF:
+		$converted += $_[0] =~ s/\015\012/\012/g;
+		$converted += $_[0] =~ s/\015/\012/g;
+	}
+
+	return $converted;
+}
+
+
+
+
+
 ################################################################################
 #
 #	Function
@@ -340,7 +372,7 @@ sub size_in_bytes ($)
 
 sub strip_status_line
 {
-	$_[0] =~ s/^.+?$CRLF//o;
+	return scalar $_[0] =~ s/^.+?$CRLF//o;
 }
 
 
@@ -366,7 +398,7 @@ sub strip_status_line
 
 sub strip_terminator
 {
-	$_[0] =~ s/$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$//o;
+	return scalar $_[0] =~ s/$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$//o;
 }
 
 1;

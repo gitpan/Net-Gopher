@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test;
 
-BEGIN { plan(tests => 107) }
+BEGIN { plan(tests => 111) }
 
 use Net::Gopher;
 use Net::Gopher::Request;
@@ -36,10 +36,9 @@ require './t/serverfunctions.pl';
 	ok($ng->silent, 0);                                     # 6
 	ok($ng->debug, 0);                                      # 7
 	ok(!defined $ng->log_file);                             # 8
-	ok(!defined $ng->_data_read);                           # 9
-	ok(!defined $ng->_buffer);                              # 10
-	ok(!defined $ng->_socket);                              # 11
-	ok(!defined $ng->_select);                              # 12
+	ok(!defined $ng->_buffer);                              # 9
+	ok(!defined $ng->_socket);                              # 10
+	ok(!defined $ng->_select);                              # 11
 }
 
 {
@@ -57,40 +56,39 @@ require './t/serverfunctions.pl';
 		LoGFiLe          => 'a_filename.txt'
 	);
 
-	ok($ng->buffer_size, 777777);         # 13
-	ok($ng->timeout, 60);                 # 14
-	ok($ng->upward_compatible, 1);        # 15
-	ok($ng->warn_handler == $warn);       # 16
-	ok($ng->die_handler  == $die);        # 17
-	ok($ng->silent, 0);                   # 18
-	ok($ng->debug, 1);                    # 19
-	ok($ng->log_file, 'a_filename.txt');  # 20
-	ok(!defined $ng->_data_read);         # 21
-	ok(!defined $ng->_buffer);            # 22
-	ok(!defined $ng->_socket);            # 23
-	ok(!defined $ng->_select);            # 24
+	ok($ng->buffer_size, 777777);         # 12
+	ok($ng->timeout, 60);                 # 13
+	ok($ng->upward_compatible, 1);        # 14
+	ok($ng->warn_handler == $warn);       # 15
+	ok($ng->die_handler  == $die);        # 16
+	ok($ng->silent, 0);                   # 17
+	ok($ng->debug, 1);                    # 18
+	ok($ng->log_file, 'a_filename.txt');  # 19
+	ok(!defined $ng->_buffer);            # 20
+	ok(!defined $ng->_socket);            # 21
+	ok(!defined $ng->_select);            # 22
 }
 
 {
 	my $ng = new Net::Gopher;
 
 	$ng->buffer_size(1234567);
-	ok($ng->buffer_size, 1234567); # 25
+	ok($ng->buffer_size, 1234567); # 23
 
 	$ng->timeout(100);
-	ok($ng->timeout, 100);         # 26
+	ok($ng->timeout, 100);         # 24
 
 	$ng->upward_compatible('true');
-	ok($ng->upward_compatible, 1); # 27
+	ok($ng->upward_compatible, 1); # 25
 
 	$ng->upward_compatible(0);
-	ok($ng->upward_compatible, 0); # 28
+	ok($ng->upward_compatible, 0); # 26
 
 	$ng->debug(100);
-	ok($ng->debug, 1);             # 29
+	ok($ng->debug, 1);             # 27
 
 	$ng->debug(0);
-	ok($ng->debug, 0);             # 30
+	ok($ng->debug, 0);             # 28
 }
 
 
@@ -101,7 +99,7 @@ require './t/serverfunctions.pl';
 
 {
 	# this runs testserver.pl with -e to echo back each request:
-	run_echo_server();
+	ok(run_echo_server()); # 29
 
 	my $ng = new Net::Gopher;
 
@@ -126,8 +124,8 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 31
-		ok($response->raw_response, $request->as_string); # 32
+		ok($response->is_success);                        # 30
+		ok($response->raw_response, $request->as_string); # 31
 	}
 
 	{
@@ -142,8 +140,8 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 33
-		ok($response->raw_response, $request->as_string); # 34
+		ok($response->is_success);                        # 32
+		ok($response->raw_response, $request->as_string); # 33
 	}
 
 	{
@@ -159,8 +157,8 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 35
-		ok($response->raw_response, $request->as_string); # 36
+		ok($response->is_success);                        # 34
+		ok($response->raw_response, $request->as_string); # 35
 	}
 
 	{
@@ -176,8 +174,8 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 37
-		ok($response->raw_response, $request->as_string); # 38
+		ok($response->is_success);                        # 36
+		ok($response->raw_response, $request->as_string); # 37
 	}
 
 	{ 
@@ -194,8 +192,8 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 39
-		ok($response->raw_response, $request->as_string); # 40
+		ok($response->is_success);                        # 38
+		ok($response->raw_response, $request->as_string); # 39
 	}
 
 	{
@@ -212,8 +210,8 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 41
-		ok($response->raw_response, $request->as_string); # 42
+		ok($response->is_success);                        # 40
+		ok($response->raw_response, $request->as_string); # 41
 	}
 
 	{
@@ -228,8 +226,8 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 43
-		ok($response->raw_response, $request->as_string); # 44
+		ok($response->is_success);                        # 42
+		ok($response->raw_response, $request->as_string); # 43
 	}
 
 	{
@@ -244,8 +242,8 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 45
-		ok($response->raw_response, $request->as_string); # 46
+		ok($response->is_success);                        # 44
+		ok($response->raw_response, $request->as_string); # 45
 	}
 
 
@@ -277,9 +275,9 @@ require './t/serverfunctions.pl';
 			SearchWords => ['red', 'green', 'blue']
 		);
 
-		ok($response->is_success);                                    # 47
-		ok($response->request->request_type, $request->request_type); # 48
-		ok($response->request->as_string, $request->as_string);       # 49
+		ok($response->is_success);                                    # 46
+		ok($response->request->request_type, $request->request_type); # 47
+		ok($response->request->as_string, $request->as_string);       # 48
 	}
 
 	{
@@ -299,9 +297,9 @@ require './t/serverfunctions.pl';
 			Representation => 'text/plain'
 		);
 
-		ok($response->is_success);                                    # 50
-		ok($response->request->request_type, $request->request_type); # 51
-		ok($response->request->as_string, $request->as_string);       # 52
+		ok($response->is_success);                                    # 49
+		ok($response->request->request_type, $request->request_type); # 50
+		ok($response->request->as_string, $request->as_string);       # 51
 	}
 
 	{
@@ -321,9 +319,9 @@ require './t/serverfunctions.pl';
 			Attributes     => '+ATTR'
 		);
 
-		ok($response->is_success);                                    # 53
-		ok($response->request->request_type, $request->request_type); # 54
-		ok($response->request->as_string, $request->as_string);       # 55
+		ok($response->is_success);                                    # 52
+		ok($response->request->request_type, $request->request_type); # 53
+		ok($response->request->as_string, $request->as_string);       # 54
 	}
 
 	{
@@ -343,12 +341,12 @@ require './t/serverfunctions.pl';
 			Attributes     => '+ATTR'
 		);
 
-		ok($response->is_success);                                    # 56
-		ok($response->request->request_type, $request->request_type); # 57
-		ok($response->request->as_string, $request->as_string);       # 58
+		ok($response->is_success);                                    # 55
+		ok($response->request->request_type, $request->request_type); # 56
+		ok($response->request->as_string, $request->as_string);       # 57
 	}
 
-	kill_server();
+	ok(kill_server()); # 58
 
 
 
@@ -360,7 +358,7 @@ require './t/serverfunctions.pl';
 	# other than 70:
 	#
 
-	run_server(7070);
+	ok(run_server(7070)); # 59
 
 	{
 		my $response = $ng->gopher(
@@ -369,10 +367,10 @@ require './t/serverfunctions.pl';
 			Selector => '/index'
 		);
 
-		ok($response->is_success); # 59
+		ok($response->is_success); # 60
 	}
 
-	kill_server();
+	ok(kill_server()); # 61
 }
 
 
@@ -382,7 +380,7 @@ require './t/serverfunctions.pl';
 
 
 {
-	run_server();
+	ok(run_server()); # 62
 
 	my $ng = new Net::Gopher;
 
@@ -418,10 +416,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);          # 60
-		ok($request == $last_request_obj);  # 61
-		ok($response== $last_response_obj); # 62
-		ok($content_matches);               # 63
+		ok($response->is_success);          # 63
+		ok($request == $last_request_obj);  # 64
+		ok($response== $last_response_obj); # 65
+		ok($content_matches);               # 66
 	}
 
 	{
@@ -448,10 +446,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 64
-		ok($request == $last_request_obj);   # 65
-		ok($response == $last_response_obj); # 66
-		ok($content_matches);                # 67
+		ok($response->is_success);           # 67
+		ok($request == $last_request_obj);   # 68
+		ok($response == $last_response_obj); # 69
+		ok($content_matches);                # 70
 	}
 
 	{
@@ -478,10 +476,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);         # 68
-		ok($request, $last_request_obj);   # 69
-		ok($response, $last_response_obj); # 70
-		ok($content_matches);              # 71
+		ok($response->is_success);         # 71
+		ok($request, $last_request_obj);   # 72
+		ok($response, $last_response_obj); # 73
+		ok($content_matches);              # 74
 	}
 
 	{
@@ -508,10 +506,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 72
-		ok($request == $last_request_obj);   # 73
-		ok($response == $last_response_obj); # 74
-		ok($content_matches);                # 75
+		ok($response->is_success);           # 75
+		ok($request == $last_request_obj);   # 76
+		ok($response == $last_response_obj); # 77
+		ok($content_matches);                # 78
 	}
 
 	{
@@ -538,10 +536,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 76
-		ok($request == $last_request_obj);   # 77
-		ok($response == $last_response_obj); # 78
-		ok($content_matches);                # 79
+		ok($response->is_success);           # 79
+		ok($request == $last_request_obj);   # 80
+		ok($response == $last_response_obj); # 81
+		ok($content_matches);                # 82
 	}
 
 	{
@@ -568,10 +566,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 80
-		ok($request == $last_request_obj);   # 81
-		ok($response == $last_response_obj); # 82
-		ok($content_matches);                # 83
+		ok($response->is_success);           # 83
+		ok($request == $last_request_obj);   # 84
+		ok($response == $last_response_obj); # 85
+		ok($content_matches);                # 86
 	}
 
 	{
@@ -598,10 +596,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 84
-		ok($request == $last_request_obj);   # 85
-		ok($response == $last_response_obj); # 86
-		ok($content_matches);                # 87
+		ok($response->is_success);           # 87
+		ok($request == $last_request_obj);   # 88
+		ok($response == $last_response_obj); # 89
+		ok($content_matches);                # 90
 	}
 
 	{
@@ -628,10 +626,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 88
-		ok($request == $last_request_obj);   # 89
-		ok($response == $last_response_obj); # 90
-		ok($content_matches);                # 91
+		ok($response->is_success);           # 91
+		ok($request == $last_request_obj);   # 92
+		ok($response == $last_response_obj); # 93
+		ok($content_matches);                # 94
 	}
 
 
@@ -649,12 +647,12 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request, File => 'test.txt');
 
-		ok($response->is_success);                # 92
-		ok(open(TEST, 'test.txt'));               # 93
-		ok(join('', <TEST>), $response->content); # 94
+		ok($response->is_success);                # 95
+		ok(open(TEST, 'test.txt'));               # 96
+		ok(join('', <TEST>), $response->content); # 97
 		close TEST;
-		ok(unlink('test.txt'));                   # 95
-		ok(!-e 'test.txt');                       # 96
+		ok(unlink('test.txt'));                   # 98
+		ok(!-e 'test.txt');                       # 99
 	}
 
 	{
@@ -667,12 +665,12 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request, File => 'test2.txt');
 
-		ok($response->is_success);                 # 97
-		ok(open(TEST2, 'test2.txt'));              # 98
-		ok(join('', <TEST2>), $response->content); # 99
+		ok($response->is_success);                 # 100
+		ok(open(TEST2, 'test2.txt'));              # 101
+		ok(join('', <TEST2>), $response->content); # 102
 		close TEST2;
-		ok(unlink('test2.txt'));                   # 100
-		ok(!-e 'test2.txt');                       # 101
+		ok(unlink('test2.txt'));                   # 103
+		ok(!-e 'test2.txt');                       # 104
 	}
 
 
@@ -697,11 +695,11 @@ require './t/serverfunctions.pl';
 
 		$ng->request();
 
-		ok(scalar @warnings, 0);        # 102
-		ok(scalar @fatal_errors, 1);    # 103
+		ok(scalar @warnings, 0);        # 105
+		ok(scalar @fatal_errors, 1);    # 106
 		ok($fatal_errors[0],
 			'A Net::Gopher::Request object was not supplied as ' .
-			'the first argument.'); # 104
+			'the first argument.'); # 107
 	}
 
 	{
@@ -714,18 +712,18 @@ require './t/serverfunctions.pl';
 
 		$ng->request(new Net::Gopher::Request('Gopher') );
 
-		ok(@warnings, 0);     # 105
-		ok(@fatal_errors, 1); # 106
+		ok(@warnings, 0);     # 108
+		ok(@fatal_errors, 1); # 109
 		ok($fatal_errors[0],
 			join(' ',
 				"You never specified a hostname; it's",
 				"impossible to send your request without one.",
 				"Specify it during object creation or later on",
 				"with the host() method."
-			));           # 107
+			));           # 110
 	}
 
 
 
-	kill_server();
+	ok(kill_server()); # 111
 }

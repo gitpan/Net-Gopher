@@ -260,10 +260,12 @@ sub new
 	{
 		# Since the calling convention is different for URL type
 		# requests than all others, we first need to parse the URL
-		# and set $type to whatever type of request (Gopher,
-		# GopherPlus, ItemAttribute, DirectoryAttribute) this URL is,
-		# then put all of the elements of the URL (scheme host, port,
-		# search words, etc.) in %args.
+		# and set $type to whatever type of request ("Gopher,"
+		# "GopherPlus," "ItemAttribute," "DirectoryAttribute") this URL
+		# contains, then put all of the notable elements of the URL
+		# (the host, port, selector, search words, etc.) in their
+		# corresponding scalars ($host, $port, $selector,
+		# $search_words, etc.).
 		my $url = shift;
 
 		my $uri;
@@ -351,7 +353,7 @@ sub new
 	}
 	else
 	{
-		# get the ParamName => "value" pairs:
+		# this isn't a URL type request, so get the named parameters:
 		($host, $port, $selector, $search_words, $representation,
 		 $attributes, $data_block, $item_type) =
 			check_params([qw(
@@ -472,12 +474,10 @@ sub as_string
 {
 	my $self = shift;
 
-	my $selector = (defined $self->selector) ? $self->selector : '';
+	my $request_string = (defined $self->selector) ? $self->selector : '';
 
-	my $request_string;
 	if ($self->request_type == GOPHER_REQUEST)
 	{
-		$request_string  = $selector;
 		$request_string .= "\t" . $self->search_words
 			if (defined $self->search_words);
 
@@ -485,7 +485,6 @@ sub as_string
 	}
 	elsif ($self->request_type == GOPHER_PLUS_REQUEST)
 	{
-		$request_string .= $selector;
 		$request_string .= "\t" . $self->search_words
 			if (defined $self->search_words);
 
@@ -515,7 +514,6 @@ sub as_string
 	}
 	elsif ($self->request_type == ITEM_ATTRIBUTE_REQUEST)
 	{
-		$request_string .= $selector;
 		$request_string .= "\t!";
 		$request_string .= $self->attributes
 			if (defined $self->attributes);
@@ -524,7 +522,6 @@ sub as_string
 	}
 	elsif ($self->request_type == DIRECTORY_ATTRIBUTE_REQUEST)
 	{
-		$request_string .= $selector;
 		$request_string .= "\t\$";
 		$request_string .= $self->attributes
 			if (defined $self->attributes);
@@ -608,7 +605,9 @@ C<DIRECTORY_ATTRIBUTE_REQUEST>. E.g.:
  	print "It's just a Gopher request.\n";
  }
 
-See L<Net::Gopher::Constants|Net::Gopher::Constants>.
+These four constants can be imported from B<Net::Gopher::Constants> by name or
+when you C<use()> B<Net::Gopher::Constants> with the I<:request> or I<:all>
+tags. See L<Net::Gopher::Constants|Net::Gopher::Constants>.
 
 =cut
 
@@ -623,8 +622,8 @@ sub request_type { return shift->{'request_type'} }
 =head2 host([HOSTNAME])
 
 This is a get/set method for the I<Host> parameter. You can change the hostname
-by supplying a new one. If you don't supply a new hostname, then the current
-one will be returned to you.
+of the request by supplying a new one. If you don't supply a new hostname, then
+the current one will be returned to you.
 
 =cut
 

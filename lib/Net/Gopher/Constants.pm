@@ -51,7 +51,13 @@ my @request_constants   = qw(
 	ITEM_ATTRIBUTE_REQUEST
 	DIRECTORY_ATTRIBUTE_REQUEST
 );
-my @response_constants  = qw(OK NOT_OK);
+my @response_constants  = qw(
+	OK
+	NOT_OK
+	DOES_NOT_EXIST_ERROR
+	TRY_AGAIN_LATER_ERROR
+	HAS_MOVED_ERROR
+);
 my @item_type_constants = qw(
 	TEXT_FILE_TYPE
 	GOPHER_MENU_TYPE
@@ -131,10 +137,10 @@ See L<request_type()|Net::Gopher::Request/request_type()>.
 
 =cut
 
-sub GOPHER_REQUEST              () { return 1 }
-sub GOPHER_PLUS_REQUEST         () { return 2 }
-sub ITEM_ATTRIBUTE_REQUEST      () { return 3 }
-sub DIRECTORY_ATTRIBUTE_REQUEST () { return 4 }
+sub GOPHER_REQUEST()              { return 1 }
+sub GOPHER_PLUS_REQUEST()         { return 2 }
+sub ITEM_ATTRIBUTE_REQUEST()      { return 3 }
+sub DIRECTORY_ATTRIBUTE_REQUEST() { return 4 }
 
 
 
@@ -142,19 +148,30 @@ sub DIRECTORY_ATTRIBUTE_REQUEST () { return 4 }
 
 =head1 RESPONSE CONSTANTS
 
-If you specify I<:response>, then two constants will be exported. These
-constants can be compared against the value returned by the
-B<Net::Gopher::Response> C<status()> method.
+If you specify I<:response>, then five constants will be exported. The first
+two constants can be compared against the value returned by the
+B<Net::Gopher::Response> C<status()> method:
 
  OK     = Evaluates to "+";
  NOT_OK = Evaluates to "-";
 
-See L<status()|Net::Gopher::Response/status()>.
+The other three constants are for the several Gopher+ error codes:
+
+ DOES_NOT_EXIST_ERROR  = Evaluates to "1";
+ TRY_AGAIN_LATER_ERROR = Evaluates to "2";
+ HAS_MOVED_ERROR       = Evaluates to "3";
+
+See the L<status()|Net::Gopher::Response/status()> and
+L<error_code()|Net::Gopher::Response/error_code()> methods.
 
 =cut
 
-sub OK ()     { return '+' }
-sub NOT_OK () { return '-' }
+sub OK()     { return '+' }
+sub NOT_OK() { return '-' }
+
+sub DOES_NOT_EXIST_ERROR()  { return 1 }
+sub TRY_AGAIN_LATER_ERROR() { return 2 }
+sub HAS_MOVED_ERROR()       { return 3 }
 
 
 
@@ -203,31 +220,28 @@ or directory attribute information request.
 
 =cut
 
-# Gopher item type constants:
-sub TEXT_FILE_TYPE               () { return 0 }
-sub GOPHER_MENU_TYPE             () { return 1 }
-sub CCSO_NAMESERVER_TYPE         () { return 2 }
-sub ERROR_TYPE                   () { return 3 }
-sub BINHEXED_MACINTOSH_FILE_TYPE () { return 4 }
-sub DOS_BINARY_FILE_TYPE         () { return 5 }
-sub UNIX_UUENCODED_FILE_TYPE     () { return 6 }
-sub INDEX_SEARCH_SERVER_TYPE     () { return 7 }
-sub TELNET_SESSION_TYPE          () { return 8 }
-sub BINARY_FILE_TYPE             () { return 9 }
-sub GIF_IMAGE_TYPE               () { return 'g' }
-sub IMAGE_FILE_TYPE              () { return 'I' }
-sub TN3270_SESSION_TYPE          () { return 'T' }
+sub TEXT_FILE_TYPE()               { return 0 }
+sub GOPHER_MENU_TYPE()             { return 1 }
+sub CCSO_NAMESERVER_TYPE()         { return 2 }
+sub ERROR_TYPE()                   { return 3 }
+sub BINHEXED_MACINTOSH_FILE_TYPE() { return 4 }
+sub DOS_BINARY_FILE_TYPE()         { return 5 }
+sub UNIX_UUENCODED_FILE_TYPE()     { return 6 }
+sub INDEX_SEARCH_SERVER_TYPE()     { return 7 }
+sub TELNET_SESSION_TYPE()          { return 8 }
+sub BINARY_FILE_TYPE()             { return 9 }
+sub GIF_IMAGE_TYPE()               { return 'g' }
+sub IMAGE_FILE_TYPE()              { return 'I' }
+sub TN3270_SESSION_TYPE()          { return 'T' }
 
-# Gopher+ item type constants:
-sub BITMAP_IMAGE_TYPE () { return ':' }
-sub MOVIE_TYPE        () { return ';' }
-sub SOUND_TYPE        () { return '<' }
+sub BITMAP_IMAGE_TYPE() { return ':' }
+sub MOVIE_TYPE()        { return ';' }
+sub SOUND_TYPE()        { return '<' }
 
-# constants for common but unofficial item types:
-sub HTML_FILE_TYPE   () { return 'h' }
-sub INLINE_TEXT_TYPE () { return 'i' }
-sub MIME_FILE_TYPE   () { return 'M' }
-sub MULAW_AUDIO_TYPE () { return 's' }
+sub HTML_FILE_TYPE()   { return 'h' }
+sub INLINE_TEXT_TYPE() { return 'i' }
+sub MIME_FILE_TYPE()   { return 'M' }
+sub MULAW_AUDIO_TYPE() { return 's' }
 
 1;
 

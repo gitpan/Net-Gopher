@@ -78,7 +78,7 @@ require './t/serverfunctions.pl';
 
 		ok($response->raw_response, $ITEMS_RAW{'gp_s_byte_term'}); # 21
 		ok($response->content, $ITEMS_CONTENT{'gp_s_byte_term'});  # 22
-		ok($response->status_line, "+30\015\012");                 # 23
+		ok($response->status_line, "+31\015\012");                 # 23
 		ok($response->status, OK);                                 # 24
 		ok(!$response->is_error);                                  # 25
 		ok($response->is_success);                                 # 26
@@ -138,7 +138,7 @@ require './t/serverfunctions.pl';
 
 		ok($response->raw_response, $ITEMS_RAW{'gp_byte_term'}); # 51
 		ok($response->content, $ITEMS_CONTENT{'gp_byte_term'});  # 52
-		ok($response->status_line, "+3483\015\012");             # 53
+		ok($response->status_line, "+3356\015\012");             # 53
 		ok($response->status, OK);                               # 54
 		ok(!$response->is_error);                                # 55
 		ok($response->is_success);                               # 56
@@ -191,7 +191,7 @@ require './t/serverfunctions.pl';
 	{
 		my $ng = new Net::Gopher;
 
-		my $response = $ng->gopher_plus(
+		my $response = $ng->item_attribute(
 			Host     => 'localhost',
 			Selector => '/item_blocks'
 		);
@@ -211,7 +211,7 @@ require './t/serverfunctions.pl';
 	{
 		my $ng = new Net::Gopher;
 
-		my $response = $ng->gopher_plus(
+		my $response = $ng->directory_attribute(
 			Host     => 'localhost',
 			Selector => '/directory_blocks'
 		);
@@ -220,7 +220,7 @@ require './t/serverfunctions.pl';
 			$ITEMS_RAW{'directory_blocks'});     # 91
 		ok($response->content,
 			$ITEMS_CONTENT{'directory_blocks'}); # 92
-		ok($response->status_line, "+568\015\012");  # 93
+		ok($response->status_line, "+554\015\012");  # 93
 		ok($response->status, OK);                   # 94
 		ok(!$response->is_error);                    # 95
 		ok($response->is_success);                   # 96
@@ -403,8 +403,8 @@ BEGIN
 			"1Application	/ask_script	localhost	70	?\015\012"
 		),
 		gp_s_byte_term => join('',
-			"+30\015\012",
-			"2.3     Gopher+ data transfer.\015\012"
+			"+31\015\012",
+			"2.3     Gopher+ data transfer.\012"
 		),
 		gp_s_period_term => join('',
 			"+-1\015\012",
@@ -416,7 +416,7 @@ BEGIN
 			"Gopher+"
 		),
 		gp_byte_term => join('',
-			"+3483\015\012",
+			"+3356\015\012",
 			"2.3     Gopher+ data transfer.\015",
 			"\015",
 			"If a client sends out a Gopher+ type request to a\015",
@@ -866,7 +866,7 @@ BEGIN
 			".\015"
 		),
 		directory_blocks => join('',
-			"+568\015\012",
+			"+554\015\012",
 			"+INFO: 1Gopher+ Index	/gp_index	localhost	70	+\012",
 			"+ADMIN\012",
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012",

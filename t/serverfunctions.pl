@@ -17,7 +17,7 @@ sub run_server
 	my $pid = open(SERVER, "| perl ./t/testserver.pl -p $port")
 		or die "Couldn't launch the test server: $!.\n";
 
-	$TEST_SERVER_PID = $pid;
+	return $TEST_SERVER_PID = $pid;
 }
 
 sub run_echo_server
@@ -27,7 +27,7 @@ sub run_echo_server
 	my $pid = open(SERVER, "| perl ./t/testserver.pl -e -p $port")
 		or die "Couldn't launch the test server: $!.\n";
 
-	$TEST_SERVER_PID = $pid;
+	return $TEST_SERVER_PID = $pid;
 }
 
 sub kill_server
@@ -40,6 +40,8 @@ sub kill_server
 	$TEST_SERVER_PID = undef;
 
 	close SERVER;
+
+	return 1;
 }
 
 

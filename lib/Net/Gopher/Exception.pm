@@ -1,7 +1,9 @@
 # Copyright 2003 by William G. Davis.
 #
-# This class contains methods to be inherited Net::Gopher. You really don't
-# need to be looking in here unless you plan on hacking Net::Gopher.
+# This class contains methods for defining and calling warning and fatal error
+# exception handlers. You really don't need to be looking in here unless you
+# plan on hacking Net::Gopher. See the POD for Net::Gopher new(),
+# warn_handler(), die_handler(), and silent().
 
 package Net::Gopher::Exception;
 

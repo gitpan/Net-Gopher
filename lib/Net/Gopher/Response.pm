@@ -14,9 +14,8 @@ Net::Gopher::Response - Class encapsulating Gopher/Gopher+ responses
  die $response->error if ($response->is_error);
  
  if ($response->is_menu) {
- 	# You can use extract_items() to parse a Gopher menu
- 	# and retrieve its items as Net::Gopher::Response::MenuItem
- 	# objects:
+ 	# You can use extract_items() to parse a Gopher menu and retrieve
+ 	# its items as Net::Gopher::Response::MenuItem objects:
  	my @items = $response->extract_items(ExceptTypes => 'i');
  
  	foreach my $item_obj (@items)
@@ -27,26 +26,54 @@ Net::Gopher::Response - Class encapsulating Gopher/Gopher+ responses
  			$item_obj->port
  		);
  
-		(my $filename = $item_obj->selector) =~ s/\W/_/g;
+ 		(my $filename = $item_obj->selector) =~ s/\W/_/g;
  		$ng->request($item_obj->as_request, File => $filename);
  	}
  
  	# See Net::Gopher::Response::MenuItem for more methods you
- 	# can you can call on these objects.
+ 	# can you can call on the objects returned by extract_items().
  } elsif ($response->is_blocks) {
- 	# When issuing item/directory attribute information
- 	# requests, use get_block() to retrieve a
-	# Net::Gopher::Response::InformationBlock object for a particular
- 	# block, which you can call methods like extract_description() and
-	# extract_adminstrator() on:
+ 	# When issuing item/directory attribute information requests, use
+ 	# get_block() to retrieve an individual
+ 	# Net::Gopher::Response::InformationBlock object for a particular
+ 	# block, which you can then parse using methods like
+ 	# extract_description() and extract_adminstrator() depending on
+ 	# what type of block it is:
+ 	my $info_block = $response->get_block('+INFO');
+ 
  	my ($type, $display, $selector, $host, $port, $plus) =
- 		$response->extract_description;
+ 		$info_block->extract_description;
  
  	print "$type   $display ($selector from $host at $port)\n";
  
- 	my ($name, $email) = $response->extract_admin;
+ 
+ 	my $admin_block = $response->get_block('+ADMIN');
+ 
+ 	my ($name, $email) = $admin_block->extract_admin;
  
  	print "Maintained by $name who can be emailed at $email\n";
+  
+ 
+ 
+ 	# for item attribute information requests, there are wrapper
+ 	# methods around the Net::Gopher::Response::InformationBlock
+ 	# extract_* methods; you can call them directly on the
+ 	# Net::Gopher::Response object and skip get_block():
+ 	($name, $email) = $response->extract_admin;
+ 	my $abstract    = $response->extract_abstract;
+ 	my @views       = $response->ectract_views;
+ 
+ 
+ 
+ 	# for directory attribute information requests, you'll have to
+ 	# specify which item you want the block from:
+ 	$info_block  = $response->get_block('+INFO', Item => 1);
+ 	$admin_block = $response->get_block('+INFO', Item => 2);
+ 
+ 	#... or use get_blocks() to multiple blocks at once:
+ 	my @blocks = $response->get_blocks;
+ 
+ 
  
  	# See Net::Gopher::Response::InformationBlock for documentation
  	# on how to manipulate block objects.
@@ -100,7 +127,12 @@ use Net::Gopher::Response::MenuItem;
 use Net::Gopher::Response::XML qw(gen_block_xml gen_menu_xml gen_text_xml);
 use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS
-	check_params get_os_name strip_status_line strip_terminator
+
+	check_params
+	get_os_name
+	convert_newlines
+	strip_status_line
+	strip_terminator
 );
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
@@ -575,10 +607,10 @@ sub extract_items
 
 
 	my @menu_items;
-	
-	foreach my $raw_item (split(/\n/, $content))
+	my $current_item;
+	foreach my $item (split(/\n/, $content))
 	{
-		chomp(my $item = $raw_item);
+		$current_item++;
 
 		# get the item type and display string, selector, host, port,
 		# and Gopher+ string:
@@ -603,7 +635,7 @@ sub extract_items
 			        'fields: %s. The response either does not ' .
 				'contain a Gopher menu or contains a '.
 				'malformed Gopher menu.',
-				scalar @menu_items + 1,
+				$current_item,
 				join(', ', @missing_fields)
 			)
 		) if (@missing_fields);
@@ -653,14 +685,14 @@ I<Net::Gopher::Response::InformationBlock> object. The first argument this
 method always takes is the name of the block to retrieve. The leading "+"
 character in the block name is optional, but block names are case sensitive.[6]
 If you made a directory attribute information request, than you'll have to be
-more specific as to which item you want the block from; use the I<Item>
-parameter to specify which item you want the block from.
+more specific as to which item you want the block from--use the I<Item>
+parameter to specify which item.
 
 I<Item> can be either a number indicating the N'th item in the response or it
 can be a reference to a hash (or array) containing one or more named parameters
 describing the item, which will be compared against each item's C<+INFO> block
-looking for an item that matches the template. The possible parameters for
-I<Item> are:
+looking for an item that matches the template. The possible C<Name => value>
+pairs for an I<Item> template hash are:
 
 =over 4
 
@@ -698,7 +730,7 @@ The Gopher+ string in the C<+INFO> block of the item.
 
 =back
 
-The value of any of the I<Item> template parameters can either be a string or a
+The value of any of the I<Item> template pair can either be a string or a
 pattern compiled with the C<qr//> operator (it tells the difference using
 C<ref()>). The first item that matches every parameter in the template is the
 item the specified block object will be returned from.
@@ -1301,43 +1333,36 @@ sub is_terminated
 
 
 
-# XXX Maybe this should be in Request.pm?
-
 sub is_text
 {
 	my $self = shift;
 
-	return 1 if ($self->is_error);
 	return unless (defined $self->content);
-
-	if ($self->is_gopher_plus)
+	
+	if ($self->is_error)
+	{
+		return 1;
+	}
+	elsif ($self->is_gopher_plus)
 	{
 		if ($self->request->request_type == ITEM_ATTRIBUTE_REQUEST
 			or $self->request->request_type == DIRECTORY_ATTRIBUTE_REQUEST)
 		{
 			return 1;
 		}
-		elsif ($self->request->item_type eq TEXT_FILE_TYPE
-			or $self->request->item_type eq GOPHER_MENU_TYPE)
+		elsif (my $mime_type = $self->request->representation)
 		{
-			return 1;
+			return 1 if ($mime_type =~ /^text\/.*/i
+				or $mime_type =~ /^directory\/.*/i
+				or $mime_type =~ /^application\/gopher\+?\-menu/i);
 		}
-		else
-		{
-			my $mime_type = $self->request->representation;
+	}
 
-			return 1 if (defined $mime_type
-				and ($mime_type =~ /^text\/.*/i
-					or $mime_type =~ /^directory\/.*/i
-					or $mime_type =~ /^application\/gopher\+?\-menu/i));
-		}
-	}
-	elsif (defined $self->request->item_type
+	return 1 if (defined $self->request->item_type
 		and $self->request->item_type eq TEXT_FILE_TYPE
-			|| $self->request->item_type eq GOPHER_MENU_TYPE)
-	{
-		return 1;
-	}
+			|| $self->request->item_type eq GOPHER_MENU_TYPE
+			|| $self->request->item_type eq HTML_FILE_TYPE
+			|| $self->request->item_type eq MIME_FILE_TYPE);
 }
 
 
@@ -1499,7 +1524,16 @@ sub _unescape_periods
 {
 	my $self = shift;
 
-	$self->{'content'} =~ s/^\.\././gm;
+	return unless (defined $self->content);
+
+	my $unescaped_periods = $self->{'content'} =~ s/^\.\././gm;
+
+	$self->debug_print(
+		sprintf('Unescaped %d escaped %s in the response content.',
+			$unescaped_periods,
+			($unescaped_periods == 1) ? 'period' : 'periods'
+		)
+	);
 }
 
 
@@ -1509,20 +1543,17 @@ sub _unescape_periods
 sub _convert_newlines
 {
 	my $self = shift;
-	my $os   = get_os_name();
 
-	if ($os =~ /^MacOS/i)
-	{
-		# convert Windows CRLF and Unix LF line endings to MacOS CR:
-		$self->{'content'} =~ s/\015\012/\015/g;
-		$self->{'content'} =~ s/\012/\015/g;
-	}
-	else
-	{
-		# convert Windows CRLF and MacOS CR line endings to Unix LF:
-		$self->{'content'} =~ s/\015\012/\012/g;
-		$self->{'content'} =~ s/\015/\012/g;
-	}
+	return unless (defined $self->content);
+
+	my $converted = convert_newlines($self->{'content'});
+
+	$self->debug_print(
+		sprintf('Converted %d %s in the response content.',
+			$converted,
+			($converted == 1) ? 'line ending' : 'line endings'
+		)
+	);
 }
 
 
@@ -1596,20 +1627,7 @@ sub _parse_blocks
 		# convert the newlines in the "pure" block value like we did
 		# for the response content, but leave the original endings
 		# intact for the "raw" value:
-		if (get_os_name() =~ /^MacOS/i)
-		{
-			# convert Windows CRLF and Unix LF line endings to
-			# MacOS CR:
-			$value =~ s/\015\012/\015/g;
-			$value =~ tr/\012/\015/;
-		}
-		else
-		{
-			# convert Windows CRLF and MacOS CR line endings to
-			# Unix LF:
-			$value =~ s/\015\012/\012/g;
-			$value =~ tr/\015/\012/;
-		}
+		convert_newlines($value);
 
 		# each line of a block value contains a leading space, so we
 		# strip the leading spaces for the "pure" value but leave
@@ -1636,7 +1654,7 @@ sub _parse_blocks
 		}
 
 		push(@blocks, $obj);
-		$seen{$name}++;
+		$seen{$name} = 1;
 	}
 
 	# add the last item's attribute information block objects to the list:

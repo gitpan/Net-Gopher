@@ -1,6 +1,17 @@
 Revision history for Perl extension Net::Gopher.
 
+0.96 -
+      The _data_read() method is gone, long since outliving its usefulness  and
+      serving only as a redundant source of data copying. For Gopher+  response
+      with content lengths, Net::Gopher now makes sure  the  actual  length  of
+      the content is equal to the  alleged  content  length  (give  or  take  a
+      single byte), resulting in an error if it isn't.  There  are  also  three
+      new   constants   for   Gopher+   error   codes:    DOES_NOT_EXIST_ERROR,
+      TRY_AGAIN_LATER_ERROR,  and  HAS_MOVED_ERROR.   Several   new   debugging
+      statements have also been added.
+
 0.95 - Fixed the test server and added some major POD updates.
+
 0.94 -
 
        (1) 
@@ -228,11 +239,11 @@ Revision history for Perl extension Net::Gopher.
        denoting the length of the response in bytes as opposed to -1 or -2).
 
 0.34 - The request() method now removes the period on a line by itself  in  the
-       response content if Type is supplied and isn't 0  or  1.  Also,  periods
+       response content if type is supplied and isn't 0  or  1.  Also,  periods
        escaped by adding and extra period (e.g., '..' instead of '.'), are  now
        unescaped in the response content.
 
-0.33 - The request_url() now properly returns a Net::Gopher::response object if
+0.33 - The request_url() now properly returns a Net::Gopher::Response object if
        if fails to connect to the server. Also fixed a typo in  the  POD  which
        had (until now) gone unnoticed.
 
