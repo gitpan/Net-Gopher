@@ -1,5 +1,6 @@
 use warnings;
 use strict;
+use Cwd;
 use IO::Socket qw(SHUT_WR SOCK_STREAM);
 use IO::Select;
 use Test;
@@ -11,12 +12,21 @@ use constant TIMEOUT     => 30;
 
 BEGIN { plan(tests => 11) }
 
-require './t/serverfunctions.pl';
 
 
 
+if (-e './t/testserver.pl')
+{
+	ok(1); # 1
+}
+else
+{
+	die "Bad CWD: " . getcwd();
+}
+my $pid = open(PIPE, "perl ./t/testserver.pl -ep 70 |")
+	or die "Couldn't fork: $!.";
 
-ok(run_echo_server()); # 1
+ok($pid); # 2
 
 my $socket = new IO::Socket::INET (
 	PeerAddr => HOST,
@@ -26,25 +36,29 @@ my $socket = new IO::Socket::INET (
 	Timeout  => TIMEOUT
 );
 
-ok($socket); # 2
+ok($socket); # 3
 
 eval {
 	$socket->autoflush(1);
 	$socket->blocking(0);
 };
 
-ok(!$@); # 3
+ok(!$@); # 4
 
 my $select = new IO::Select ($socket);
 
-ok($select->can_write(TIMEOUT)); # 4
-ok($socket->send('test', 0), 4); # 5
-ok($socket->shutdown(SHUT_WR));  # 6
+ok($select->can_write(TIMEOUT)); # 5
+ok($socket->send('test', 0), 4); # 6
+ok($socket->shutdown(SHUT_WR));  # 7
 
-ok($select->can_read(TIMEOUT));               # 7
+ok($select->can_read(TIMEOUT));               # 8
 my $response;
-ok($socket->recv($response, BUFFER_SIZE, 0)); # 8
-ok($response, 'test');                        # 9
-ok($socket->close);                           # 10
+ok($socket->recv($response, BUFFER_SIZE, 0)); # 9
+ok($response, 'test');                        # 10
+ok($socket->close);                           # 11
 
-ok(kill_server()); # 11
+
+kill(INT => $pid);
+waitpid($pid, 0);
+
+close PIPE;

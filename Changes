@@ -1,6 +1,6 @@
 Revision history for Perl extension Net::Gopher.
 
-1.00 - Fixed gget. First stable version.
+1.00 - First stable version.
 
 0.99 - Ok, I think I finally figured out what's wrong with the test server  and
        why all tests that utilize  it  fail  on  a  variety  of  platforms:  it

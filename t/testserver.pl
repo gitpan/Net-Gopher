@@ -6,7 +6,6 @@ use Cwd;
 use Errno 'EINTR';
 use Getopt::Std;
 use IO::Socket qw(SOCK_STREAM SOMAXCONN);
-use IO::Select;
 
 use constant DEFAULT_PORT => 70;
 use constant BUFFER_SIZE  => 4096;
@@ -57,7 +56,7 @@ my $server = new IO::Socket::INET (
 
 while (my $client = $server->accept)
 {
-	my $select = new IO::Select ($client);
+	my $select;
 
 	my $request = '';
 	my $buffer;
@@ -98,6 +97,8 @@ while (my $client = $server->accept)
 		write_to_socket($client, $select, $item);
 		die $error if ($error);
 	}
+
+	close $client;
 }
 
 
