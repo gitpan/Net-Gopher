@@ -11,16 +11,35 @@ Net::Gopher::Response - Class encapsulating Gopher responses
  ...
  my $response = $gopher->request($selector, Type => $type);
  
- # check for errors:
- if ($response->is_success)
- {
- 	# get each item on the menu:
- 	my @items = $response->as_menu;
- 	print "type: $item[0]{'type'}\n",
- 	      "description: $item[0]{'text'}\n";
- }
- else
- {
+ if ($response->is_success) {
+ 	if ($response->is_menu) {
+		# you can use as_menu() to parse Gopher menus:
+ 		my @items = $response->as_menu;
+ 		foreach my $item (@items) {
+ 			print join("::",
+ 				$item->{'type'}, $item->{'text'},
+ 				$item->{'selector'}, $item->{'host'},
+ 				$item->{'port'}, $item->{'gopher+'}
+ 			), "\n";
+ 		}
+ 	}
+ 
+ 	if ($response->is_blocks) {
+ 		# you can use item_blocks() to parse item attribute information
+ 		# blocks:
+ 		my ($info_block, $admin_block) =
+ 			$response->item_blocks('INFO', 'ADMIN');
+ 
+ 		print join("::",
+ 			$info_block->{'type'}, $info_block->{'text'},
+ 			$info_block->{'selector'}, $info_block->{'host'},
+ 			$info_block->{'port'}, $info_block->{'gopher+'}
+ 		), "\n";
+ 
+ 		print "Maintained by $admin_block->{'Admin'}[0] ",
+ 		      "who can be emailed at $admin_block->{'Admin'}[1]\n";
+ 	}
+ } else {
 	 print $response->error;
  }
  ...
@@ -52,7 +71,7 @@ use Carp;
 use Time::Local;
 use Net::Gopher::Utility qw($CRLF $NEWLINE);
 
-$VERSION = '0.33';
+$VERSION = '0.34';
 
 
 
@@ -73,13 +92,13 @@ sub new
 
 	my $self = {
 		# any error that occurred while sending the request or while
-		# receiving the response:
+		# recieving the response:
 		error       => $args{'Error'},
 
 		# the request that was sent to the server:
 		request     => $args{'Request'},
 
-		# entire response, every single byte:
+		# the entire response, every single byte:
 		response    => $args{'Response'},
 
 		# the first line of the response including the newline (only
@@ -89,11 +108,10 @@ sub new
 		# the status code (+ or -) (only in Gopher+):
 		status      => $args{'Status'},
 
-		# content of the response (same as response except in Gopher+,
-		# where it's everything after the status line):
+		# content of the response:
 		content     => $args{'Content'},
 
-		# if this was a Gopher+ item attribute information request
+		# if this was a Gopher+ item attribute information request,
 		# then this will be used to store the parsed information
 		# blocks:
 		info_blocks => undef
@@ -117,12 +135,7 @@ character. For a Gopher request, this will return undef.
 
 =cut
 
-sub status_line
-{
-	my $self = shift;
-
-	return $self->{'status_line'};
-}
+sub status_line { return shift->{'status_line'} }
 
 
 
@@ -139,12 +152,7 @@ return undef.
 
 =cut
 
-sub status
-{
-	my $self = shift;
-
-	return $self->{'status'};
-}
+sub status { return shift->{'status'} }
 
 
 
@@ -154,18 +162,23 @@ sub status
 
 =head2 content()
 
-For a Gopher+ request, if the request was successful, this method will return
-the content of the response (everything after the status line). For a Gopher
-request, this just returns the same thing as the as_string() method does.
+Both content() and as_string() can be used to retrieve the strings containing
+the server's response. With content(), however, if the item requested was a
+text file then escaped periods are unescaped (i.e., '..' at the start of a
+line becomes '.'). Also, if response was terminated by a period on a line by
+itself but it isn't a text file or menu, then the period on a line by itself
+will be removed from the content (though you can still check to see if it was
+period terminated using the L<is_terminated()> method). This is because if you
+were requesting an image or some other binary file (especially in Gopher+),
+odds are you don't want the newline and period at the end the content. Note
+that Net::Gopher will only attempt the aforementioned modifications if you
+supply the Type argument to request(). Also note that in Gopher+, besides the
+modifications listed above, content() does not include the status line (first
+line) of the response (since the status line isn't content).
 
 =cut
 
-sub content
-{
-	my $self = shift;
-
-	return $self->{'content'};
-}
+sub content { return shift->{'content'} }
 
 
 
@@ -176,17 +189,12 @@ sub content
 =head2 as_string()
 
 For both Gopher as well as Gopher+ requests, if the request was successful,
-then this method will return the entire response, every single byte, from the
-server. This includes the status line in Gopher+.
+then this method will return the entire unmodified response, every single byte,
+from the server. This includes the status line in Gopher+.
 
 =cut
 
-sub as_string
-{
-	my $self = shift;
-
-	return $self->{'response'};
-}
+sub as_string { return shift->{'response'} }
 
 
 
@@ -334,8 +342,7 @@ arithmetic on; the total size in bytes (e.g., <80> becomes 80, <40K> becomes
 
  my $views = $response->item_blocks('VIEWS');
  
- foreach my $view (@$views)
- {
+ foreach my $view (@$views) {
  	print "$view->{'type'} ($view->{'size'} bytes) ($type->{'language'})\n";
  }
 
@@ -642,9 +649,8 @@ sub is_menu
 
 =head2 is_terminated()
 
-This method checks if the response content was terminated by a period on a line
-by itself. It returns true if the content is terminated by a period on a line
-by itself; false otherwise,
+This returns true if the response was terminated by a period on a line by
+itself; false otherwise.
 
 =cut
 
@@ -676,13 +682,7 @@ error has occurred.
 
 =cut
 
-sub error
-{
-	my $self  = shift;
-	my $error = shift;
-
-	return $self->{'error'};
-}
+sub error { return shift->{'error'} }
 
 
 
@@ -762,16 +762,16 @@ sub _parse_blocks
 	# $self->{'info_blocks'} will contain a reference to an array which
 	# will have hashrefs as its elements. Each hash will contain the item
 	# attribute information block names and block values for a single item.
-	# For Gopher+ ! requests, the $self->{'info_blocks'} array will only
+	# For Gopher+ '!' requests, the $self->{'info_blocks'} array will only
 	# contain one element (for the single item's blocks). But for
-	# Gopher+ $ requests, since $ retrieves item attribute information
+	# Gopher+ '$' requests, since $ retrieves item attribute information
 	# blocks for every item in a directory, the array will contain multiple
 	# elements:
 	$self->{'info_blocks'} = [];
 
-	# Each block name is denoted by '+' as the first character on a line.
-	# Any characters after the plus and up to the first space is the block
-	# name, and everything after the space is the value.
+	# Each block name is denoted by '+' as the first character at the start
+	# of line. Any characters after the plus and up to the first space is
+	# the block name, and everything after the first space is the value.
 	if ($self->is_terminated)
 	{
 		$content =~ s/$NEWLINE\.$//;

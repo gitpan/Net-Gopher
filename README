@@ -1,4 +1,4 @@
-Net::Gopher version 0.33
+Net::Gopher version 0.34
 ========================
 
 For usage, run:
@@ -20,7 +20,7 @@ DEPENDENCIES
 
 This module requires these other modules and libraries:
 
- Nothing that isn't in the standard distribution.
+ URI.
 
 COPYRIGHT AND LICENCE
 

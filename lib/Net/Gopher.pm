@@ -21,9 +21,7 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  # check for errors:
  if ($response->is_success)
  {
- 	# get each item on the menu:
- 	my @items = $response->as_menu;
- 	print $item[0]->{'type'}, $item[0]->{'text'};
+ ...
  }
  else
  {
@@ -34,19 +32,12 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  $gopher->disconnect;
  
  # or, if you have a (even partial) URL, you can do it this way:
- $repsonse = $gopher->request_url($url) or die $gopher->error;
+ $repsonse = $gopher->request_url($url);
  
- # make sure what we got was terminated by a period on a line by itself:
- die "Not terminated by a period on a line by itself."
- 	unless ($response->is_terminated);
+ # the content of the response:
+ my $content = $gopher->content;
  
- # get an arrayref containing all items listed on a menu:
- my $menu = $response->as_menu;
- print "Type: ", $menu->[0]{'type'}, ";\n",
-       "Description: ", $menu->[0]{'text'}, ";\n",
-       "On: ", $menu->[0]{'host'}, ";\n";
- 
- # or just get the entire response as a string:
+ # or just get the entire (unmodified) response as a string:
  my $string = $response->as_string;
  ...
 
@@ -79,7 +70,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.33';
+$VERSION = '0.34';
 
 
 
@@ -99,10 +90,10 @@ sub new
 	my $class = ref $invo || $invo;
 
 	my $self = {
-		# IO::Socket::INET socket:
+		# the IO::Socket::INET socket:
 		io_socket     => undef,
 
-		# IO::Select object for the socket stored in io_socket:
+		# theIO::Select object for the socket stored in io_socket:
 		io_select     => undef,
 
 		# every single byte read from the socket:
@@ -122,7 +113,7 @@ sub new
 		# support Gopher+?
 		gopher_plus   => 1,
 
-		# stores an error message to be retreived by the user with
+		# stores an error message to be retrieved by the user with
 		# the error() method:
 		error         => undef
 	};
@@ -144,7 +135,7 @@ connect it returns true; false otherwise (call error() to find out why). As
 its first argument it takes a mandatory hostname (e.g., gopher.host.com). In
 addition to the hostname, it takes two optional named paramters. The first,
 Port, takes an optional port number. If you don't supply this then the default
-of 70 will be used instead. The second, Timeout, takes the number of second at
+of 70 will be used instead. The second, Timeout, takes the number of seconds at
 which a timeout will occur when attempting to connect to a Gopher server. If
 you don't supply this then the default of 60 seconds will be used instead.
 
@@ -177,8 +168,8 @@ sub connect
 	# default to a 60 second timeout:
 	my $timeout = $args{'Timeout'} || 60;
 
-	# connect to the Gopher server and store the IO::Socket socket in our
-	# Net::Gopher object:
+	# try connect to the Gopher server and store the IO::Socket socket in
+	# our Net::Gopher object:
 	$self->{'io_socket'} = new IO::Socket::INET (
 		PeerAddr => $host,
 		PeerPort => $port,
@@ -194,6 +185,8 @@ sub connect
 
 	# now initialize the IO::Select object for our new socket:
 	$self->{'io_select'} = new IO::Select ($self->{'io_socket'});
+
+	return 1;
 }
 
 
@@ -236,20 +229,24 @@ or you can put them in an array ref:
  );
 
 Also note that when using the array ref format, you don't have to prefix each
-block name with a plus; this method will do it for you if you don't. The fourth
-named parameter, Type, isn't needed for communicating with either Gopher or
-Gopher+ servers, however, with Gopher servers it helps request() tell how
-exactly it should receive the response from the server. For Gopher+ requests,
-while you'll usually need to add a trailing tab and plus to the selector
-string, it's not always necessary; if either the Representation or DataBlock
-parameters are defined, then this method will realize that this is a Gopher+
-request and will add the trailing tab and plus to your selector string for you
-if they are not already present. The same holds true for Gopher+ item attribute
-information requests; if the Attributes parameter is defined then this method
-will realize this is a Gopher+ item attribute information request and will add
-the trailing tab and exclamation point to your selector string for you if there
-isn't already either a tab and exclamation point or tab and dollar sign at the
-end of your selector.
+block name with a plus; this method will do it for you if you don't.
+
+The fourth named parameter, Type, helps Net::Gopher determine how exactly it
+should handle the response from the Gopher server, and what (if any)
+modifications it should make to the response content (see the
+Net::Gopher::Response content() method). You don't have to supply this, but I'd
+advise that you do.
+
+For Gopher+ requests, while you'll usually need to add a trailing tab and plus
+to the selector string, it's not always necessary; if either the Representation
+or DataBlock parameters are defined, then this method will realize that this is
+a Gopher+ request and will add the trailing tab and plus to your selector
+string for you if they are not already present. The same holds true for Gopher+
+item attribute information requests; if the Attributes parameter is defined
+then this method will realize this is a Gopher+ item attribute information
+request and will add the trailing tab and exclamation point to your selector
+string for you if there isn't already either a tab and exclamation point or tab
+and dollar sign at the end of your selector.
 
 =cut
 
@@ -277,8 +274,7 @@ sub request
 	if (defined $args{'Representation'} || defined $args{'DataBlock'})
 	{
 		# if there's a data block or representation then this is a a
-		# Gopher+ request, which means we need to add the trailing tab
-		# and + to the selector if the user hasn't done so:
+		# Gopher+ request:
 		$request_type = 2;
 	}
 	elsif ($selector =~ /\t\+$/)
@@ -290,16 +286,14 @@ sub request
 	elsif (defined $args{'Attributes'})
 	{
 		# if there are attributes then this is a Gopher+ item attribute
-		# information request, which means we need to add the trailing
-		# tab and ! to the selector if there isn't one or if there
-		# isn't a trailing tab and $:
+		# information request:
 		$request_type = 3;
 	}
 	elsif ($selector =~ /\t(?:\!|\$)$/)
 	{
 		# if the selector has a tab and ! at the end of it or a tab and
-		# a $ at the end of it, then it's a Gopher+ item attribute
-		# information request:
+		# a $ at the end of it, then it's a Gopher+ item attribute or
+		# directory attribute information request:
 		$request_type = 3;
 	}
 	else
@@ -308,7 +302,7 @@ sub request
 		$request_type = 1;
 	}
 
-	# even if it's a Gopher+ request we won't act like a Gopher+ client
+	# even if it's a Gopher+ request, we won't act like a Gopher+ client
 	# if the user has told us not to:
 	$request_type = 1 unless ($self->{'gopher_plus'});
 
@@ -363,10 +357,6 @@ sub request
 			{
 				foreach my $name (@{$args{'Attributes'}})
 				{
-					# add the leading plus if isn't already
-					# there then add this block name to
-					# the item attribute information
-					# request:
 					$name = "+$name" unless ($name=~/^\+/);
 					$request .= $name;
 				}
@@ -396,17 +386,17 @@ sub request
 		unless ($self->{'io_select'}->can_write($self->{'timeout'}));
 
 	# now, send the request to the Gopher server:
-	my $num_bytes_writen =
+	my $num_bytes_written =
 		syswrite($self->{'io_socket'}, $request, length $request);
 
 	# make sure *something* was sent:
 	return new Net::Gopher::Response (Error => "Nothing was sent: $!")
-		unless (defined $num_bytes_writen);
+		unless (defined $num_bytes_written);
 
-	# make sure all the bytes were sent:
+	# make sure the entire request was sent:
 	return new Net::Gopher::Response (
 		Error => "Couldn't send entire request: $!"
-	) unless (length $request == $num_bytes_writen);
+	) unless (length $request == $num_bytes_written);
 
 
 
@@ -418,14 +408,15 @@ sub request
 		Error => "Can't read response from socket."
 	) unless ($self->{'io_select'}->can_read($self->{'timeout'}));
 
-	# this variable stores any errors encountered while receiving the
+	# this variable stores any errors encountered while recieving the
 	# response:
 	my $response_error;
 
 
 
-	# if we sent a Gopher+ request or item attribute information request,
-	# we need to get the first line (the status line) of the response:
+	# if we sent a Gopher+ request or item/directory attribute information
+	# request, we need to get the status line (the first line) of the
+	# response:
 	if ($request_type > 1
 		and my $status_line = $self->_get_status_line(\$response_error))
 	{
@@ -464,20 +455,28 @@ sub request
 				# Remove anything after the period on a line by
 				# itself:
 				$content =~
-				s/($NEWLINE[.]) (?: \z|$NEWLINE .*)/$1/xs;
+				s/($NEWLINE\.)($NEWLINE)? .*/$1$2/xs;
+
+				if (defined $args{'Type'}
+					and $args{'Type'} ne 0
+					and $args{'Type'} ne 1
+					and exists $GOPHER_PLUS_ITEM_TYPES{$args{'Type'}})
+				{
+					# remove the period on a line by itself
+					# in the response content (except for
+					# text files and menus):
+					$content =~ s/$NEWLINE\.$NEWLINE?//;
+				}
 			}
 		}
 		else
 		{
 			# a length other than -1 or -2 is the total length of
 			# the response content in bytes:
-			while (1)
+			while ($self->_get_buffer(\$response_error))
 			{
-				# refill the buffer:
-				$self->_get_buffer(\$response_error);
-
 				# exit if we ran into any errors while
-				# refilling the buffer:
+				# filling the buffer:
 				return new Net::Gopher::Response (
 					Error => $response_error
 				) if ($response_error);
@@ -493,12 +492,14 @@ sub request
 			}
 		}
 
-		if (exists $args{'Type'} and $args{'Type'} eq 1)
+		if ((defined $args{'Type'} and $args{'Type'} eq 1)
+			or (defined $args{'Representation'}
+				and $args{'Representation'} =~ m|^text/|i))
 		{
 			# For text files, lines that only contain periods are
 			# escaped by adding another period. Those lines must be
 			# shrunk:
-			$content =~ s/($NEWLINE)..($NEWLINE)/$1.$2/;
+			$content =~ s/($NEWLINE)..($NEWLINE)/$1.$2/g;
 		}
 		
 		
@@ -550,7 +551,7 @@ sub request
 		# and 9, the server sends a series of bytes then closes the
 		# connection. With all other types, it sends a block of text
 		# terminated by a period on a line by itself:
-		if (exists $args{'Type'}
+		if (defined $args{'Type'}
 			and $args{'Type'} ne 5 and $args{'Type'} ne 9)
 		{
 			if (exists $GOPHER_ITEM_TYPES{$args{'Type'}})
@@ -558,7 +559,16 @@ sub request
 				# remove everything after the period on a line
 				# by itself:
 				$content =~
-				s/($NEWLINE[.]) (?: \z|$NEWLINE.*)/$1/xs;
+				s/($NEWLINE\.)($NEWLINE)? .*/$1$2/xs;
+			}
+
+			if ($args{'Type'} ne 0 and $args{'Type'} ne 1
+				and exists $GOPHER_ITEM_TYPES{$args{'Type'}})
+			{
+				# remove the period on a line by itself
+				# in the response content (except for
+				# text files and menus):
+				$content =~ s/$NEWLINE\.$NEWLINE?//;
 			}
 
 			if ($args{'Type'} eq 1)
@@ -566,7 +576,7 @@ sub request
 				# For text files, lines that only contain
 				# periods are escaped by adding another
 				# period. Those lines must be shrunk:
-				$content =~ s/($NEWLINE)..($NEWLINE)/$1.$2/;
+				$content =~ s/($NEWLINE)..($NEWLINE)/$1.$2/g;
 			}
 		}
 
@@ -592,14 +602,14 @@ sub request
 #		(using _get_buffer()) and removes character after character
 #		from the the buffer looking for the the newline, refilling
 #		the buffer if it gets empty. Once it finds the newline, it
-#		checks to make sure the line is in the format of a status line.
-#		If the line is a status line, this method will return it.
-#		Otherwise, this method will return undef.
+#		checks to make sure the line is in the format of a Gopher+
+#		status line. If the line is a status line, this method will
+#		return it. Otherwise, this method will return undef.
 #
 #	Parameters
 #		$error - A reference to a scalar; _get_status_line() will store
 #		         any error encountered while looking for the status
-#		         line.
+#		         line in this variable.
 #
 
 sub _get_status_line
@@ -616,7 +626,7 @@ sub _get_status_line
 	# has closed the connection and that the server is not a Gopher+
 	# server.
 
-	my $first_line;    # the first line of the response.
+	my $first_line;    # everything up till the first CRLF in the response.
 	my $found_newline; # did we find the newline?
 
 	FIRSTLINE: while ($self->_get_buffer($error))
@@ -749,13 +759,14 @@ sub request_url
 	my $self = shift;
 	my $url  = shift;
 
-	# We need to add a scheme if one isn't there yet. We have to do this
-	# instead of just using URI's scheme() method cause that--for some
-	# reason--just adds the scheme name plus colon to the beginning of
+	# We need to manually add the scheme if one isn't there yet. We have to
+	# do this instead of just using URI.pm's scheme() method because
+	# that--for some reason (I think so URI.pm can handle mailto:
+	# urls)--just adds the scheme name plus a colon to the beginning of
 	# the URL if a scheme isn't already there (e.g., if you call
-	# scheme("foo") on a URL like subdomain.domain.com, you end up with
-	# foo:subdomain.domain.com, which is not what we want):
-	$url = "gohper://$url" unless ($url =~ /^[a-zA-Z0-9]+?:\/\//);
+	# $url->scheme("foo") on a URL like subdomain.domain.com, you end up
+	# with foo:subdomain.domain.com, which is not what we want):
+	$url = "gohper://$url" unless ($url =~ m|^[a-zA-Z0-9]+?://|);
 
 	my $uri = new URI $url;
 

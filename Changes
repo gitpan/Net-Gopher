@@ -1,5 +1,10 @@
 Revision history for Perl extension Net::Gopher.
 
+0.34 - The request() method now removes the period on a line by itself  in  the
+       response content if Type is supplied and isn't 0  or  1.  Also,  periods
+       escaped by adding and extra period (e.g., '..' instead of '.'), are now
+       unescaped in the response content.
+
 0.33 - The request_url() now properly returns a Net::Gopher::response object if
        if fails to connect to the server. Also fixed a typo in  the  POD  which
        had (until now) gone unnoticed.
