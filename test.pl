@@ -2,4 +2,4 @@
 use strict;
 use Test::Harness;
 
-runtests('./tests/floodgap.t');
+runtests('./tests/floodgap.t', './tests/quux.t');

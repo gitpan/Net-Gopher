@@ -51,7 +51,7 @@ use Carp;
 use Time::Local;
 use Net::Gopher::Utility qw($CRLF $NEWLINE);
 
-$VERSION = '0.27';
+$VERSION = '0.28';
 
 
 

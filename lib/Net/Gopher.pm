@@ -79,7 +79,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.27';
+$VERSION = '0.28';
 
 
 
@@ -489,8 +489,9 @@ sub request
 		}
 		
 		
-		# The Gopher+ response may have been an error. In which case
-		# the content contains an error code (number) followed by a
+		# Now, time to create the Net::Gopher::Response object for the
+		# Gopher+ response. If the response was an error, thne the
+		# content contains an error code (number) followed by a
 		# description of the error (e.g., "1 Item is not available."):
 		return new Net::Gopher::Response (
 			Error      => ($status eq '-') ? $content : undef,
