@@ -2,4 +2,8 @@
 use strict;
 use Test::Harness;
 
-runtests('./tests/floodgap.t', './tests/quux.t');
+runtests(
+	'./tests/net_gopher_request.t',
+	'./tests/net_gopher.t',
+	'./tests/net_gopher_response.t'
+);

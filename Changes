@@ -1,17 +1,75 @@
 Revision history for Perl extension Net::Gopher.
 
+0.90 - First beta release:
+       (a) 
+           Added     a     new     class     for     menu     items      called
+           Net::Gopher::Response::MenuItem  with  methods   to   retrieve   the
+           tab-delimited fields of a menu  item,  convert  a  menu  item  to  a
+           Gopher URL,  and  convert  the  item  into  a  request  object.  The
+           as_menu() has been renamed extract_menu_items(), and it now  returns
+           a list containing Net::Gopher::Response::MenuItem objects  for  each
+           item.
+
+       (b) 
+           item_blocks(), directory_blocks(), and as_blocks(),  are  all  gone,
+           for good. The names were never that descriptive or well-thought  out
+           in the first place, and their  functionality  was  easily  condensed
+           into one new method: get_blocks().
+
+       (c) 
+           The   Net::Gopher::Response::Blocks   class   has    been    renamed
+           Net::Gopher::Response::InformationBlock. In  addition,  its  methods
+           have been renamed, removed, and replaced. Where possible,  they  now
+           return a list of elements, or the first element from the  list.  The
+           old hash-based behavior was long since made  antiquated  by  changes
+           to  the  info  block  code.   Also,   this   class   now   overloads
+           stringification so block objects can be treated  as  simple  scalars
+           containing block values.
+
+       (d) 
+           The items and their attribute  information  block  objects  are  now
+           stored internally as an array of arrays.
+
+       (e) 
+           Added the as_xml() method to Net::Gopher::Response, which  generates
+           XML  for  item/directory  attribute  information  requests,   Gopher
+           menus, and other non-menu text items.
+
+       (f) 
+           A new module, Net::Gopher::Constants has been added,  which  exports
+           on demand constants for every known item type, constants to  compare
+           against the value  returned  by  request_type(),  and  constants  to
+           compare against the value returned by status().
+
+       (g) 
+           Added the as_url() method to Net::Gopher::Request,  which  generates
+           a Gopher URL using the request object.
+
+       (h) 
+           The  Net::Gopher::Response  as_string()  method  has  been   renamed
+           raw_response(). Even if as_string() is the current president set  by
+           LWP and others, I don't think it's descriptive enough.
+       
+       (i) 
+           The attribute information block methods  as_string()  and  content()
+           have been replaced with raw_value() and value() respectively, and  a
+           new method, name(), has been added.
+       
+       (j) 
+           %GOPHER_ITEM_TYPES  and  %GOPHER_PLUS_ITEM_TYPES  have  been  merged
+           into %ITEM_DESCRIPTIONS.
+
 0.80 - Many more POD changes.
 
 0.78 - POD changes in each module.
 
 0.77 - This version incorporates a wealth of new functionality into
        Net::Gopher, including:
-
        (a)
-           A  new  class,  Net::Gopher::Response,  is   used   to   encapsulate
-           requests. This class has accessor methods to modify  every  relevant
-           aspect of a Gopher/Gopher+ request, as well  as  named  constructors
-           you can import for each type of request.
+           A new class, Net::Gopher::Request, is used to encapsulate  requests.
+	   This class has accessor methods to modify every relevant aspect of a
+	   Gopher/Gopher+ request, as well as named constructors you can import
+	   for each type of request.
 
        (b)
            The Net::Gopher connect() and disconnect()  methods  are  gone.  The

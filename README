@@ -1,4 +1,4 @@
-Net::Gopher version 0.78
+Net::Gopher version 0.90
 ========================
 
 
@@ -39,13 +39,14 @@ DEPENDENCIES
 This module requires these other modules and libraries that do not come  with
 the standard library:
 
- URI.
-
+ URI, v1.27;
+ XML::Writer, v0.4;
+ IO::String, v1.0;
 
 COPYRIGHT AND LICENCE
 
 
-Copyright 2003, William G. Davis.
+Copyright 2003 by William G. Davis.
 
 This code is free software released under the  GNU  General  Public  License,
 the full terms of which can be found in the "COPYING" file in this directory.
