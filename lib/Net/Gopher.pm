@@ -67,7 +67,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.43';
+$VERSION = '0.47';
 
 
 

@@ -1,4 +1,4 @@
-Net::Gopher version 0.43
+Net::Gopher version 0.47
 ========================
 
 
@@ -20,7 +20,7 @@ To install this module type the following:
    make install
 
 
-TESTING
+ON TESTING
 
 
 Since  Net::Gopher  is  a  network  library,  all of the tests that come with

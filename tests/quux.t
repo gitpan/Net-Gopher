@@ -77,11 +77,11 @@ else
 	print "not ok 7\n";
 }
 
-my $info = $response->item_blocks('INFO');
+my %info = $response->as_info_block;
 
-if (exists $info->{'type'} and exists $info->{'text'}
-	and exists $info->{'selector'} and exists $info->{'host'}
-	and exists $info->{'port'})
+if (exists $info{'type'} and exists $info{'text'}
+	and exists $info{'selector'} and exists $info{'host'}
+	and exists $info{'port'})
 {
 	print "ok 8\n";
 }
@@ -90,9 +90,9 @@ else
 	print "not ok 8\n";
 }
 
-my $admin = $response->item_blocks('ADMIN');
+my %admin = $response->as_admin_block;
 
-if (@{ $admin->{'Mod-Date'} } == 9)
+if (@{ $admin{'Mod-Date'} } == 9)
 {
 	print "ok 9\n";
 }
@@ -101,7 +101,7 @@ else
 	print "not ok 9\n";
 }
 
-if (scalar @{ $admin->{'Admin'} } == 2)
+if (scalar @{ $admin{'Admin'} } == 2)
 {
 	print "ok 10\n";
 }
@@ -112,9 +112,11 @@ else
 
 my %blocks = $response->as_blocks;
 
-if (exists $blocks{'INFO'}{'type'} and exists $blocks{'INFO'}{'text'}
-	and exists $blocks{'INFO'}{'selector'} and exists $blocks{'INFO'}{'host'}
-	and exists $blocks{'INFO'}{'port'})
+my $info = $response->as_info_block($blocks{'INFO'});
+
+if (exists $info->{'type'} and exists $info->{'text'}
+	and exists $info->{'selector'} and exists $info->{'host'}
+	and exists $info->{'port'})
 {
 	print "ok 11\n";
 }
@@ -123,7 +125,9 @@ else
 	print "not ok 11\n";
 }
 
-if (@{ $blocks{'ADMIN'}{'Mod-Date'} } == 9)
+my $admin = $response->as_admin_block($blocks{'ADMIN'});
+
+if (@{ $admin->{'Mod-Date'} } == 9)
 {
 	print "ok 12\n";
 }
@@ -132,7 +136,7 @@ else
 	print "not ok 12\n";
 }
 
-if (@{ $blocks{'ADMIN'}{'Admin'} } == 2)
+if (@{ $admin->{'Admin'} } == 2)
 {
 	print "ok 13\n";
 }

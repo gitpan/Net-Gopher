@@ -1,5 +1,11 @@
 Revision history for Perl extension Net::Gopher.
 
+0.47 - Removed  the  ADMIN,  ASK,  INFO,  and  VIEWS  block  parsing  from  the
+       _parse_blocks() method and  put  them  into  separate  as_admin_block(),
+       as_ask_block(),    as_info_block(),    and    as_views_block()   methods
+       respectively. Also, changed the key for  Gopher+  strings  in  the  hash
+       returned by as_menu() from 'gopher+' to 'gopher_plus'.
+
 0.43 - You can now specify a which item  you  want  for  directory_blocks()  by
        its selector, hostname, port, etc., in addition to its number. Fixed the
        typo in request_url() for the default scheme, and changed  request_url()
@@ -32,7 +38,7 @@ Revision history for Perl extension Net::Gopher.
 0.32 - Added new is_menu() and is_blocks() methods.
 
 0.30 - Removed as_block() and replaced it with item_blocks(), and added the new
-       directory_blocks()  and  as_blocks()   method.   Also   refractored  the
+       directory_blocks()  and  as_blocks()  methods.  Also   refractored   the
        request_url() method.
 
 0.27 - Refractored  request()  and   removed   the  _get_gopher_response()  and
