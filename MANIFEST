@@ -7,3 +7,5 @@ Makefile.PL
 MANIFEST
 README
 test.pl
+tests/floodgap.t
+tests/quux.t

@@ -79,7 +79,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.28';
+$VERSION = '0.30';
 
 
 
@@ -125,8 +125,6 @@ sub new
 		# stores an error message to be retreived by the user with
 		# the error() method:
 		error         => undef
-
-		
 	};
 
 	bless($self, $class);
@@ -143,9 +141,10 @@ sub new
 
 This method attempts to connect to a Gopher server. If connect() is able to
 connect it returns true; false otherwise (call error() to find out why). As
-its first argument it takes a mandatory hostname (e.g., gopher.host.com). In addition to the hostname it takes two optional named paramters. The first, Port,
-takes an optional port number. If you don't supply this then the default of
-70 will be used instead. The second, Timeout, takes the number of second at
+its first argument it takes a mandatory hostname (e.g., gopher.host.com). In
+addition to the hostname, it takes two optional named paramters. The first,
+Port, takes an optional port number. If you don't supply this then the default
+of 70 will be used instead. The second, Timeout, takes the number of second at
 which a timeout will occur when attempting to connect to a Gopher server. If
 you don't supply this then the default of 60 seconds will be used instead.
 
@@ -245,7 +244,7 @@ while you'll usually need to add a trailing tab and plus to the selector
 string, it's not always necessary; if either the Representation or DataBlock
 parameters are defined, then this method will realize that this is a Gopher+
 request and will add the trailing tab and plus to your selector string for you
-if one if not already present. The same holds true for Gopher+ item attribute
+if they are not already present. The same holds true for Gopher+ item attribute
 information requests; if the Attributes parameter is defined then this method
 will realize this is a Gopher+ item attribute information request and will add
 the trailing tab and exclamation point to your selector string for you if there
@@ -312,13 +311,12 @@ sub request
 
 
 
-	# now we need to generate the request string to send to the server:
+	# the request string to send to the server:
 	my $request = '';
+
 	if ($request_type == 2)
 	{
 		$request .= $selector;
-
-		# add the representation:
 		$request .= $args{'Representation'}
 			if (defined $args{'Representation'});
 
@@ -490,7 +488,7 @@ sub request
 		
 		
 		# Now, time to create the Net::Gopher::Response object for the
-		# Gopher+ response. If the response was an error, thne the
+		# Gopher+ response. If the response was an error, then the
 		# content contains an error code (number) followed by a
 		# description of the error (e.g., "1 Item is not available."):
 		return new Net::Gopher::Response (
@@ -534,7 +532,7 @@ sub request
 
 		# For Gopher, we need to find out if the server's response will
 		# be terminatred by a perioid on a line by itself. With types 5
-		# and 9, the serves sends a series of bytes then closes the
+		# and 9, the server sends a series of bytes then closes the
 		# connection. With all other types, it sends a block of text
 		# terminated by a period on a line by itself:
 		if (exists $args{'Type'}
@@ -580,8 +578,8 @@ sub request
 #		from the the buffer looking for the the newline, refilling
 #		the buffer if it gets empty. Once it finds the newline, it
 #		checks to make sure the line is in the format of a status line.
-#		If it is the status line, this method will return the status
-#		line; false otherwise.
+#		If the line is a status line, this method will return it.
+#		Otherwise, this method will return undef.
 #
 #	Parameters
 #		$error - A reference to a scalar; _get_status_line() will store
@@ -662,7 +660,7 @@ sub _get_status_line
 #
 #	Parameters
 #		$error - A reference to a scalar; _get_buffer() will store any
-#		         error encountered while receiving the response in this
+#		         error encountered while reading the buffer in this
 #		         variable.
 #
 
@@ -725,9 +723,9 @@ sub disconnect
 =head2 request_url($url)
 
 This method allows you to bypass the connect(), request(), and disconnect()
-methods. If you have a Gopher URL you can simply supply it to this method
-and it will connect to the server and request it for you. It will return
-a Net::Gopher::Response object just like request() does.
+methods. If you have a Gopher URL you can just supply it to this method and it
+will connect to the server and request it for you. This method will return a
+Net::Gopher::Response object just like request() does.
 
 =cut
 
@@ -736,44 +734,40 @@ sub request_url
 	my $self = shift;
 	my $url  = shift;
 
-	# add a scheme if one isn't there yet:
-	$url = 'gohper://' . $url unless ($url =~ m/^[a-z0-9]+:\/\//);
+	# We need to add a scheme if one isn't there yet. We have to do this
+	# insead of just using URI's scheme() method cause that--for some
+	# reason--just adds the scheme name plus colon to the beginning of
+	# the URL if a scheme isn't already there (e.g., if you call
+	# scheme("foo") on a URL like subdomain.domain.com, you end up with
+	# foo:subdomain.domain.com, which is not what we want).
+	$url = "gohper://$url" unless ($url =~ /^[a-zA-Z0-9]+?:\/\//);
 
-	
-	$url = new URI $url;
-	$url->scheme;
+	my $uri = new URI $url;
 
 	# make sure the URL's scheme isn't something other than gopher:
-	return $self->error('Protocol "' . $url->scheme . '" is not supported')
-		unless ($url->scheme eq 'gopher');
+	return $self->error('Protocol "' . $uri->scheme . '" is not supported')
+		unless ($uri->scheme eq 'gopher');
 
-	# update the URL:
-	$url->scheme('gopher');
-	$url->canonical;
+	# set the scheme to gopher:
+	$uri->scheme('gopher');
 
-	# grab the item type, selector, host, port, Gopher+ string, and any 
-	# search words:
-	my $item_type    = $url->gopher_type;
-	my $selector     = $url->selector;
-	my $host         = $url->host;
-	my $port         = $url->port;
-	my $search_words = $url->search;
-	my $gopher_plus  = $url->string;
-
-
+	# grab the item type, selector, host, port, any search words, and the
+	# Gopher+ string:
+	my $item_type    = $uri->gopher_type;
+	my $selector     = $uri->selector;
+	my $host         = $uri->host;
+	my $port         = $uri->port;
+	my $search_words = $uri->search;
+	my $gopher_plus  = $uri->string;
 
 	# now build the request string:
 	my $request_string  = $selector;
 	   $request_string .= "\t$search_words" if (defined $search_words);
 	   $request_string .= $gopher_plus      if (defined $gopher_plus);
 
-	# connect to the Gopher server:
+	# connect to the Gopher server send the request:
 	$self->connect($host, Port => $port);
-
-	# issue the request:
 	my $ngr = $self->request($request_string, Type => $item_type);
-
-	# disconnect from the server:
 	$self->disconnect;
 
 	return $ngr;
@@ -888,8 +882,9 @@ __END__
 
 =head1 BUGS
 
-Email any to me at <william_g_davis at users dot sourceforge dot net> or go
-to perlmonks.com and /msg me (William G. Davis) and I'll fix 'em.
+If you encounter bugs, you can alert me of them by emailing me at
+<william_g_davis at users dot sourceforge dot net> or, if you have PerlMonks
+account, you can go to perlmonks.org and /msg me (William G. Davis).
 
 =head1 SEE ALSO
 

@@ -133,8 +133,9 @@ __END__
 
 =head1 BUGS
 
-Email any to me at <william_g_davis at users dot sourceforge dot net> or go
-to perlmonks.com and /msg me (William G. Davis) and I'll fix 'em.
+If you encounter bugs, you can alert me of them by emailing me at
+<william_g_davis at users dot sourceforge dot net> or, if you have PerlMonks
+account, you can go to perlmonks.org and /msg me (William G. Davis).
 
 =head1 COPYRIGHT
 

@@ -55,7 +55,7 @@ else
 	print "not ok 5\n";
 }
 
-my $info = $response->as_block('INFO');
+my $info = $response->item_blocks('INFO');
 
 if (exists $info->{'type'} and exists $info->{'text'}
 	and exists $info->{'selector'} and exists $info->{'host'}
@@ -68,7 +68,7 @@ else
 	print "not ok 6\n";
 }
 
-my $admin = $response->as_block('ADMIN');
+my $admin = $response->item_blocks('ADMIN');
 
 if (@{ $admin->{'Mod-Date'} } == 9)
 {
