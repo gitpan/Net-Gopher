@@ -36,7 +36,7 @@ $DEFAULT_WARN_HANDLER = sub {
 
 	foreach my $warning (@warnings)
 	{
-		$warning = "Warning: $warning Raised" if (defined $warning);
+		$warning = "WARNING: $warning Raised" if (defined $warning);
 	}
 
 	Carp::carp(@warnings);
@@ -105,6 +105,9 @@ sub call_die
 
 	$DIE_HANDLER->(@_);
 
+	# *always* return nothing, to ensure the stack unwinds correctly if
+	# one function called by another that was called by another... calls
+	# die:
 	return;
 }
 

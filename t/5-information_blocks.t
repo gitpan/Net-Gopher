@@ -2,11 +2,13 @@ use strict;
 use warnings;
 use Test;
 
-BEGIN { plan(tests => 279) }
+BEGIN { plan(tests => 287) }
 
 use Net::Gopher;
 use Net::Gopher::Constants qw(:item_types :request);
 use Net::Gopher::Utility '$CRLF';
+
+use constant SERVER_PORT => 80;
 
 require './t/serverfunctions.pl';
 
@@ -21,6 +23,7 @@ ok(launch_item_server()); # 1
 
 	my $response = $ng->item_attribute(
 		Host     => 'localhost',
+		Port     => SERVER_PORT,
 		Selector => '/item_blocks'
 	);
 
@@ -46,7 +49,7 @@ ok(launch_item_server()); # 1
 		ok(!$block->is_attributes);                             # 7
 
 		my ($type, $display, $selector, $host, $port, $gp) =
-			$block->extract_description;
+			$block->extract_descriptor;
 
 		ok($type, GOPHER_MENU_TYPE);                        # 8
 		ok($display, 'Gopher+ Index');                      # 9
@@ -300,7 +303,33 @@ ok(launch_item_server()); # 1
 
 	{
 		my ($type, $display, $selector, $host, $port, $gp) =
+			$response->extract_descriptor;
+
+		ok($type, GOPHER_MENU_TYPE);                        # 131
+		ok($display, 'Gopher+ Index');                      # 132
+		ok($selector, '/gp_index');                         # 133
+		ok($host, 'localhost');                             # 134
+		ok($port, 70);                                      # 135
+		ok($gp, '+');                                       # 136
+	}
+
+	# Check for backwards compatability warnings:
+	{
+		my @warnings;
+
+		my $old_warn_handler = $ng->warn_handler;
+
+		$ng->warn_handler(sub {push(@warnings, shift)});
+	
+		my ($type, $display, $selector, $host, $port, $gp) =
 			$response->extract_description;
+
+		ok($warnings[0],
+			"The extract_description() method is depricated. Use " .
+			"extract_descriptor() instead."); # 13
+		ok(@warnings, 1);                         # 1
+
+		$ng->warn_handler($old_warn_handler);
 
 		ok($type, GOPHER_MENU_TYPE);                        # 131
 		ok($display, 'Gopher+ Index');                      # 132
@@ -437,6 +466,7 @@ ok(launch_item_server()); # 1
 
 	my $response = $ng->directory_attribute(
 		Host     => 'localhost',
+		Port     => SERVER_PORT,
 		Selector => '/directory_blocks'
 	);
 
@@ -719,6 +749,7 @@ ok(launch_item_server()); # 1
 
 	my $response = $ng->gopher_plus(
 		Host     => 'localhost',
+		Port     => SERVER_PORT,
 		Selector => '/gp_index'
 	);
 

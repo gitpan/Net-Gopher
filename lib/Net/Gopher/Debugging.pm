@@ -24,11 +24,12 @@ push(@ISA, 'Net::Gopher::Exception');
 $DEBUG = 0;
 
 # should the diagnostic messages be printed to a log file instead of to STDERR?
-$LOG = undef;
+$LOG = 0;
 
 # if logging is on, then this stores the name of the log file to use:
 $LOG_FILE = undef;
 
+# has the opening formatting for the debugging messages been printed yet?
 $STARTED = 0;
 
 
@@ -156,8 +157,7 @@ sub log_file
 
 
 
-END
-{
+END {
 	return unless ($DEBUG and $STARTED);
 
 	my $message = "\n". '=' x 80 . "\n\n";

@@ -4,7 +4,7 @@
 # the full terms of which can be found in the "COPYING" file that comes with
 # the distribution.
 #
-# This module defines and exports on demand global variablesand utility
+# This module defines and exports on demand global variables and utility
 # functions for Net::Gopher. You really don't need to be looking in here unless
 # you plan on hacking Net::Gopher.
 
@@ -21,8 +21,7 @@ use vars qw(
 use base 'Exporter';
 use Carp;
 
-BEGIN
-{
+BEGIN {
 	# this hack allows us to "use bytes" or fake it for older (pre-5.6.1)
 	# versions of Perl (thanks to Liz from PerlMonks):
 	eval { require bytes };
@@ -40,11 +39,12 @@ BEGIN
 @EXPORT_OK = qw(
 	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS
 
+	get_named_params
 	check_params
 	size_in_bytes
-	remove_bytes
 	get_os_name
-	chars_to_entities
+	ceil
+	escape_html
 	convert_newlines
 	strip_status_line
 	strip_terminator
@@ -115,14 +115,26 @@ $ITEM_PATTERN = qr/$field\t$field\t$field\t$field(?:\t$field)?/;
 ################################################################################
 #
 #	Function
-#		check_params($param_names, $arg_list, $strict)
+#		get_named_params($param_names, $arg_list, $strict)
 #
 #	Purpose
-#		This function is used to validate and retrieve the named
-#		parameters sent to a function. It takes a reference to a list
-#		containing the paramter names whose values you want as its
-#		first argument, a reference to a list (either a hash or array)
-#		containing named parameters as its second
+#		This function is used to retrieve and validate the named
+#		parameters sent to one of your functions. It takes as its first
+#		argument a reference to an array containing the names of the
+#		parameters whose values you want, a reference to a list (either
+#		a hash or array) containing named parameters as its second
+#		argument (probably just a reference to @_), and a flag
+#		indicating whether or not the function should complain if the
+#		second argument contains named parameters besides the ones
+#		specified in the first argument.
+#
+#		It extracts the named parameters and returns an array
+#		containing the values of each specified parameter in the order
+#		in which they were specified. It ignores parameter name case,
+#		underscores, or leading dashes in $arg_list, so if you ask for
+#		"SomeParam", then the caller of your function can supply
+#		"SomeParam", "SOMEparam", "Some_Param", or "-some_param" and it
+#		will be correctly returned to you.
 #
 #	Parameters
 #		$param_names - A reference to an array containing the names of
@@ -130,9 +142,13 @@ $ITEM_PATTERN = qr/$field\t$field\t$field\t$field(?:\t$field)?/;
 #		$arg_list    - Either a reference to a hash or array containing
 #		               "ParamName => 'value'" pairs. This can just be
 #		               a reference to @_.
+#		$strict      - (Optional.) If true, then this function will
+#		               croak() if the caller of your function supplies
+#		               a named parameter that was *not* requested using
+#		               $param_names.
 #
 
-sub check_params
+sub get_named_params
 {
 	my ($names_ref, $params_ref, $strict) = @_;
 
@@ -217,36 +233,8 @@ sub check_params
 	return @values{@params_wanted};
 }
 
-
-
-
-
-################################################################################
-#
-#	Function
-#		chars_to_entities($text)
-#
-#	Purpose
-#		This method converts &, <, >, ", and ' to their XML/XHTML
-#		entity equivalents. The text with the escaped characters is
-#		returned
-#
-#	Parameters
-#		$text - Text containing XHTML metasymbols to escape.
-#
-
-sub chars_to_entities
-{
-	my $text = shift;
-
-	   $text =~ s/&/&amp;/g;
-	   $text =~ s/</&lt;/g;
-	   $text =~ s/>/&gt;/g;
-	   $text =~ s/"/&quot;/g;
-	   $text =~ s/'/&apos;/g;
-
-	return $text;
-}
+# for backwards compatibility:
+sub check_params { return get_named_params(@_) }
 
 
 
@@ -287,33 +275,6 @@ sub get_os_name
 ################################################################################
 #
 #	Function
-#		remove_bytes($string, $bytes)
-#
-#	Purpose
-#		This function removes one or more bytes from the beginning of
-#		of string. Use this instead of the built-in substr() function
-#		(that, as of 5.6.1, is used to retrieve or remove one or more
-#		characters from a string as opposed to bytes) when you need to
-#		remove bytes specifically, not characters, from a string.
-#
-#	Parameters
-#		None.
-#
-
-sub remove_bytes ($$)
-{
-	use bytes;
-
-	return substr($_[0], 0, $_[1], '');
-}
-
-
-
-
-
-################################################################################
-#
-#	Function
 #		size_in_bytes($scalar)
 #
 #	Purpose
@@ -332,6 +293,64 @@ sub size_in_bytes ($)
 	use bytes;
 
 	return length shift;
+}
+
+
+
+
+
+################################################################################
+#
+#	Function
+#		ceil($num)
+#
+#	Purpose
+#		Rounds a number up to the nearest whole integer and returns the
+#		integer. (Works like POSIX/C ceil().)
+#
+#	Parameters
+#		$num - The number you want the ceil of.
+#
+
+sub ceil
+{
+	my $num = shift;
+
+	# thanks to Jarkko Hietaniemi:
+	my $ceil_of_num = int($num + 1) unless ($num == int $num);
+
+	return $ceil_of_num;
+}
+
+
+
+
+
+################################################################################
+#
+#	Function
+#		escape_html($text)
+#
+#	Purpose
+#		This method converts &, <, >, ", and ' to their XML/XHTML
+#		entity equivalents. The text with the escaped characters is
+#		returned
+#
+#	Parameters
+#		$text - Text containing XHTML metasymbols to escape.
+#
+
+sub escape_html
+{
+	my $text = shift;
+
+	   $text =~ s/&/&amp;/g;
+	   $text =~ s/</&lt;/g;
+	   $text =~ s/>/&gt;/g;
+	   $text =~ s/"/&quot;/g;
+	   $text =~ s/'/&apos;/g;
+
+	return $text;
 }
 
 

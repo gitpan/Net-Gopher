@@ -62,13 +62,14 @@ my @item_type_constants = qw(
 	TEXT_FILE_TYPE
 	GOPHER_MENU_TYPE
 	CCSO_NAMESERVER_TYPE
-	ERROR_TYPE
+	GOPHER_ERROR_TYPE
 	BINHEXED_MACINTOSH_FILE_TYPE
 	DOS_BINARY_FILE_TYPE
 	UNIX_UUENCODED_FILE_TYPE
 	INDEX_SEARCH_SERVER_TYPE
 	TELNET_SESSION_TYPE
 	BINARY_FILE_TYPE
+	REDUNDANT_SERVER_TYPE
 	GIF_IMAGE_TYPE
 	IMAGE_FILE_TYPE
 	TN3270_SESSION_TYPE
@@ -223,7 +224,7 @@ compared against the values returned by the various C<item_type()> methods:
 sub TEXT_FILE_TYPE()               { return 0 }
 sub GOPHER_MENU_TYPE()             { return 1 }
 sub CCSO_NAMESERVER_TYPE()         { return 2 }
-sub ERROR_TYPE()                   { return 3 }
+sub GOPHER_ERROR_TYPE()            { return 3 }
 sub BINHEXED_MACINTOSH_FILE_TYPE() { return 4 }
 sub DOS_BINARY_FILE_TYPE()         { return 5 }
 sub UNIX_UUENCODED_FILE_TYPE()     { return 6 }

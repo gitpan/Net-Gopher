@@ -9,14 +9,14 @@ Net::Gopher::Request - Class encapsulating Gopher/Gopher+ requests
 
  use Net::Gopher::Request;
  
- # to create a Gopher rerquest:
+ # Create a request object for a Gopher request:
  my $request = new Net::Gopher::Request ('Gopher',
  	Host     => 'gopher.host.com',
  	Selector => '/menu',
  	ItemType => 1
  );
  
- # to create a Gopher+ request:
+ # ...or, for a Gopher+ request:
  my $request = new Net::Gopher::Request ('GopherPlus',
  	Host           => 'gopher.host.com',
  	Selector       => '/item',
@@ -24,34 +24,34 @@ Net::Gopher::Request - Class encapsulating Gopher/Gopher+ requests
  	ItemType       => 0
  );
  
- # to create a Gopher+ item attribute information request:
+ # ...or, for a Gopher+ item attribute information request:
  $request = new Net::Gopher::Request ('ItemAttribute',
  	Host       => 'gopher.host.com',
  	Selector   => '/some_item.txt',
  	Attributes => ['+INFO', '+VIEWS']
  );
  
- # to create a Gopher+ directory attribute information request:
+ # ...or, for a Gopher+ directory attribute information request:
  $request = new Net::Gopher::Request ('DirectoryAttribute',
  	Host       => 'gopher.host.com',
  	Selector   => '/some_dir',
  	Attributes => ['+INFO', '+ADMIN']
  );
  
- # or, use a URL to create one of the above types of requesnt:
+ # ...or, you can use a URL to create one of the above types of requests:
  $request = new Net::Gopher::Request ('URL', 'gopher://gopher.host.com/1');
-
+ 
  # You can also send arguments as a hashref instead; which ever style you
  # prefer:
  my $request = new Net::Gopher::Request (
-	 Gopher => {
+ 	 Gopher => {
  		Host     => 'gopher.host.com',
  		Selector => '/menu',
  		ItemType => 1
  	}
  );
  
- # all of the possible parameters to new() have accessor methods:
+ # all of the possible parameters to new() have corresponding accessor methods:
  my $item_type = $request->item_type;
  $request->selector('/another_item');      # change the selector string
  $request->host('gopher.anotherhost.com'); # change the hostname
@@ -59,16 +59,19 @@ Net::Gopher::Request - Class encapsulating Gopher/Gopher+ requests
 
 =head1 DESCRIPTION
 
-This module encapsulates Gopher and Gopher+ requests. Typical usage of this
-module is calling the C<new()> method to create a new request object, then
-passing it on to the B<Net::Gopher> C<request()> method. As an aternative to
-the C<new()>/C<request()> combination, there are five named constructors
-detailed below in
-L<NAMED CONSTRUCTORS|Net::Gopher::Request/NAMED CONSTRUCTORS>. You can also
-import them and call them like functions if you like.
+B<Net::Gopher::Request> is a generic class to encapsulate Gopher and Gopher+
+requests. The typical usage of this module is to call the C<new()> method to
+create a new request object, then pass the object on to the B<Net::Gopher>
+C<request()> method. As an aternative to the C<new()> consturctor, there are
+five named constructors detailed below in
+L<NAMED CONSTRUCTORS|Net::Gopher::Request/NAMED CONSTRUCTORS> that each bare
+the name of the type of object they create (C<Gopher()>, C<GopherPlus()>,
+C<ItemAttribute()>, C<DirectoryAttribute()>, and C<URL()>). You can import
+them and call them like functions, and they'll return request objects like
+C<new()>.
 
-For storing and manipulating requests, this class also provides accessor
-methods to manipulate every element of a request object.
+For storing and manipulating requests, this class provides accessor methods to
+manipulate every member of a request object.
 
 =head1 METHODS
 
@@ -85,7 +88,7 @@ use Carp;
 use Net::Gopher::Constants qw(:request :item_types);
 use Net::Gopher::Debugging;
 use Net::Gopher::Exception;
-use Net::Gopher::Utility qw($CRLF check_params size_in_bytes);
+use Net::Gopher::Utility qw($CRLF get_named_params size_in_bytes);
 use URI;
 
 use constant DEFAULT_GOPHER_PORT => 70;
@@ -115,16 +118,16 @@ push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
 =head2 new(TYPE [, OPTIONS | URL])
 
-This method creates a new B<Net::Gopher::Request> object, encapsulating a
-Gopher or Gopher+ request.
+This method creates a new B<Net::Gopher::Request> object encapsulating a Gopher
+or Gopher+ request.
 
-The first argument specifies what type of request you're creating. You're
-options are as follows: I<Gopher>, for a Gopher request; I<GopherPlus>, for a
-Gopher+ request; I<ItemAttribute>, for a Gopher+ item attribute information
-request; I<DirectoryAttribute>, for a Gopher+ directory attribute information
-request; and I<URL>, which allows you to create one of the aforementioned
-requests using a string containing URL instead of using a series of named
-parameters.
+The first argument is a string specifying what type of request you're creating.
+You're options are as follows: "Gopher", for a Gopher request; "GopherPlus",
+for a Gopher+ request; "ItemAttribute", for a Gopher+ item attribute
+information request; "DirectoryAttribute", for a Gopher+ directory attribute
+information request; and "URL", which allows you to create one of the
+aforementioned requests using a string containing URL instead of using a series
+of named parameters.
 
 For all types other than I<URL>, following the type are a series of named
 parameters optionally in the form of a hash reference or array reference.
@@ -135,16 +138,16 @@ Depending on which type you specify, your usage will vary:
 
 =item I<Gopher>
 
-For Gopher requests the available Name=value pairs are:
+For Gopher requests the available C<Name => "value"> pairs are:
 
- Host        = A hostname (e.g., 'gopher.host.com');
+ Host        = A hostname (e.g., "gopher.host.com");
  Port        = A port number (e.g., 70);
- Selector    = A selector string (e.g., '/');
+ Selector    = A selector string (e.g., "/");
  SearchWords = A string or list containing query words for an index-search
-               server type item (e.g., 'red blue green');
- ItemType    = The Gopher item type (e.g., '0', '1', '7', 'g', etc.);
+               server type item (e.g., "red blue green");
+ ItemType    = The Gopher item type (e.g., "0", "1", "7", "g", etc.);
 
-E.g.:
+Example:
 
  my $request = new Net::Gopher::Request ('Gopher',
  	Host        => 'gopher.host.com',
@@ -155,15 +158,15 @@ E.g.:
 
 =item I<GopherPlus>
 
-For Gopher+ requests, in addition to the I<Host>, I<Port>, I<Selector>,
-I<SearchWords>, and I<ItemType> parameters, you have the following Name=value
-pairs:
+For Gopher+ requests, besides the I<Host>, I<Port>, I<Selector>,
+I<SearchWords>, and I<ItemType> parameters, you have the following additional
+C<Name => "value"> pairs:
 
  Representation = What format (MIME type) you want the resource in (e.g.,
                   'text/plain');
  DataBlock      = For Gopher+ Ask forms. Data to be sent to the server.
 
-E.g.:
+Example:
 
  my $request = new Net::Gopher::Request ('GopherPlus',
  	Host           => 'gopher.host.com',
@@ -172,17 +175,17 @@ E.g.:
  	DataBlock      => "Some data"
  );
 
-Note that the data heading for your data block will be generated for you when
+Note that a data heading for your data block will be generated for you when
 you send the request, so your data block should not contain one.
 
 =item I<ItemAttribute>
 
 For item attribute information requests, in addition to the I<Host>, I<Port>,
-and I<Selector> options, you have the following Name=value pairs:
+and I<Selector> options, you have the following C<Name => "value"> pairs:
 
  Attributes = A string or list containing block names (e.g., "+VIEWS+ADMIN");
 
-E.g.:
+Example:
 
  my $request = new Net::Gopher::Request ('ItemAttribute',
  	Host       => 'gopher.host.com',
@@ -272,11 +275,10 @@ sub new
 		{
 			# We need to manually add the scheme to the URL if one
 			# isn't there yet. We have to do this instead of just
-			# using URI.pm's scheme() method because that--for some
-			# reason (I think so URI.pm can handle mailto:
-			# URLs)--just adds the scheme name plus a colon to the
-			# beginning of the URL if a scheme isn't already there
-			# (e.g., if you call  $url->scheme("foo") on a URL like
+			# using URI.pm's scheme() method because that just adds
+			# the scheme name plus a colon to the beginning of the
+			# URL if a scheme isn't already there (e.g., if you
+			# call $url->scheme("foo") on a URL like
 			# subdomain.domain.com, you end up with
 			# foo:subdomain.domain.com, which is not what we want):
 			$url = "gopher://$url"
@@ -341,6 +343,17 @@ sub new
 				$attributes = $string
 					if (defined $string and length $string);
 			}
+			else
+			{
+				return Net::Gopher::Request->call_die(
+					"Can't convert malformed URL into a " .
+					"request object: the Gopher+ string " .
+					"contains an invalid request type " .
+					"character (\"$type_char\"). It " .
+					"should be \"+\", \"?\", \"!\", or " .
+					"\"\$\" instead."
+				);
+			}
 		}
 		else
 		{
@@ -352,10 +365,11 @@ sub new
 	}
 	else
 	{
-		# this isn't a URL type request, so get the named parameters:
+		# this isn't a URL type request, so extract every possible
+		# named parameter instead:
 		($host, $port, $selector, $search_words, $representation,
 		 $attributes, $data_block, $item_type) =
-			check_params([qw(
+			get_named_params([qw(
 				Host
 				Port
 				Selector
@@ -375,7 +389,7 @@ sub new
 
 	if (lc $type eq 'gopher')
 	{
-		$search_words = _parse_words($search_words);
+		$search_words = _search_words_as_string($search_words);
 
 		$self = {
 			request_type => GOPHER_REQUEST,
@@ -390,7 +404,7 @@ sub new
 	}
 	elsif (lc $type eq 'gopherplus')
 	{
-		$search_words = _parse_words($search_words);
+		$search_words = _search_words_as_string($search_words);
 
 		$self = {
 			request_type   => GOPHER_PLUS_REQUEST,
@@ -407,28 +421,26 @@ sub new
 	}
 	elsif (lc $type eq 'itemattribute')
 	{
-		$attributes = _parse_attributes($attributes);
+		$attributes = _attributes_as_string($attributes);
 
 		$self = {
 			request_type => ITEM_ATTRIBUTE_REQUEST,
 			host         => $host,
 			port         => $port || DEFAULT_GOPHER_PORT,
 			selector     => $selector,
-			attributes   => $attributes,
-			item_type    => $item_type
+			attributes   => $attributes
 		};
 	}
 	elsif (lc $type eq 'directoryattribute')
 	{
-		$attributes = _parse_attributes($attributes);
+		$attributes = _attributes_as_string($attributes);
 
 		$self = {
 			request_type => DIRECTORY_ATTRIBUTE_REQUEST,
 			host         => $host,
 			port         => $port || DEFAULT_GOPHER_PORT,
 			selector     => $selector,
-			attributes   => $attributes,
-			item_type    => $item_type
+			attributes   => $attributes
 		};
 	}
 	
@@ -443,7 +455,7 @@ sub new
 
 ################################################################################
 # 
-# The named constructor methods/exported constructor functions:
+# The named constructor functions:
 # 
 
 sub URL           { return new Net::Gopher::Request ('URL', @_) }
@@ -488,6 +500,7 @@ sub as_string
 			if (defined $self->search_words);
 
 		$request_string .= "\t+";
+
 		$request_string .= $self->representation
 			if (defined $self->representation);
 
@@ -498,12 +511,10 @@ sub as_string
 			$request_string .= "\t1";
 			$request_string .= $CRLF;
 
-			# add the transfer type:
+			# add the transfer type and then the data block itself:
 			$request_string .= '+';
 			$request_string .= size_in_bytes($self->data_block);
 			$request_string .= $CRLF;
-
-			# add the data block:
 			$request_string .= $self->data_block;
 		}
 		else
@@ -618,7 +629,7 @@ sub request_type { return shift->{'request_type'} }
 
 #==============================================================================#
 
-=head2 host([HOSTNAME])
+=head2 host([HOST])
 
 This is a get/set method for the I<Host> parameter. You can change the hostname
 of the request by supplying a new one. If you don't supply a new hostname, then
@@ -719,7 +730,7 @@ sub search_words
 
 	if (@_)
 	{
-		$self->{'search_words'} = _parse_words(@_);
+		$self->{'search_words'} = _search_words_as_string(@_);
 	}
 	else
 	{
@@ -814,7 +825,7 @@ sub attributes
 
 	if (@_)
 	{
-		$self->{'attributes'} = _parse_attributes(@_);
+		$self->{'attributes'} = _attributes_as_string(@_);
 	}
 	else
 	{
@@ -857,7 +868,7 @@ sub item_type
 
 ################################################################################
 
-sub _parse_words
+sub _search_words_as_string
 {
 	my $first_arg = $_[0];
 
@@ -886,7 +897,7 @@ sub _parse_words
 
 ################################################################################
 
-sub _parse_attributes
+sub _attributes_as_string
 {
 	my $first_arg = $_[0];
 

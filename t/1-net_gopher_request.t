@@ -903,7 +903,7 @@ use Net::Gopher::Constants qw(:request :item_types);
 	ok(!defined $request->representation);                        # 365
 	ok(!defined $request->data_block);                            # 366
 	ok(!defined $request->attributes);                            # 367
-	ok($request->item_type, GOPHER_MENU_TYPE);                    # 368
+	ok(!defined $request->item_type);                             # 368
 }
 
 
@@ -922,7 +922,7 @@ use Net::Gopher::Constants qw(:request :item_types);
 	ok(!defined $request->representation);                     # 376
 	ok(!defined $request->data_block);                         # 377
 	ok(!defined $request->attributes);                         # 378
-	ok($request->item_type, GOPHER_MENU_TYPE);                 # 379
+	ok(!defined $request->item_type);                          # 379
 }
 
 
@@ -943,7 +943,7 @@ use Net::Gopher::Constants qw(:request :item_types);
 	ok(!defined $request->representation);                                           # 387
 	ok(!defined $request->data_block);                                               # 388
 	ok($request->attributes, '+ADMIN+ABSTRACT');                                     # 389
-	ok($request->item_type, GOPHER_MENU_TYPE);                                       # 390
+	ok(!defined $request->item_type);                                                # 390
 }
 
 
@@ -963,7 +963,7 @@ use Net::Gopher::Constants qw(:request :item_types);
 	ok(!defined $request->representation);                        # 398
 	ok(!defined $request->data_block);                            # 399
 	ok(!defined $request->attributes);                            # 400
-	ok($request->item_type, GOPHER_MENU_TYPE);                    # 401
+	ok(!defined $request->item_type);                             # 401
 }
 
 
@@ -984,7 +984,7 @@ use Net::Gopher::Constants qw(:request :item_types);
 	ok(!defined $request->representation);                          # 409
 	ok(!defined $request->data_block);                              # 410
 	ok($request->attributes, '+INFO');                              # 411
-	ok($request->item_type, GOPHER_MENU_TYPE);                      # 412
+	ok(!defined $request->item_type);                               # 412
 }
 
 
@@ -1003,7 +1003,7 @@ use Net::Gopher::Constants qw(:request :item_types);
 	ok(!defined $request->representation);                                       # 420
 	ok(!defined $request->data_block);                                           # 421
 	ok($request->attributes, '+INFO+ADMIN');                                     # 422
-	ok($request->item_type, GOPHER_MENU_TYPE);                                   # 423
+	ok(!defined $request->item_type);                                            # 423
 }
 
 

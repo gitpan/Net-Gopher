@@ -61,7 +61,7 @@ use Net::Gopher::Constants ':item_types';
 use Net::Gopher::Debugging;
 use Net::Gopher::Exception;
 use Net::Gopher::Request;
-use Net::Gopher::Utility 'check_params';
+use Net::Gopher::Utility 'get_named_params';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -79,7 +79,7 @@ sub new
 	my $class = ref $invo || $invo;
 
 	my ($item_type, $display, $selector, $host, $port, $gopher_plus) =
-		check_params([qw(
+		get_named_params([qw(
 			ItemType
 			Display
 			Selector

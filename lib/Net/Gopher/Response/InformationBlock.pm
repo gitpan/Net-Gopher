@@ -23,6 +23,7 @@ Net::Gopher::Response::InformationBlock - Manipulate Gopher+ information blocks
  # if a block value contains attributes, you can retrieve all of the
  # attributes within it at once in the form of a hash using
  # get_attributes():
+ $block = $response->get_block('+ADMIN');
  my %attributes = $block->get_attributes;
  print(
  	"Gopherspace name: $attributes{'Site'}\n",
@@ -37,10 +38,10 @@ Net::Gopher::Response::InformationBlock - Manipulate Gopher+ information blocks
  
  
  # There are also methods available to parse individual block values and
- # attributes. For example, the extract_description() method parses
+ # attributes. For example, the extract_descriptor() method parses
  # +INFO blocks and extracts their contents:
  my ($type, $display, $selector, $host, $port, $gopher_plus) =
- 	$response->get_block('+INFO')->extract_description;
+ 	$response->get_block('+INFO')->extract_descriptor;
  
  # finally, note that for all of the block and attribute parsing methods
  # in this class, there are wrappers in Net::Gopher::Response which
@@ -90,7 +91,11 @@ use Net::Gopher::Constants ':item_types';
 use Net::Gopher::Debugging;
 use Net::Gopher::Exception;
 use Net::Gopher::Request;
-use Net::Gopher::Utility qw($ITEM_PATTERN $NEWLINE_PATTERN check_params);
+use Net::Gopher::Utility qw(
+	$ITEM_PATTERN $NEWLINE_PATTERN
+	
+	get_named_params ceil
+);
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -108,7 +113,7 @@ sub new
 	my $class = ref $invo || $invo;
 
 	my ($response, $name, $raw_value, $value) =
-		check_params([qw(
+		get_named_params([qw(
 			Response
 			Name
 			RawValue
@@ -346,18 +351,31 @@ sub is_attributes
 
 #==============================================================================#
 
-=head2 is_description()
+=head2 is_descriptor()
 
-This method checks to see if the block value contains an item descpription like
+This method checks to see if the block value contains an item descpriptor like
 you'd find in a Gopher menu or a Gopher+ +INFO block.
 
 =cut
 
-sub is_description
+sub is_descriptor
 {
 	my $self = shift;
 
 	return 1 if ($self->value =~ $ITEM_PATTERN);
+}
+
+# for backwards compatibility:
+sub is_description
+{
+	my $self = shift;
+
+	$self->call_warn(
+		'The is_description() method is depricated. Use ' .
+		'is_descriptor() instead.'
+	);
+
+	return $self->is_descriptor;
 }
 
 
@@ -368,7 +386,7 @@ sub is_description
 
 =head2 as_request()
 
-If the block value contains an item description, then you can use this method
+If the block value contains an item descriptor, then you can use this method
 to create a request object from it.
 
 =cut
@@ -388,7 +406,7 @@ sub as_request
 
 =head2 as_url()
 
-If the block value contains an item description, then you can use this method
+If the block value contains an item descriptor, then you can use this method
 to create a URL from it.
 
 =cut
@@ -398,7 +416,7 @@ sub as_url
 	my $self = shift;
 
 	my ($item_type, $display, $selector, $host, $port, $gopher_plus) =
-		$self->extract_description;
+		$self->extract_descriptor;
 
 	my $uri = new URI (undef, 'gopher');
 	   $uri->scheme('gopher');
@@ -426,8 +444,9 @@ indicating where the abstract can be downloaded from.
 
 The C<extract_abstract()> (sorry for the name) method extracts an item
 abstract, either directly from the block value if the block value contains it,
-or if the block value contains an item description of where the abstract can be
-downloaded from, it will download the item containing the abstract, and returns it.
+or if the block value contains an item descriptor of where the abstract can be
+downloaded from, it will download the item containing the abstract. It returns
+a striing containing the item abstract.
 
 =cut
 
@@ -443,7 +462,7 @@ sub extract_abstract
 		)
 	) unless ($self->name eq '+ABSTRACT');
 
-	if ($self->value =~ $ITEM_PATTERN)
+	if ($self->is_descriptor)
 	{
 		my $ng = $self->response->ng;
 
@@ -703,13 +722,13 @@ find in a Gopher menu.
 
 The following methods are available specifically for parsing C<+INFO> blocks:
 
-=head2 extract_description()
+=head2 extract_descriptor()
 
 This method parses C<+INFO> blocks and returns the item type, display string,
 selector string, host, port, and Gopher+ string:
 
  my ($type, $display, $selector, $host, $port) =
- 	$block->extract_description;
+ 	$block->extract_descriptor;
  
  print "$type     $display ($selector at $host:$port")\n";
 
@@ -719,16 +738,16 @@ this method will call C<$response-E<gt>get_block('+INFO')> and use that
 block object. Thus this:
 
  my ($type, $display, $selector, $host, $port) =
- 	$response->extract_description;
+ 	$response->extract_descriptor;
 
 is the same as this:
 
  my ($type, $display, $selector, $host, $port) =
- 	$response->get_block('+INFO')->extract_description;
+ 	$response->get_block('+INFO')->extract_descriptor;
 
 =cut
 
-sub extract_description
+sub extract_descriptor
 {
 	my $self = shift;
 
@@ -739,7 +758,7 @@ sub extract_description
 
 	return $self->call_die(
 		sprintf('The %s block either does not contain an item ' .
-		        'description or contains a malformed one.',
+		        'descriptor or it contains a malformed one.',
 			$self->name
 		)
 	) unless (defined $type_and_display
@@ -752,6 +771,19 @@ sub extract_description
 		(substr($type_and_display, 0, 1), substr($type_and_display, 1));
 
 	return($type, $display, $selector, $host, $port, $gopher_plus);
+}
+
+# for backwards compatibility:
+sub extract_description
+{
+	my $self = shift;
+
+	$self->call_warn(
+		'The extract_description() method is depricated. Use ' .
+		'extract_descriptor() instead.'
+	);
+
+	return $self->extract_descriptor(@_);
 }
 
 
@@ -781,7 +813,7 @@ Note that this method will convert the <\dk?> size format used in Gopher+ to
 an integer; the total size in bytes (e.g., <80> becomes 80, <40K> becomes
 40960, <.4K> becomes 410, <400B> becomes 400):
 
- my @views = $response->get_block('+VIEWS')->as_views;
+ my @views = $response->get_block('+VIEWS')->extract_views;
  
  foreach my $view (@views) {
  	print "$view->{'type'} ($view->{'size'} bytes)\n";
@@ -824,7 +856,7 @@ sub extract_views
 
 		# get the size in bytes:
 		my $size_in_bytes;
-		if (defined $size and $size =~ /<(\.?\d+)(kb|k|b)?>/i)
+		if (defined $size and $size =~ /<([\.\-0-9]+)(kb|k|b)?>/i)
 		{
 			# turn <55> into 55, <600B> into 600, <55K> into 56320,
 			# <.5K> into 512:
@@ -835,8 +867,7 @@ sub extract_views
 				$size_in_bytes *= 1024;
 
 				# round up to nearest whole byte:
-				$size_in_bytes += 0.9;
-				$size_in_bytes = int $size_in_bytes;
+				$size_in_bytes = ceil($size_in_bytes);
 			}
 		}
 

@@ -37,12 +37,12 @@ Net::Gopher::Response - Class encapsulating Gopher/Gopher+ responses
  	# get_block() to retrieve an individual
  	# Net::Gopher::Response::InformationBlock object for a particular
  	# block, which you can then parse using methods like
- 	# extract_description() and extract_adminstrator() depending on
+ 	# extract_descriptor() and extract_adminstrator() depending on
  	# what type of block it is:
  	my $info_block = $response->get_block('+INFO');
  
  	my ($type, $display, $selector, $host, $port, $plus) =
- 		$info_block->extract_description;
+ 		$info_block->extract_descriptor;
  
  	print "$type   $display ($selector from $host at $port)\n";
  
@@ -124,105 +124,12 @@ use Net::Gopher::Response::MenuItem;
 use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN
 
-	check_params
-	convert_newlines
-	strip_status_line
-	strip_terminator
+	get_named_params convert_newlines strip_status_line strip_terminator
 );
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
 
-
-
-
-
-
-################################################################################
-#
-# The following subroutines are wrapper methods around
-# Net::Gopher::Response::InformationBlock extract_* methods. They enable the
-# user to call extract_* block methods directly on the response object for
-# item attribute information requests:
-#
-
-sub extract_admin
-{
-	my $self = shift;
-
-	my $block = $self->get_block('+ADMIN');
-
-	return $self->call_die('No +ADMIN block in response.')
-		unless (defined $block);
-
-	return $block->extract_admin;
-}
-sub extract_date_created
-{
-	my $self = shift;
-
-	my $block = $self->get_block('+ADMIN');
-
-	return $self->call_die('No +ADMIN block in response.')
-		unless (defined $block);
-
-	return $block->extract_date_created;
-}
-sub extract_date_expires
-{
-	my $self = shift;
-
-	my $block = $self->get_block('+ADMIN');
-
-	return $self->call_die('No +ADMIN block in response.')
-		unless (defined $block);
-
-	return $block->extract_date_expires;
-}
-sub extract_date_modified
-{
-	my $self = shift;
-
-	my $block = $self->get_block('+ADMIN');
-
-	return $self->call_die('No +ADMIN block in response.')
-		unless (defined $block);
-
-	return $block->extract_date_modified;
-}
-sub extract_queries
-{
-	my $self = shift;
-
-	my $block = $self->get_block('+ASK');
-
-	return $self->call_die('No +ASK block in response.')
-		unless (defined $block);
-
-	return $block->extract_queries;
-}
-sub extract_description
-{
-	my $self = shift;
-
-	my $block = $self->get_block('+INFO');
-
-	return $self->call_die('No +INFO block in response.')
-		unless (defined $block);
-
-	return $block->extract_description;
-}
-sub extract_views
-{
-	my $self = shift;
-
-	my $block = $self->get_block('+VIEWS');
-
-	return $self->call_die('No +VIEWS block in response.')
-		unless (defined $block);
-
-	return $block->extract_views;
-}
 
 
 
@@ -240,7 +147,7 @@ sub new
 
 	my ($ng, $request, $raw_response, $status_line, $status,
 	    $content, $error) =
-		check_params([qw(
+		get_named_params([qw(
 			NG
 			Request
 			RawResponse
@@ -307,6 +214,107 @@ sub new
 
 
 
+################################################################################
+#
+# The following subroutines are wrapper methods around
+# Net::Gopher::Response::InformationBlock extract_* methods. They enable the
+# user to call extract_* block methods directly on the response object for
+# item attribute information requests:
+#
+
+sub extract_admin
+{
+	my $self = shift;
+
+	my $block = $self->get_block('+ADMIN');
+
+	return $self->call_die('No +ADMIN block in response.')
+		unless ($block);
+
+	return $block->extract_admin;
+}
+sub extract_date_created
+{
+	my $self = shift;
+
+	my $block = $self->get_block('+ADMIN');
+
+	return $self->call_die('No +ADMIN block in response.')
+		unless ($block);
+
+	return $block->extract_date_created;
+}
+sub extract_date_expires
+{
+	my $self = shift;
+
+	my $block = $self->get_block('+ADMIN');
+
+	return $self->call_die('No +ADMIN block in response.')
+		unless ($block);
+
+	return $block->extract_date_expires;
+}
+sub extract_date_modified
+{
+	my $self = shift;
+
+	my $block = $self->get_block('+ADMIN');
+
+	return $self->call_die('No +ADMIN block in response.')
+		unless ($block);
+
+	return $block->extract_date_modified;
+}
+sub extract_queries
+{
+	my $self = shift;
+
+	my $block = $self->get_block('+ASK');
+
+	return $self->call_die('No +ASK block in response.')
+		unless ($block);
+
+	return $block->extract_queries;
+}
+sub extract_descriptor
+{
+	my $self = shift;
+
+	my $block = $self->get_block('+INFO');
+
+	return $self->call_die('No +INFO block in response.')
+		unless ($block);
+
+	return $block->extract_descriptor;
+}
+sub extract_description
+{
+	my $self = shift;
+
+	$self->call_warn(
+		'The extract_description() method is depricated. Use ' .
+		'extract_descriptor() instead.'
+	);
+
+	return $self->extract_descriptor(@_);
+}
+sub extract_views
+{
+	my $self = shift;
+
+	my $block = $self->get_block('+VIEWS');
+
+	return $self->call_die('No +VIEWS block in response.')
+		unless ($block);
+
+	return $block->extract_views;
+}
+
+
+
+
+
 sub ng
 {
 	my $self = shift;
@@ -329,9 +337,10 @@ sub ng
 
 =head2 request()
 
-This returns the request object. You probably won't need to use this much since
-you'll usually have the request object anyway, however, when you need to store
-and manipulate multiple response objects, you may find this useful.
+This returns the request object for the request that this response resulted
+from. You probably won't need to use this much since you'll usually have the
+request object anyway, however, when you need to store and manipulate multiple
+response objects, you may find this useful.
 
 =cut
 
@@ -386,7 +395,7 @@ sub raw_response
 =head2 status_line()
 
 For a Gopher+ request, this method will return the status line (the first line)
-of the response, including the newline (CRLF) character.[3] For a Gopher
+of the response, including the newline (CRLF) terminator.[3] For a Gopher
 request, this will return undef.
 
 =cut
@@ -507,17 +516,16 @@ This method takes two optional named parameters:
 =item OfTypes
 
 To retrieve only items of certain types, you can use the I<OfTypes> parameter.
-This parameter takes as its argument one or more item type characters as either
-a string or a reference to an array of strings and will only retrieve items
-if they are of those types:
+This parameter takes one or more item type characters as either a string or a
+reference to an array of strings and will only return items of those types:
 
- # get the Net::Gopher::Response::MenuItem object for each
+ # get the Net::Gopher::Response::MenuItem objects for each
  # text file item or menu item:
  my @items = $response->extract_items(OfTypes => '01');
  
  # the same thing, but instead get only DOS binary files
  # and other binary files:
- my @items = $response->extract_items(OfTypes => ['5', '9']);
+ @items = $response->extract_items(OfTypes => ['5', '9']);
 
 =item ExceptTypes
 
@@ -530,14 +538,14 @@ parameter in the same format as described above for I<OfTypes>:
  # menu except for inline text and GIF images:
  my @items = $response->extract_items(ExceptTypes => 'ig');
  
- # the same thing but instead skip DOS binary files, mirrors, and
+ # the same thing, but instead skip DOS binary files, mirrors, and
  # inline text:
- my @items = $response->extract_items(ExceptTypes => ['5', '+', 'i']);
+ @items = $response->extract_items(ExceptTypes => ['5', '+', 'i']);
 
 =back
 
 Note that B<Net::Gopher::Constants> contains constants you can use to specify
-item types that are exported when you C<use()> B<Net::Gopher::Constants> with
+item types. They are exported when you C<use()> B<Net::Gopher::Constants> with
 either the I<:item_types> or I<:all> export tags; for example:
 
  # get the Net::Gopher::Response::MenuItem object for each
@@ -557,8 +565,10 @@ sub extract_items
 {
 	my $self = shift;
 
+	return unless (defined $self->content);
+
 	my ($of_types, $except_types) =
-		check_params(['OfTypes', 'ExceptTypes'], \@_);
+		get_named_params(['OfTypes', 'ExceptTypes'], \@_);
 
 
 
@@ -568,7 +578,7 @@ sub extract_items
 	strip_terminator($content) if ($self->is_terminated);
 
 	# To compare the item type of each item in the menu with
-	# the ones we were told to get, or alternately, the ones we were told
+	# the ones we were told to get, or, alternately, the ones we were told
 	# to ignore, we'll use a regex character class comprised of all of the
 	# specified item type characters.
 	my $retrieval_class;
@@ -679,7 +689,7 @@ sub extract_items
 =head2 get_block(NAME [, OPTIONS])
 
 This method is used to retrieve an individual
-I<Net::Gopher::Response::InformationBlock> object. The first argument this
+B<Net::Gopher::Response::InformationBlock> object. The first argument this
 method always takes is the name of the block to retrieve. The leading "+"
 character in the block name is optional, but block names are case sensitive.[6]
 If you made a directory attribute information request, than you'll have to be
@@ -774,6 +784,8 @@ sub get_block
 	my $self = shift;
 	my $name = shift;
 
+	return unless (defined $self->content);
+
 	$self->call_warn(
 		"You didn't send an item attribute or directory attribute " .
 		"information request, so why would the response contain " .
@@ -793,7 +805,7 @@ sub get_block
 	my @item_wanted_from;
 	if (@_)
 	{
-		my $item = check_params(['Item'], \@_);
+		my $item = get_named_params(['Item'], \@_);
 
 		@item_wanted_from = $self->_find_item_blocks($item);
 	}
@@ -908,6 +920,8 @@ sub get_blocks
 {
 	my $self = shift;
 
+	return unless (defined $self->content);
+
 	$self->call_warn(
 		"You didn't send an item attribute or directory attribute " .
 		"information request, so why would the response contain " .
@@ -924,7 +938,7 @@ sub get_blocks
 
 
 
-	my ($item, $blocks) = check_params(['Item', 'Blocks'], \@_);
+	my ($item, $blocks) = get_named_params(['Item', 'Blocks'], \@_);
 
 	# this hash will contain the name of every block requested, including
 	# the leading "+," which we'll add if it was absent:
@@ -1012,6 +1026,8 @@ sub has_block
 	my $self = shift;
 	my $name = shift;
 
+	return unless (defined $self->content);
+
 	return $self->call_die('No block name supplied for has_block().')
 		unless ($name);
 
@@ -1032,7 +1048,7 @@ sub has_block
 	my @blocks_to_check;
 	if (@_)
 	{
-		my $item = check_params(['Item'], \@_);
+		my $item = get_named_params(['Item'], \@_);
 
 		@blocks_to_check = $self->_find_item_blocks($item);
 	}
@@ -1481,17 +1497,26 @@ sub _extract_blocks
 	# another item's blocks, we save @blocks to $self->{'_blocks'} and
 	# empty it:
 	my @blocks;
-	my %seen;
 
-	# the start of block is denoted by a + at the beginning of a line:
+	# This stores the name of the item-terminating block. Usually, an +INFO
+	# block denotes the start of an item's attribute information blocks, so
+	# it's not to hard to tell where one item's blocks end and another
+	# item's blocks begin, but if specific blocks were requested, then some
+	# other block may come first instead:
+	my $terminating_block_name;
+
 	foreach my $name_and_value (split(/$NEWLINE_PATTERN\+/, $raw_response))
 	{
 		# get the newline/space separated name and value:
 		my ($name, $raw_value) =
 			split(/ |\015\012|\015|\012/, $name_and_value, 2);
 
-		# block names are usually postfixed with colons:
-		$name =~ s/:$//;
+		# block names are usually postfixed with colons, so we need to
+		# remove it:
+		chop($name) if (substr($name, -1, 1) eq ':');
+
+		# does this block denote the start of an item?
+		$terminating_block_name ||= $name;
 
 		my $value = $raw_value;
 
@@ -1512,20 +1537,19 @@ sub _extract_blocks
 			Value    => $value
 		);
 
-		if ($seen{$name})
+		if ($name eq $terminating_block_name and @blocks)
 		{
-			# we need to save a reference to an array containing
+			# This is the start of the next item's blocks, so we
+			# need to save a reference to an array containing
 			# the block objects in @blocks, but not @blocks itself
 			# because we're going to empty it to make room
-			# for this item:
+			# for this new item's blocks:
 			push(@{ $self->{'_blocks'} }, [ @blocks ]);
 
 			@blocks = ();
-			%seen   = ();
 		}
 
 		push(@blocks, $obj);
-		$seen{$name} = 1;
 	}
 
 	# add the last item's attribute information block objects to the list:
@@ -1609,7 +1633,7 @@ sub _find_item_blocks
 		 $template{'item_type'}, $template{'display'},
 		 $template{'selector'}, $template{'host'},
 		 $template{'port'}, $template{'gopher_plus'}) =
-		 	check_params([qw(
+		 	get_named_params([qw(
 				N
 				ItemType
 				Display
@@ -1657,7 +1681,7 @@ sub _find_item_blocks
 			next unless ($info_block and $info_block->name eq '+INFO');
 
 			# parse the item's +INFO block:
-			my @values = $info_block->extract_description or next;
+			my @values = $info_block->extract_descriptor or next;
 
 			# we'll use these keys to build a hash containing
 			# values from the +INFO block, then use them again to

@@ -38,7 +38,7 @@ print "Done.\n\n" if ($interactive);
 
 print <<END_OF_MESSAGE if ($interactive);
 Some of the tests I'm going to run employ the services of a test server that
-runs on ports 70 and 7070 to serve up the test items. If you have anything
+runs on ports 80 and 21 to serve up the test items. If you have anything
 running on those ports or if you have them blocked in some way that disables
 programs from listening on them, well, shutdown the programs or unblock the
 ports before continuing, otherwise some tests will inexplicably fail. The final
@@ -62,9 +62,10 @@ WriteMakefile(
 	VERSION_FROM    => 'lib/Net/Gopher.pm',
 	PL_FILES        => {},
 	PREREQ_PM       => {
+		'IO::String'       => 1.0,
 		'IO::Socket'       => 1.26,
 		'IO::Socket::INET' => 1.25,
-		'URI'              => 1.27,
+		'URI'              => 1.27
 	},
 	($] >= 5.005
 		? (ABSTRACT_FROM => 'lib/Net/Gopher.pm',

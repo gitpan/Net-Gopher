@@ -8,6 +8,8 @@ use Net::Gopher;
 use Net::Gopher::Constants qw(:item_types :request :response);
 use Net::Gopher::Utility qw($CRLF);
 
+use constant SERVER_PORT => 80;
+
 require './t/serverfunctions.pl';
 
 
@@ -53,6 +55,7 @@ ok(launch_item_server()); # 13
 
 	my $response = $ng->gopher(
 		Host     => 'localhost',
+		Port     => SERVER_PORT,
 		Selector => '/index'
 	);
 
@@ -495,6 +498,7 @@ ok(launch_item_server()); # 13
 
 	my $response = $ng->gopher_plus(
 		Host     => 'localhost',
+		Port     => SERVER_PORT,
 		Selector => '/gp_index'
 	);
 
@@ -952,6 +956,7 @@ ok(launch_item_server()); # 13
 
 		$ng->gopher(
 			Host     => 'localhost',
+			Port     => SERVER_PORT,
 			Selector => '/malformed_menu'
 		)->extract_items;
 
@@ -978,6 +983,7 @@ ok(launch_item_server()); # 13
 
 		$ng->gopher_plus(
 			Host     => 'localhost',
+			Port     => SERVER_PORT,
 			Selector => '/gp_s_no_term'
 		)->extract_items;
 

@@ -1,5 +1,14 @@
 Revision history for Perl extension Net::Gopher.
 
+1.06 - Deprecated  extract_description()  and  is_description()  in  favor   of
+       extract_descriptor() and is_descriptor(),  as  well  as  deprecated  the
+       internal check_params() function in  favor  of  get_named_params()  (the
+       old names still work, though, with an added warning). Cleaned up  new();
+       it sets the Net::Gopher::Exception and Net::Gopher::Debugging  variables
+       using  their  global  accessor  methods.  Removed  remove_bytes()   from
+       Net::Gopher::Utility, as  it's  not  needed  anymore.  Also,  fixed  the
+       faulty rounding in extract_views().
+
 1.05 - Net::Gopher::Response::XML is gone, as is the as_xml()  method;  they're
        now distributed separately in their own package.
 

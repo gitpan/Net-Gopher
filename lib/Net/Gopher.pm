@@ -169,14 +169,16 @@ use warnings;
 use vars qw($VERSION @ISA);
 use Carp;
 use Errno 'EINTR';
-use IO::Socket qw(SOCK_STREAM SHUT_WR);
+use IO::Socket qw(SHUT_WR);
 use IO::Select;
 use Net::Gopher::Constants ':all';
 use Net::Gopher::Debugging;
 use Net::Gopher::Exception;
 use Net::Gopher::Request;
 use Net::Gopher::Response;
-use Net::Gopher::Utility qw($CRLF check_params size_in_bytes strip_terminator);
+use Net::Gopher::Utility qw(
+	$CRLF get_named_params size_in_bytes strip_terminator
+);
 
 use constant DEFAULT_GOPHER_PORT  => 70;
 use constant DEFAULT_TIMEOUT      => 30;
@@ -187,7 +189,7 @@ use constant MAX_STATUS_LINE_SIZE => 64;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '1.05';
+$VERSION = '1.06';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -292,7 +294,7 @@ sub new
 
 	my ($buffer_size, $timeout, $upward_compatible,
 	    $warn_handler, $die_handler, $silent, $debug, $log_file) =
-		check_params([qw(
+		get_named_params([qw(
 			BufferSize
 			Timeout
 			UpwardCompatible
@@ -310,7 +312,7 @@ sub new
 
 
 	my $self = {
-		# the size (in bytes) of _buffer:
+		# the size (in bytes) of $self->_buffer:
 		buffer_size       => (defined $buffer_size)
 					? $buffer_size
 					: DEFAULT_BUFFER_SIZE,
@@ -328,7 +330,8 @@ sub new
 		# buffers. This stores each buffer one at a time:
 		_buffer           => undef,
 
-		# the IO::Select object for the socket stored in _socket:
+		# the IO::Select object for the socket stored in
+		# $self->_socket:
 		_select           => undef,
 
 		# the IO::Socket::INET socket:
@@ -343,29 +346,17 @@ sub new
 
 
 
-	# set the global Net::Gopher::Exception variables (these can also be
-	# modified using the warn_handler(), die_handler() and silent()
-	# methods inherited by this class and its sub classes):
-	$Net::Gopher::Exception::WARN_HANDLER =
-		(ref $warn_handler eq 'CODE')
-			? $warn_handler
-			: $Net::Gopher::Exception::DEFAULT_WARN_HANDLER;
+	# set the global Net::Gopher::Exception variables (the warn_handler(),
+	# die_handler() and silent() methods are inherited by this class and
+	# its sub classes from Net::Gopher::Exception):
+	$self->warn_handler($warn_handler);
+	$self->die_handler($die_handler);
+	$self->silent($silent); 
 
-	$Net::Gopher::Exception::DIE_HANDLER =
-		(ref $die_handler eq 'CODE')
-			? $die_handler
-			: $Net::Gopher::Exception::DEFAULT_DIE_HANDLER;
-
-	$Net::Gopher::Exception::SILENT = $silent ? 1 : 0; 
-
-
-
-	# set the global Net::Gopher::Debugging variables (these can also be
-	# modified using the debug() and log_file() methods inherited by this
-	# class and all of its sub classes):
-	$Net::Gopher::Debugging::DEBUG    = $debug ? 1 : 0;
-	$Net::Gopher::Debugging::LOG      = (defined $log_file) ? 1 : 0;
-	$Net::Gopher::Debugging::LOG_FILE = $log_file;
+	# set the global Net::Gopher::Debugging variables (debug() and
+	# log_file() are inherited from Net::Gopher::Debugging):
+	$self->debug($debug);
+	$self->log_file($log_file);
 
 	return $self;
 }
@@ -432,21 +423,20 @@ sub request
 		'first argument.'
 	) unless (UNIVERSAL::isa($request, 'Net::Gopher::Request'));
 
-	my ($file, $handler) = check_params(['File', 'Handler'], \@_);
+	my ($file, $handler) = get_named_params(['File', 'Handler'], \@_);
 
 
 
-	# the response object we'll return:
 	my $response = new Net::Gopher::Response;
 	   $response->ng($self);
 	   $response->request($request);
 
 	# First, we need to connect to the Gopher server. To connect, at the
-	# very least, we need a hostname:
+	# very least, we need a hostname or IP address:
 	return $self->call_die(
-		"You never specified a hostname; it's impossible to send " .
-		"your request without one. Specify it during object " .
-		"creation or later on with the host() method."
+		"You never specified a host; it's impossible to send your " .
+		"request. Specify one during object creation or later on " .
+		"with the host() method."
 	) unless (defined $request->host and length $request->host);
 
 	# we also need a port number, but we can use the default IANA
@@ -470,21 +460,17 @@ sub request
 			or $request->request_type == ITEM_ATTRIBUTE_REQUEST
 			or $request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
 
-	# clear any previous network error that occurred during a prior call to
-	# request():
+	# make sure we don't inherit errors from previous failled request()
+	# calls:
 	$self->_network_error(undef);
 
-	# now, try to connect to the server:
 	my $socket = new IO::Socket::INET (
+		Proto    => 'tcp',
 		PeerAddr => $request->host,
 		PeerPort => $request->port,
-		Timeout  => $self->timeout,
-		Proto    => 'tcp',
-		Type     => SOCK_STREAM,
-		Blocking => 0
+		Timeout  => $self->timeout
 	);
 
-	# make sure we connected successfully:
 	if ($socket)
 	{
 		$self->_socket($socket);
@@ -506,7 +492,6 @@ sub request
 		return $response->error($self->_network_error);
 	}
 
-	# show the hostname, IP address, and port number for debugging:
 	$self->debug_print(
 		sprintf("Connected to \"%s\" (%s) at port %d.",
 			$request->host,
@@ -575,12 +560,11 @@ sub request
 	};
 
 	# This branch of code below is used to receive the response. It does so
-	# in one of two ways: either as a Gopher+ style request/response cycle
-	# or as a plain-old Gopher request/response cycle. For Gopher+
-	# responses, we first need to read the status line prefixing the
-	# response so we can look at the transfer type and decide how to
-	# receive it. For Gopher, we just read from the stream until the server
-	# closes the connection.
+	# in one of two ways: either as a Gopher+ style response message or as
+	# a plain-old Gopher response message. For Gopher+ responses, we first
+	# need to read the status line prefixing the response so we can look at
+	# the transfer type and decide how to receive it. For Gopher, we just
+	# read from the stream until the server closes the connection.
 	# 
 	# For Gopher+, $remainder will store any additional bytes we end up
 	# reading beyond the status line, or if we don't find the status line,
@@ -591,7 +575,7 @@ sub request
 	{
 		$response->_add_raw($status_line);
 
-		# get the status character (+ or -) and transfer type (either
+		# extract the status code (+ or -) and transfer type (either
 		# -1, -2, or the length of the response content in bytes) of
 		# the response:
 		my $status        = substr($status_line, 0, 1);
@@ -611,9 +595,9 @@ sub request
 			# A -1 or -2 transfer type means the server is going to
 			# send a series of bytes, which may (-1) or may not
 			# (-2) be terminated by a period on a line by itself,
-			# and then close the connection. So we'll read the
-			# server's response as a series of buffers using
-			# _read_from_socket() and then store each buffer:
+			# and then close the connection. So we'll read from
+			# the stream over and over again until the server
+			# closes the connection or an error occurs:
 			while ($self->_read_from_socket)
 			{
 				$store_response->($self->_buffer);
@@ -628,8 +612,8 @@ sub request
 			# This keeps track of how many bytes of the response
 			# content we've stored in the response object. Since we
 			# may have already read some of the content with
-			# read_status_line() and $remainder, we check to see if
-			# there's anything already in $response->content:
+			# read_status_line() and $remainder, we'll add that to
+			# the total:
 			my $bytes_stored =
 				(defined $response->content)
 					? size_in_bytes($response->content)
@@ -707,21 +691,21 @@ sub request
 	}
 	else
 	{
-		# If we got here then this is a plain old Gopher request, not a
-		# Gopher+ request.
+		# If we got here then this is a plain old Gopher response, not
+		# a Gopher+ response.
 
 		if ($is_gopher_plus)
 		{
-			# if we got here, then either some network error
-			# occurred or the response wasn't prefixed with a valid
-			# status line:
+			# if we got here, then maybe some network error
+			# occurred while receiving the status line?
 			return $response->error($self->_network_error)
 				if ($self->_network_error);
 
 			# If it wasn't a network error, then that means
-			# we sent a Gopher+ request to a Gopher server. If
-			# upward compatability is on, we'll keep going anyway
-			# and try to receive the Gopher response:
+			# we sent a Gopher+ request to a Gopher server, and
+			# hence there was no valid status line prefixing the
+			# response. If upward compatability is on, we'll keep
+			# going anyway and try to receive the Gopher response:
 			return $response->error(
 				'You sent a Gopher+ style request to a ' .
 				'non-Gopher+ server'
@@ -734,9 +718,20 @@ sub request
 
 
 
-		# now, read the server's response as a series of buffers,
-		# storing each buffer one at a time in $self->_buffer and then
-		# store them in the response object:
+		# For original Gopher, we're just gonna read from the TCP
+		# stream over and over again using read_from_socket() and store
+		# each buffer read one at a time in $self->_buffer, then store
+		# the buffer in the response object. When the server is done
+		# sending its response, it should close the connection (or at
+		# least shutdown write portion of it), resulting in an EOF read
+		# and exiting of the while loop below.
+		#
+		# If we were going to follow RFC 1436 to the letter, we would
+		# probably check each buffer for a terminating period on a line
+		# by itself and stop reading if we find it, but not all items
+		# contain this (binary items) and some text items aren't
+		# properly escaped, potentially resulting in cut-off responses.
+		# Plus, I've never seen an implementation that does check:
 		while ($self->_read_from_socket)
 		{
 			$store_response->($self->_buffer);
@@ -745,16 +740,15 @@ sub request
 		return $response->error($self->_network_error)
 			if ($self->_network_error);
 
-		# make sure we received some sort of response from the server:
 		return $response->error(
 			'The server closed the connection without returning ' .
 			'any response'
 		) unless (defined $response->raw_response
 			and size_in_bytes($response->raw_response));
 
-		# unescape periods if the item is a text file, menu, or other
-		# text item and it's terminated by a period on a line by
-		# itself:
+		# if the item is a text file, menu, or other text item and it's
+		# terminated by a period on a line by itself, then periods at
+		# the start of line need to be escaped; we'll unescape them:
 		$response->_unescape_periods
 			if ($response->is_text and $response->is_terminated);
 
@@ -795,8 +789,8 @@ sub request
 				"Couldn't open output file ($file): $!."
 			);
 
-		# if it's binary, we don't want Perl messing with it when
-		# we output it:
+		# if it's binary, we don't want bytes recognized as line
+		# endings getting messed with:
 		binmode FILE unless ($response->is_text);
 
 		print FILE $response->content;
@@ -817,14 +811,14 @@ sub request
 This method is a shortcut around the B<Net::Gopher::Request>
 object/C<request()> method combination for plain-old Gopher requests.[7] It
 creates a Gopher-type B<Net::Gopher::Request> object, sends it, and then
-returns B<Net::Gopher::Response> object for the response.
+returns the B<Net::Gopher::Response> object for the response.
 
 This:
 
  $ng->gopher(
  	Host     => 'gopher.host.com',
  	Selector => '/menu',
-	ItemType => 1
+ 	ItemType => 1
  );
 
 is roughly equivalent to this:
@@ -862,7 +856,7 @@ sub gopher
 
 This method is a shortcut around the B<Net::Gopher::Request>
 object/C<request()> method combination for Gopher+ requests.[8] It creates a
-Gopher+ B<Net::Gopher::Request> object, sends it, and then returns
+Gopher+ B<Net::Gopher::Request> object, sends it, and then returns the
 B<Net::Gopher::Response> object for the response.
 
 This:
@@ -909,7 +903,7 @@ sub gopher_plus
 This method is a shortcut around the B<Net::Gopher::Request>
 object/C<request()> method combination for item attribute information
 requests.[9] It creates an item attribute information B<Net::Gopher::Request>
-object, sends it, and then returns B<Net::Gopher::Response> object for the
+object, sends it, and then returns the B<Net::Gopher::Response> object for the
 response.
 
 This:
@@ -957,7 +951,7 @@ sub item_attribute
 This method is a shortcut around the B<Net::Gopher::Request>
 object/C<request()> method combination for directory attribute information
 requests.[10] It creates a directory attribute information
-B<Net::Gopher::Request> object, sends it, and then returns
+B<Net::Gopher::Request> object, sends it, and then returns the
 B<Net::Gopher::Response> object for the response.
 
 This:
@@ -1245,7 +1239,7 @@ sub _buffer
 ################################################################################
 #
 #	Method
-#		_read_from_socket([$length])
+#		_read_from_socket([$bytes_to_read])
 #
 #	Purpose
 #		This method tries to read $length worth of bytes from the
@@ -1258,14 +1252,15 @@ sub _buffer
 #		far fewer bytes than we asked for.)
 #
 #	Parameters
-#		$length - How many bytes to read. If this is not supplied,
-#		          $self->buffer_size bytes will be read instead.
+#		$bytes_to_read - How many bytes to read. If this is not
+#		                 supplied, $self->buffer_size bytes will be
+#		                 read instead.
 #
 
 sub _read_from_socket
 {
-	my $self   = shift;
-	my $length = shift || $self->buffer_size;
+	my $self          = shift;
+	my $bytes_to_read = shift || $self->buffer_size;
 
 	# first, empty the buffer:
 	$self->_buffer(undef);
@@ -1276,10 +1271,9 @@ sub _read_from_socket
 		return $self->_network_error('Response timed out')
 			unless ($self->_select->can_read($self->timeout));
 
-		# try to read part of the response from the socket into the
-		# buffer:
-		my $bytes_read =
-			$self->_socket->sysread($self->{'_buffer'}, $length);
+		my $bytes_read = sysread(
+			$self->_socket, $self->{'_buffer'}, $bytes_to_read
+		);
 
 		unless (defined $bytes_read)
 		{
@@ -1287,14 +1281,13 @@ sub _read_from_socket
 			# something else:
 			redo if ($! == EINTR);
 
-			# a network error occurred and there's nothing we can
-			# do about it:
+			# a real network error occurred and there's nothing we
+			# can do about it:
 			return $self->_network_error(
 				"Couldn't receive response: $!"
 			);
 		}
 
-		# show how many bytes we read for debugging:
 		$self->debug_print(
 			sprintf('Received %d %s of data from server.',
 				$bytes_read,
@@ -1329,9 +1322,9 @@ sub _read_from_socket
 
 sub _write_to_socket
 {
-	my $self   = shift;
-	my $data   = shift;
-	my $length = shift || size_in_bytes($data);
+	my $self           = shift;
+	my $data           = shift;
+	my $bytes_to_write = shift || size_in_bytes($data);
 
 	while (1)
 	{
@@ -1339,8 +1332,9 @@ sub _write_to_socket
 		return $self->_network_error('Request timed out')
 			unless ($self->_select->can_write($self->timeout));
 
-		# try to send the data to the server:
-		my $bytes_written = $self->_socket->syswrite($data, $length);
+		my $bytes_written = syswrite(
+			$self->_socket, $data, $bytes_to_write
+		);
 
 		unless (defined $bytes_written)
 		{
@@ -1348,8 +1342,8 @@ sub _write_to_socket
 			# something else:
 			redo if ($! == EINTR);
 
-			# a network error occurred and there's nothing we can
-			# do about it:
+			# a real network error occurred and there's nothing we
+			# can do about it:
 			return $self->_network_error("Couldn't send request: $!");
 		}
 		
@@ -1359,12 +1353,11 @@ sub _write_to_socket
 			        "%s of a %d byte request): %s",
 				$bytes_written,
 				($bytes_written == 1) ? 'byte' : 'bytes',
-				$length,
+				$bytes_to_write,
 				$!
 			)
-		) unless ($length == $bytes_written);
+		) unless ($bytes_written == $bytes_to_write);
 
-		# show how many bytes we wrote for debugging:
 		$self->debug_print(
 			sprintf('Sent %d %s of data to server.',
 				$bytes_written,

@@ -7,7 +7,7 @@ use Test;
 
 use constant BUFFER_SIZE => 4096;
 use constant HOST        => 'localhost';
-use constant PORT        => 70;
+use constant PORT        => 80;
 use constant TIMEOUT     => 30;
 
 BEGIN { plan(tests => 12) }
@@ -23,13 +23,18 @@ else
 {
 	die "Bad CWD: " . getcwd();
 }
-my $pid = open(PIPE, "perl ./t/testserver.pl -ep 70 |")
-	or die "Couldn't fork: $!.";
-
-ok($pid); # 2
+my $pid = open(PIPE, "perl ./t/testserver.pl -ep 80 |");
+if ($pid)
+{
+	ok(1); # 2
+}
+else
+{
+	die "Couldn't fork: $!.";
+}
 
 chomp(my $line = <PIPE>);
-ok($line, "# Listening on port 70..."); # 3
+ok($line, "# Listening on port 80..."); # 3
 
 
 my $socket = new IO::Socket::INET (

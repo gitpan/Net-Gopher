@@ -8,6 +8,9 @@ use Net::Gopher;
 use Net::Gopher::Request;
 use Net::Gopher::Constants qw(:item_types);
 
+use constant SERVER_PORT => 80;
+use constant ECHO_PORT   => 21;
+
 require './t/serverfunctions.pl';
 
 
@@ -116,7 +119,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			Gopher => {
 				Host        => 'localhost',
-				Port        => 7070,
+				Port        => ECHO_PORT,
 				Selector    => '/something',
 				SearchWords => ['red', 'green', 'blue']
 			}
@@ -139,7 +142,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 7070,
+				Port           => ECHO_PORT,
 				Selector       => '/something_else',
 				Representation => 'text/plain'
 			}
@@ -161,7 +164,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 7070,
+				Port           => ECHO_PORT,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      => 'This is a single-line block'
@@ -185,7 +188,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 7070,
+				Port           => ECHO_PORT,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      => 'This is a big single-line block ' x 2000
@@ -209,7 +212,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 7070,
+				Port           => ECHO_PORT,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      =>
@@ -234,7 +237,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 7070,
+				Port           => ECHO_PORT,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      =>
@@ -259,7 +262,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			ItemAttribute => {
 				Host           => 'localhost',
-				Port           => 7070,
+				Port           => ECHO_PORT,
 				Selector       => '/some_item',
 				Attributes     => '+ATTR'
 			}
@@ -282,7 +285,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			DirectoryAttribute => {
 				Host           => 'localhost',
-				Port           => 7070,
+				Port           => ECHO_PORT,
 				Selector       => '/some_dir',
 				Attributes     => '+ATTR'
 			}
@@ -317,7 +320,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			Gopher => {
 				Host        => 'localhost',
-				Port        => 7070,
+				Port        => ECHO_PORT,
 				Selector    => '/something',
 				SearchWords => ['red', 'green', 'blue']
 			}
@@ -325,7 +328,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher(
 			Host        => 'localhost',
-			Port        => 7070,
+			Port        => ECHO_PORT,
 			Selector    => '/something',
 			SearchWords => ['red', 'green', 'blue']
 		);
@@ -348,7 +351,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 7070,
+				Port           => ECHO_PORT,
 				Selector       => '/something_else',
 				Representation => 'text/plain'
 			}
@@ -356,7 +359,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host           => 'localhost',
-			Port           => 7070,
+			Port           => ECHO_PORT,
 			Selector       => '/something_else',
 			Representation => 'text/plain'
 		);
@@ -379,7 +382,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			ItemAttribute => {
 				Host           => 'localhost',
-				Port           => 7070,
+				Port           => ECHO_PORT,
 				Selector       => '/some_dir',
 				Attributes     => '+ATTR'
 			}
@@ -387,7 +390,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->item_attribute(
 			Host           => 'localhost',
-			Port           => 7070,
+			Port           => ECHO_PORT,
 			Selector       => '/some_dir',
 			Attributes     => '+ATTR'
 		);
@@ -410,7 +413,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			DirectoryAttribute => {
 				Host           => 'localhost',
-				Port           => 7070,
+				Port           => ECHO_PORT,
 				Selector       => '/some_dir',
 				Attributes     => '+ATTR'
 			}
@@ -418,7 +421,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->directory_attribute(
 			Host           => 'localhost',
-			Port           => 7070,
+			Port           => ECHO_PORT,
 			Selector       => '/some_dir',
 			Attributes     => '+ATTR'
 		);
@@ -461,8 +464,9 @@ require './t/serverfunctions.pl';
 		# see the "index" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			Gopher => {
-				Host        => 'localhost',
-				Selector    => '/index'
+				Host     => 'localhost',
+				Port     => SERVER_PORT,
+				Selector => '/index'
 			}
 		);
 
@@ -498,8 +502,9 @@ require './t/serverfunctions.pl';
 		# see the "gp_period_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
-				Host        => 'localhost',
-				Selector    => '/gp_period_term'
+				Host     => 'localhost',
+				Port     => SERVER_PORT,
+				Selector => '/gp_period_term'
 			}
 		);
 
@@ -535,8 +540,9 @@ require './t/serverfunctions.pl';
 		# see the "gp_no_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
-				Host        => 'localhost',
-				Selector    => '/gp_no_term'
+				Host     => 'localhost',
+				Port     => SERVER_PORT,
+				Selector => '/gp_no_term'
 			}
 		);
 
@@ -572,8 +578,9 @@ require './t/serverfunctions.pl';
 		# see the "gp_byte_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
-				Host        => 'localhost',
-				Selector    => '/gp_byte_term'
+				Host     => 'localhost',
+				Port     => SERVER_PORT,
+				Selector => '/gp_byte_term'
 			}
 		);
 
@@ -609,8 +616,9 @@ require './t/serverfunctions.pl';
 		# see the "gp_s_period_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
-				Host        => 'localhost',
-				Selector    => '/gp_s_period_term'
+				Host     => 'localhost',
+				Port     => SERVER_PORT,
+				Selector => '/gp_s_period_term'
 			}
 		);
 
@@ -646,8 +654,9 @@ require './t/serverfunctions.pl';
 		# see the "gp_s_no_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
-				Host        => 'localhost',
-				Selector    => '/gp_s_no_term'
+				Host     => 'localhost',
+				Port     => SERVER_PORT,
+				Selector => '/gp_s_no_term'
 			}
 		);
 
@@ -683,8 +692,9 @@ require './t/serverfunctions.pl';
 		# see the "gp_s_byte_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
-				Host        => 'localhost',
-				Selector    => '/gp_s_byte_term'
+				Host     => 'localhost',
+				Port     => SERVER_PORT,
+				Selector => '/gp_s_byte_term'
 			}
 		);
 
@@ -720,8 +730,9 @@ require './t/serverfunctions.pl';
 		# see the "index" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
-				Host        => 'localhost',
-				Selector    => '/index'
+				Host     => 'localhost',
+				Port     => SERVER_PORT,
+				Selector => '/index'
 			}
 		);
 
@@ -761,8 +772,9 @@ require './t/serverfunctions.pl';
 	{
 		my $request = new Net::Gopher::Request (
 			Gopher => {
-				Host        => 'localhost',
-				Selector    => '/index'
+				Host     => 'localhost',
+				Port     => SERVER_PORT,
+				Selector => '/index'
 			}
 		);
 
@@ -786,8 +798,9 @@ require './t/serverfunctions.pl';
 	{
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
-				Host        => 'localhost',
-				Selector    => '/gp_index'
+				Host     => 'localhost',
+				Port     => SERVER_PORT,
+				Selector => '/gp_index'
 			}
 		);
 
@@ -852,10 +865,10 @@ require './t/serverfunctions.pl';
 		ok(@fatal_errors, 1); # 105
 		ok($fatal_errors[0],
 			join(' ',
-				"You never specified a hostname; it's",
-				"impossible to send your request without one.",
-				"Specify it during object creation or later on",
-				"with the host() method."
+				"You never specified a host; it's impossible",
+				"to send your request. Specify one during",
+				"object creation or later on with the host()",
+				"method."
 			));           # 106
 	}
 
