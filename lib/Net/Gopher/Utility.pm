@@ -41,13 +41,13 @@ BEGIN {
 
 	get_named_params
 	check_params
-	size_in_bytes
 	get_os_name
+	size_in_bytes
 	ceil
-	escape_html
-	convert_newlines
+	unify_line_endings
 	strip_status_line
 	strip_terminator
+	escape_html
 	remove_error_prefix
 );
 
@@ -61,19 +61,13 @@ BEGIN {
 # feed:
 $CRLF = "\015\012";
 
-
-
 # This pattern is used to match newlines:
 $NEWLINE_PATTERN = qr/(?:\015\012|\015|\012)/;
-
-
 
 # $ITEM_PATTERN pattern is used to match item descriptions within Gopher menus
 # and other areas:
 my $field = qr/[^\t\012\015]*?/; # a tab delimited field.
 $ITEM_PATTERN = qr/$field\t$field\t$field\t$field(?:\t$field)?/;
-
-
 
 # This hash contains all of the item types described in *RFC 1436 : The
 # Internet Gopher Protocol* and in *Gopher+: Upward Compatible Enhancements
@@ -113,29 +107,103 @@ $ITEM_PATTERN = qr/$field\t$field\t$field\t$field(?:\t$field)?/;
 
 
 
+
+
 ################################################################################
 #
 #	Function
-#		get_named_params($param_names, $arg_list, $strict)
+#		get_named_params(\%params, \@arg_list)
+#
+#	Purpose
+#
+#	Parameters
+#
+
+sub get_named_params
+{
+	my ($destinations, $arg_list) = @_;
+
+	my $params_hashref;
+	if (ref $arg_list eq 'ARRAY')
+	{
+		if (@$arg_list == 1)
+		{
+			# only one arg on the stack, so it must be reference to
+			# the hash or array we *really* want:
+			my $ref = $$arg_list[0];
+
+			$params_hashref = (ref $ref eq 'ARRAY')
+						? { @$ref }
+						: $ref;
+		}
+		else
+		{
+			
+			$params_hashref = { @$arg_list };
+		}
+	}
+	else
+	{
+		$params_hashref = $arg_list;
+	}
+
+	
+	my %name_translation_table;
+	foreach my $real_name (keys %$destinations)
+	{
+		my $bare_name = lc $real_name;
+		   $bare_name =~ s/_//g;
+		   $bare_name =~ s/^-//;
+
+		$name_translation_table{$bare_name} = $real_name;
+	}
+
+	foreach my $supplied_name (keys %$params_hashref)
+	{
+		my $bare_name = lc $supplied_name;
+		   $bare_name =~ s/_//g;
+		   $bare_name =~ s/^-//;
+
+		if (exists $name_translation_table{$bare_name})
+		{
+			my $real_name   = $name_translation_table{$bare_name};
+			my $destination = $destinations->{$real_name};
+
+			$$destination = $params_hashref->{$supplied_name};
+		}
+	}
+}
+
+
+
+
+
+################################################################################
+#
+#	Function
+#		check_params($param_names, $arg_list, $strict)
 #
 #	Purpose
 #		This function is used to retrieve and validate the named
 #		parameters sent to one of your functions. It takes as its first
 #		argument a reference to an array containing the names of the
 #		parameters whose values you want, a reference to a list (either
-#		a hash or array) containing named parameters as its second
-#		argument (probably just a reference to @_), and a flag
-#		indicating whether or not the function should complain if the
-#		second argument contains named parameters besides the ones
-#		specified in the first argument.
+#		a hash or array) containing named parameters themselves as its
+#		second argument (probably just a reference to @_), and a flag
+#		as its third argument indicating whether or not the function
+#		should complain if the second argument contains named
+#		parameters besides the ones specified in the first argument.
 #
-#		It extracts the named parameters and returns an array
-#		containing the values of each specified parameter in the order
-#		in which they were specified. It ignores parameter name case,
-#		underscores, or leading dashes in $arg_list, so if you ask for
-#		"SomeParam", then the caller of your function can supply
-#		"SomeParam", "SOMEparam", "Some_Param", or "-some_param" and it
-#		will be correctly returned to you.
+#		It extracts the named parameters from $arg_list and returns an
+#		array containing the parameter values of each specified
+#		parameter in the order in which you specified using
+#		$param_names.
+#
+#		In $arg_list, it ignores parameter name case, underscores, or
+#		leading dashes, so if you ask for "SomeParam", then the caller
+#		of your function can supply "SomeParam", "SOMEparam",
+#		"Some_Param", or "-some_param" and if $arg_list is reference to
+#		@_, the value will be correctly returned to you.
 #
 #	Parameters
 #		$param_names - A reference to an array containing the names of
@@ -149,7 +217,7 @@ $ITEM_PATTERN = qr/$field\t$field\t$field\t$field(?:\t$field)?/;
 #		               $param_names.
 #
 
-sub get_named_params
+sub check_params
 {
 	my ($names_ref, $params_ref, $strict) = @_;
 
@@ -225,6 +293,8 @@ sub get_named_params
 	{
 		(my $function_name = (caller(1))[3]) =~ s/.*:://;
 
+		$function_name ||= 'this script';
+
 		croak sprintf("Can't supply \"%s\" to %s",
 			join('", "', @bad_names),
 			$function_name
@@ -233,9 +303,6 @@ sub get_named_params
 
 	return @values{@params_wanted};
 }
-
-# for backwards compatibility:
-sub check_params { return get_named_params(@_) }
 
 
 
@@ -330,51 +397,37 @@ sub ceil
 ################################################################################
 #
 #	Function
-#		escape_html($text)
+#		unify_line_endings($string)
 #
 #	Purpose
-#		This method converts &, <, >, ", and ' to their XML/XHTML
-#		entity equivalents. The text with the escaped characters is
-#		returned
+#		This method looks for any kind of newline characters within
+#		$string and converts them to whatever this platform considers
+#		\n to be (LF on Unix and Windows, CR on MacOS). The total
+#		number modified line endings is returned.
 #
 #	Parameters
-#		$text - Text containing XHTML metasymbols to escape.
+#		$string - The string with line endings to unify. Note that this
+#		          argument will be modified directly.
 #
 
-sub escape_html
+sub unify_line_endings
 {
-	my $text = shift;
+	my $unified;
 
-	   $text =~ s/&/&amp;/g;
-	   $text =~ s/</&lt;/g;
-	   $text =~ s/>/&gt;/g;
-	   $text =~ s/"/&quot;/g;
-	   $text =~ s/'/&apos;/g;
-
-	return $text;
-}
-
-
-
-
-
-sub convert_newlines
-{
-	my $converted;
 	if (get_os_name() =~ /^MacOS/i)
 	{
 		# convert Windows CRLF and Unix LF line endings to MacOS CR:
-		$converted += $_[0] =~ s/\015\012/\015/g;
-		$converted += $_[0] =~ s/\012/\015/g;
+		$unified += $_[0] =~ s/\015\012/\015/g;
+		$unified += $_[0] =~ s/\012/\015/g;
 	}
 	else
 	{
 		# convert Windows CRLF and MacOS CR line endings to Unix LF:
-		$converted += $_[0] =~ s/\015\012/\012/g;
-		$converted += $_[0] =~ s/\015/\012/g;
+		$unified += $_[0] =~ s/\015\012/\012/g;
+		$unified += $_[0] =~ s/\015/\012/g;
 	}
 
-	return $converted;
+	return $unified;
 }
 
 
@@ -423,6 +476,37 @@ sub strip_status_line
 sub strip_terminator
 {
 	return scalar $_[0] =~ s/$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$//o;
+}
+
+
+
+
+
+################################################################################
+#
+#	Function
+#		escape_html($text)
+#
+#	Purpose
+#		This method converts &, <, >, ", and ' to their XML/XHTML
+#		entity equivalents. The text with the escaped characters is
+#		returned.
+#
+#	Parameters
+#		$text - Text containing XHTML metasymbols to escape.
+#
+
+sub escape_html
+{
+	my $text = shift;
+
+	   $text =~ s/&/&amp;/g;
+	   $text =~ s/</&lt;/g;
+	   $text =~ s/>/&gt;/g;
+	   $text =~ s/"/&quot;/g;
+	   $text =~ s/'/&apos;/g;
+
+	return $text;
 }
 
 

@@ -152,6 +152,15 @@ Example:
  my $request = new Net::Gopher::Request ('Gopher',
  	Host        => 'gopher.host.com',
 	Selector    => '/doc.txt',
+ 	SearchWords => "red green blue",
+ 	ItemType    => 0
+ );
+
+Note that you can also send the searh words separately as an array reference:
+
+ my $request = new Net::Gopher::Request ('Gopher',
+ 	Host        => 'gopher.host.com',
+	Selector    => '/doc.txt',
  	SearchWords => ['red', 'green', 'blue'],
  	ItemType    => 0
  );
@@ -367,19 +376,17 @@ sub new
 	{
 		# this isn't a URL type request, so extract every possible
 		# named parameter instead:
-		($host, $port, $selector, $search_words, $representation,
-		 $attributes, $data_block, $item_type) =
-			get_named_params([qw(
-				Host
-				Port
-				Selector
-				SearchWords
-				Representation
-				Attributes
-				DataBlock
-				Itemtype
-				)], \@_
-			);
+		get_named_params({
+			Host           => \$host,
+			Port           => \$port,
+			Selector       => \$selector,
+			SearchWords    => \$search_words,
+			Representation => \$representation,
+			Attributes     => \$attributes,
+			DataBlock      => \$data_block,
+			Itemtype       => \$item_type
+			}, \@_
+		);
 	}
 
 

@@ -36,10 +36,16 @@ Net::Gopher::Response::MenuItem - Manipulate Gopher/Gopher+ menu items
 
 =head1 DESCRIPTION
 
-The B<Net::Gopher::Response> C<extract_items()> method parses
-Gopher menus and returns the parsed menu items in the form of
-B<Net::Gopher::Response::MenuItem> objects. Use the methods in this class to
-manipulate them.
+The B<Net::Gopher::Response> C<extract_items()> method parses a Gopher menu
+and returns the parsed items from the menu in the form of
+B<Net::Gopher::Response::MenuItem> objects. This class contains methods to
+retrieve the various fields from a menu item object and methods to generate
+corresponding URLs and request objects from them.
+
+As a convenience, this class overloads stringification, so using one of these
+menu item objects in a string context will yield a string containing the menu
+item as it appeared in the Gopher menu (tabs an all). (Which can alternately be
+achieved using C<as_string()>, described below.)
 
 =head1 METHODS
 
@@ -78,16 +84,16 @@ sub new
 	my $invo  = shift;
 	my $class = ref $invo || $invo;
 
-	my ($item_type, $display, $selector, $host, $port, $gopher_plus) =
-		get_named_params([qw(
-			ItemType
-			Display
-			Selector
-			Host
-			Port
-			GopherPlus
-			)], \@_
-		);
+	my ($item_type, $display, $selector, $host, $port, $gopher_plus);
+	get_named_params({
+		ItemType   => \$item_type,
+		Display    => \$display,
+		Selector   => \$selector,
+		Host       => \$host,
+		Port       => \$port,
+		GopherPlus => \$gopher_plus
+		}, \@_
+	);
 
 	my $self = {
 		item_type   => $item_type,
@@ -141,7 +147,7 @@ sub as_string
 =head2 as_request()
 
 This method creates and returns a new B<Net::Gopher::Request> object using the
-values present in the menu item.
+fields in the menu item.
 
 =cut
 
@@ -163,10 +169,10 @@ sub as_request
 		if ($request_char eq '+' or $request_char eq '?')
 		{
 			$request = new Net::Gopher::Request ('GopherPlus',
-				Host           => $self->host,
-				Port           => $self->port,
-				Selector       => $self->selector,
-				ItemType       => $self->item_type
+				Host     => $self->host,
+				Port     => $self->port,
+				Selector => $self->selector,
+				ItemType => $self->item_type
 			);
 		}
 		else
@@ -201,7 +207,7 @@ sub as_request
 
 =head2 as_url()
 
-This method creates and returns a new gopher:// URL using the values in the
+This method creates and returns a new gopher:// URL using the fields in the
 menu item.
 
 =cut

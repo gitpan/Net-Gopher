@@ -114,14 +114,14 @@ sub new
 	my $invo  = shift;
 	my $class = ref $invo || $invo;
 
-	my ($response, $name, $raw_value, $value) =
-		get_named_params([qw(
-			Response
-			Name
-			RawValue
-			Value
-			)], \@_
-		);
+	my ($response, $name, $raw_value, $value);
+	get_named_params({
+		Response => \$response,
+		Name     => \$name,
+		RawValue => \$raw_value,
+		Value    => \$value
+		}, \@_
+	);
 
 	my $self = {
 		# the Net::Gopher::Response object:

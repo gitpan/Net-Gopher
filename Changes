@@ -1,5 +1,10 @@
 Revision history for Perl extension Net::Gopher.
 
+1.10 - Rewrote get_named_params()  so  it's  significantly  faster,  especially
+       with very, very  large  parameter  values.  The  check_params()  routine
+       retains  the  old  behavior.  Also,  fixed  the  error   reporting   for
+       _find_item_blocks(), and added a test for it.
+
 1.07 - Added dozens of new tests to information_blocks.t,  and  configured  the
        test server to just listen on what ever  ports  the  OS  assigns  to  it
        instead of requesting specific ports.

@@ -194,7 +194,7 @@ use constant MAX_STATUS_LINE_SIZE => 64;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '1.08';
+$VERSION = '1.10';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -298,18 +298,18 @@ sub new
 	my $class = ref $invo || $invo;
 
 	my ($buffer_size, $timeout, $upward_compatible,
-	    $warn_handler, $die_handler, $silent, $debug, $log_file) =
-		get_named_params([qw(
-			BufferSize
-			Timeout
-			UpwardCompatible
-			WarnHandler
-			DieHandler
-			Silent
-			Debug
-			LogFile
-			)], \@_
-		);
+	    $warn_handler, $die_handler, $silent, $debug, $log_file);
+	get_named_params({
+		BufferSize       => \$buffer_size,
+		Timeout          => \$timeout,
+		UpwardCompatible => \$upward_compatible,
+		WarnHandler      => \$warn_handler,
+		DieHandler       => \$die_handler,
+		Silent           => \$silent,
+		Debug            => \$debug,
+		LogFile          => \$log_file
+		}, \@_
+	);
 
 	# turn upward compatability on by default:
 	$upward_compatible = 1 unless (defined $upward_compatible);
@@ -428,7 +428,12 @@ sub request
 		'first argument.'
 	) unless (UNIVERSAL::isa($request, 'Net::Gopher::Request'));
 
-	my ($file, $handler) = get_named_params(['File', 'Handler'], \@_);
+	my ($file, $handler);
+	get_named_params({
+		File    => \$file,
+		Handler => \$handler
+		}, \@_
+	);
 
 
 

@@ -127,7 +127,7 @@ use Net::Gopher::Utility qw(
 	$ITEM_PATTERN
 
 	get_named_params
-	convert_newlines
+	unify_line_endings
 	strip_status_line
 	strip_terminator
 );
@@ -151,17 +151,17 @@ sub new
 	my $class = ref $invo || $invo;
 
 	my ($ng, $request, $raw_response, $status_line, $status,
-	    $content, $error) =
-		get_named_params([qw(
-			NG
-			Request
-			RawResponse
-			StatusLine
-			Status
-			Content
-			Error
-			)], \@_
-		);
+	    $content, $error);
+	get_named_params({
+		NG          => \$ng,
+		Request     => \$request,
+		RawResponse => \$raw_response,
+		StatusLine  => \$status_line,
+		Status      => \$status,
+		Content     => \$content,
+		Error       => \$error
+		}, \@_
+	);
 
 
 
@@ -572,8 +572,12 @@ sub extract_items
 
 	return unless (defined $self->content);
 
-	my ($of_types, $except_types) =
-		get_named_params(['OfTypes', 'ExceptTypes'], \@_);
+	my ($of_types, $except_types);
+	get_named_params({
+		OfTypes     => \$of_types,
+		ExceptTypes => \$except_types
+		}, \@_
+	);
 
 
 
@@ -810,7 +814,16 @@ sub get_block
 	my @item_wanted_from;
 	if (@_)
 	{
-		my $item = get_named_params(['Item'], \@_);
+		my $item;
+		get_named_params({Item => \$item}, \@_);
+
+		if (ref $item eq 'HASH')
+		{
+			while (my ($key, $value) = each %$item)
+			{
+					print "# $key=$value;\n";
+			}
+		}
 
 		@item_wanted_from = $self->_find_item_blocks($item);
 	}
@@ -943,7 +956,12 @@ sub get_blocks
 
 
 
-	my ($item, $blocks) = get_named_params(['Item', 'Blocks'], \@_);
+	my ($item, $blocks);
+	get_named_params({
+		Item   => \$item,
+		Blocks => \$blocks
+		}, \@_
+	);
 
 	# this hash will contain the name of every block requested, including
 	# the leading "+," which we'll add if it was absent:
@@ -1053,7 +1071,8 @@ sub has_block
 	my @blocks_to_check;
 	if (@_)
 	{
-		my $item = get_named_params(['Item'], \@_);
+		my $item;
+		get_named_params({Item => \$item}, \@_);
 
 		@blocks_to_check = $self->_find_item_blocks($item);
 	}
@@ -1320,7 +1339,7 @@ sub error_code
 
 	unless ($self->{'error_code'})
 	{
-		$self->_extract_error or return
+		$self->_extract_error or return;
 	}
 
 	return $self->{'error_code'};
@@ -1348,7 +1367,7 @@ sub error_admin
 
 	unless ($self->{'error_admin'})
 	{
-		$self->_extract_error or return
+		$self->_extract_error or return;
 	}
 
 	return @{ $self->{'error_admin'} } if (ref $self->{'error_admin'});
@@ -1374,7 +1393,7 @@ sub error_message
 
 	unless ($self->{'error_message'})
 	{
-		$self->_extract_error or return
+		$self->_extract_error or return;
 	}
 
 	return $self->{'error_message'};
@@ -1439,7 +1458,7 @@ sub _convert_newlines
 
 	return unless (defined $self->content);
 
-	my $converted = convert_newlines($self->{'content'});
+	my $converted = unify_line_endings($self->{'content'});
 
 	$self->debug_print(
 		sprintf('Converted %d %s in the response content.',
@@ -1487,7 +1506,7 @@ sub _extract_blocks
 	# remove any status line and terminating period on a line by itself
 	# so we're left with just the blocks and nothing else:
 	strip_status_line($raw_response) if ($self->is_gopher_plus);
-	strip_terminator($raw_response) if ($self->is_terminated);
+	strip_terminator($raw_response)  if ($self->is_terminated);
 
 	# remove the leading + for the first block name:
 	$raw_response =~ s/^\+// or return $self->call_die(
@@ -1510,7 +1529,7 @@ sub _extract_blocks
 	# other block may come first instead:
 	my $terminating_block_name;
 
-	foreach my $name_and_value (split(/$NEWLINE_PATTERN\+/, $raw_response))
+	foreach my $name_and_value (split(/$NEWLINE_PATTERN\+/o, $raw_response))
 	{
 		# get the newline/space separated name and value:
 		my ($name, $raw_value) =
@@ -1518,7 +1537,7 @@ sub _extract_blocks
 
 		# block names are usually postfixed with colons, so we need to
 		# remove it:
-		chop($name) if (substr($name, -1, 1) eq ':');
+		chop $name if (substr($name, -1, 1) eq ':');
 
 		# does this block denote the start of an item?
 		$terminating_block_name ||= $name;
@@ -1528,7 +1547,7 @@ sub _extract_blocks
 		# convert the newlines in the "pure" block value like we did
 		# for the response content, but leave the original endings
 		# intact for the "raw" value:
-		convert_newlines($value);
+		unify_line_endings($value);
 
 		# each line of a block value contains a leading space, so we
 		# strip the leading spaces for the "real" value but leave
@@ -1634,22 +1653,16 @@ sub _find_item_blocks
 	if (ref $item)
 	{
 		my ($n, %template);
-		($n,
-		 $template{'item_type'}, $template{'display'},
-		 $template{'selector'}, $template{'host'},
-		 $template{'port'}, $template{'gopher_plus'}) =
-		 	get_named_params([qw(
-				N
-				ItemType
-				Display
-				Selector
-				Host
-				Port
-				GopherPlus
-				)], $item
-			);
-
-
+		get_named_params({
+			N          => \$n,
+			ItemType   => \$template{'item_type'},
+			Display    => \$template{'display'},
+			Selector   => \$template{'selector'},
+			Host       => \$template{'host'},
+			Port       => \$template{'port'},
+			GopherPlus => \$template{'gopher_plus'}
+			}, $item
+		);
 
 		# If an item number was specified, then we'll only check that
 		# item against the template. Otherwise, we'll check each item
@@ -1660,8 +1673,8 @@ sub _find_item_blocks
 			my $number_of_items = scalar @{ $self->{'_blocks'} };
 			return $self->call_die(
 				sprintf('There %s only %d %s in the ' .
-				        'response.You specified item %d, ' .
-					'which does not exist.',
+				        'response. You specified item %d, ' .
+				        'which does not exist.',
 					($number_of_items == 1) ? 'is' : 'are',
 					$number_of_items,
 					($number_of_items == 1) ?'item':'items',

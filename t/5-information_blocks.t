@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test;
 
-BEGIN { plan(tests => 382) }
+BEGIN { plan(tests => 387) }
 
 use Net::Gopher;
 use Net::Gopher::Constants qw(:item_types :request);
@@ -826,6 +826,31 @@ ok($port); # 1
 	);                    # 298
 }
 
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/directory_blocks'
+	);
+
+	ok($response->is_success); # 299
+
+	my $info = $response->get_block('+INFO', Item => 7);
+	ok(!$info);           # 300
+	ok(@warnings, 0);     # 301
+	ok(@fatal_errors, 1); # 302
+	ok($fatal_errors[0],
+		'There are only 4 items in the response. You specified item ' .
+		'7, which does not exist.'
+	);                    # 303
+}
+
 
 
 ################################################################################
@@ -846,23 +871,23 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 299
+	ok($response->is_success); # 304
 
 	my $info = $response->get_block('INFO');
-	ok($info); # 300
+	ok($info); # 305
 
-	ok(!$info->extract_admin); # 301
-	ok(@warnings, 1);          # 302
-	ok(@fatal_errors, 1);      # 303
+	ok(!$info->extract_admin); # 306
+	ok(@warnings, 1);          # 307
+	ok(@fatal_errors, 1);      # 308
 	ok($warnings[0],
 		"Are you sure there's administrator information to " .
 		"extract? The block object contains a +INFO block, not " .
 		"an +ADMIN block."
-	);                         # 304
+	);                         # 309
 	ok($fatal_errors[0],
 		'This +INFO block either does not contain ' .
 		'attributes or contains malformed attributes.'
-	);                         # 305
+	);                         # 310
 }
 
 {
@@ -878,23 +903,23 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 306
+	ok($response->is_success); # 311
 
 	my $admin = $response->get_block('+BAD-ADMIN1');
-	ok($admin); # 307
+	ok($admin); # 312
 
-	ok(!$admin->extract_admin); # 308
-	ok(@warnings, 1);           # 309
-	ok(@fatal_errors, 1);       # 310
+	ok(!$admin->extract_admin); # 313
+	ok(@warnings, 1);           # 314
+	ok(@fatal_errors, 1);       # 315
 	ok($warnings[0],
 		"Are you sure there's administrator information to " .
 		"extract? The block object contains a +BAD-ADMIN1 block, not " .
 		"an +ADMIN block."
-	);                          # 311
+	);                          # 316
 	ok($fatal_errors[0],
 		'The +BAD-ADMIN1 block has no Admin attribute to extract ' .
 		'item administrator information from.'
-	);                          # 312
+	);                          # 317
 }
 
 {
@@ -910,22 +935,22 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 313
+	ok($response->is_success); # 318
 
 	my $admin = $response->get_block('+BAD-ADMIN2');
-	ok($admin); # 314
+	ok($admin); # 319
 
-	ok(!$admin->extract_admin); # 315
-	ok(@warnings, 1);           # 316
-	ok(@fatal_errors, 1);       # 317
+	ok(!$admin->extract_admin); # 320
+	ok(@warnings, 1);           # 321
+	ok(@fatal_errors, 1);       # 322
 	ok($warnings[0],
 		"Are you sure there's administrator information to " .
 		"extract? The block object contains a +BAD-ADMIN2 block, not " .
 		"an +ADMIN block."
-	);                          # 318
+	);                          # 323
 	ok($fatal_errors[0],
 		'The +BAD-ADMIN2 block contains a malformed Admin attribute.'
-	);                          # 319
+	);                          # 324
 }
 
 {
@@ -941,23 +966,23 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 320
+	ok($response->is_success); # 325
 
 	my $admin = $response->get_block('+BAD-ADMIN1');
-	ok($admin); # 321
+	ok($admin); # 326
 
-	ok(!$admin->extract_date_modified); # 322
-	ok(@warnings, 1);                   # 323
-	ok(@fatal_errors, 1);               # 324
+	ok(!$admin->extract_date_modified); # 327
+	ok(@warnings, 1);                   # 328
+	ok(@fatal_errors, 1);               # 329
 	ok($warnings[0],
 		"Are you sure there's a modification date timestamp " .
 		"to extract? The block object contains a +BAD-ADMIN1 block, " .
 		"not an +ADMIN block."
-	);                                  # 325
+	);                                  # 330
 	ok($fatal_errors[0],
 		'The +BAD-ADMIN1 block has no Mod-Date attribute to extract ' .
 		'a modification date from.'
-	);                                  # 326
+	);                                  # 331
 }
 
 {
@@ -973,23 +998,23 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 327
+	ok($response->is_success); # 332
 
 	my $admin = $response->get_block('+BAD-ADMIN2');
-	ok($admin); # 328
+	ok($admin); # 333
 
-	ok(!$admin->extract_date_modified); # 329
-	ok(@warnings, 1);                   # 330
-	ok(@fatal_errors, 1);               # 331
+	ok(!$admin->extract_date_modified); # 334
+	ok(@warnings, 1);                   # 335
+	ok(@fatal_errors, 1);               # 336
 	ok($warnings[0],
 		"Are you sure there's a modification date timestamp " .
 		"to extract? The block object contains a +BAD-ADMIN2 block, " .
 		"not an +ADMIN block."
-	);                                  # 332
+	);                                  # 337
 	ok($fatal_errors[0],
 		'The Mod-Date attribute either does not contain a ' .
 		'timestamp or contains a malformed one.'
-	);                                  # 333
+	);                                  # 338
 }
 
 {
@@ -1005,23 +1030,23 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 334
+	ok($response->is_success); # 339
 
 	my $admin = $response->get_block('+BAD-ADMIN1');
-	ok($admin); # 335
+	ok($admin); # 340
 
-	ok(!$admin->extract_date_created); # 336
-	ok(@warnings, 1);                  # 337
-	ok(@fatal_errors, 1);              # 338
+	ok(!$admin->extract_date_created); # 341
+	ok(@warnings, 1);                  # 342
+	ok(@fatal_errors, 1);              # 343
 	ok($warnings[0],
 		"Are you sure there's a creation date timestamp " .
 		"to extract? The block object contains a +BAD-ADMIN1 block, " .
 		"not an +ADMIN block."
-	);                                 # 339
+	);                                 # 344
 	ok($fatal_errors[0],
 		'The +BAD-ADMIN1 block has no Creation-Date attribute to ' .
 		'extract a creation date from.'
-	);                                 # 340
+	);                                 # 345
 }
 
 {
@@ -1037,23 +1062,23 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 341
+	ok($response->is_success); # 346
 
 	my $admin = $response->get_block('+BAD-ADMIN2');
-	ok($admin); # 342
+	ok($admin); # 347
 
-	ok(!$admin->extract_date_created); # 343
-	ok(@warnings, 1);                  # 344
-	ok(@fatal_errors, 1);              # 345
+	ok(!$admin->extract_date_created); # 348
+	ok(@warnings, 1);                  # 349
+	ok(@fatal_errors, 1);              # 350
 	ok($warnings[0],
 		"Are you sure there's a creation date timestamp " .
 		"to extract? The block object contains a +BAD-ADMIN2 block, " .
 		"not an +ADMIN block.",
-	);                                 # 346
+	);                                 # 351
 	ok($fatal_errors[0],
 		'The Creation-Date attribute either does not contain a ' .
 		'timestamp or contains a malformed one.'
-	);                                 # 347
+	);                                 # 352
 }
 
 {
@@ -1069,23 +1094,23 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 348
+	ok($response->is_success); # 353
 
 	my $admin = $response->get_block('+BAD-ADMIN1');
-	ok($admin); # 349
+	ok($admin); # 354
 
-	ok(!$admin->extract_date_expires); # 350
-	ok(@warnings, 1);                  # 351
-	ok(@fatal_errors, 1);              # 352
+	ok(!$admin->extract_date_expires); # 355
+	ok(@warnings, 1);                  # 356
+	ok(@fatal_errors, 1);              # 357
 	ok($warnings[0],
 		"Are you sure there's an expiration date timestamp " .
 		"to extract? The block object contains a +BAD-ADMIN1 block, " .
 		"not an +ADMIN block.",
-	);                                 # 353
+	);                                 # 358
 	ok($fatal_errors[0],
 		'The +BAD-ADMIN1 block has no Expiration-Date attribute to ' .
 		'extract an expiration date from.'
-	);                                 # 354
+	);                                 # 359
 }
 
 {
@@ -1101,23 +1126,23 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 355
+	ok($response->is_success); # 360
 
 	my $admin = $response->get_block('+BAD-ADMIN2');
-	ok($admin); # 356
+	ok($admin); # 361
 
-	ok(!$admin->extract_date_expires); # 357
-	ok(@warnings, 1);                  # 358
-	ok(@fatal_errors, 1);              # 359
+	ok(!$admin->extract_date_expires); # 362
+	ok(@warnings, 1);                  # 363
+	ok(@fatal_errors, 1);              # 364
 	ok($warnings[0],
 		"Are you sure there's an expiration date timestamp " .
 		"to extract? The block object contains a +BAD-ADMIN2 block, " .
 		"not an +ADMIN block.",
-	);                                 # 360
+	);                                 # 365
 	ok($fatal_errors[0],
 		'The Expiration-Date attribute either does not contain a ' .
 		'timestamp or contains a malformed one.'
-	);                                 # 361
+	);                                 # 366
 }
 
 
@@ -1140,22 +1165,22 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 362
+	ok($response->is_success); # 367
 
 	my $info = $response->get_block('INFO');
-	ok($info); # 363
+	ok($info); # 368
 
-	ok(!$info->extract_queries); # 364
-	ok(@warnings, 1);            # 365
-	ok(@fatal_errors, 1);        # 366
+	ok(!$info->extract_queries); # 369
+	ok(@warnings, 1);            # 370
+	ok(@fatal_errors, 1);        # 371
 	ok($warnings[0],
 		'Are you sure there are queries to extract? The block '.
 		'object contains a +INFO block, not an +ASK block.'
-	);                           # 367
+	);                           # 372
 	ok($fatal_errors[0],
 		'This +INFO block either does not contain ' .
 		'any queries or it contains malformed queries.'
-	);                           # 368
+	);                           # 373
 }
 
 
@@ -1178,18 +1203,18 @@ ok($port); # 1
 		Selector => '/item_blocks'
 	);
 
-	ok($response->is_success); # 369
+	ok($response->is_success); # 374
 
 	my $admin = $response->get_block('ADMIN');
-	ok($admin); # 370
+	ok($admin); # 375
 
-	ok(!$admin->extract_descriptor); # 371
-	ok(@warnings, 0);                # 372
-	ok(@fatal_errors, 1);            # 373
+	ok(!$admin->extract_descriptor); # 376
+	ok(@warnings, 0);                # 377
+	ok(@fatal_errors, 1);            # 378
 	ok($fatal_errors[0],
 		'The +ADMIN block either does not contain an item ' .
 		'descriptor or it contains a malformed one.'
-	);                               # 374
+	);                               # 379
 }
 
 
@@ -1212,22 +1237,22 @@ ok($port); # 1
 		Selector => '/item_blocks'
 	);
 
-	ok($response->is_success); # 375
+	ok($response->is_success); # 380
 
 	my $info = $response->get_block('INFO');
-	ok($info); # 376
+	ok($info); # 381
 
-	ok(!$info->extract_views); # 377
-	ok(@warnings, 1);          # 378
-	ok(@fatal_errors, 1);      # 379
+	ok(!$info->extract_views); # 382
+	ok(@warnings, 1);          # 383
+	ok(@fatal_errors, 1);      # 384
 	ok($warnings[0],
 		'Are you sure there are views to extract? The block '.
 		'object contains a +INFO block, not a +VIEWS block.'
-	);                         # 380
+	);                         # 385
 	ok($fatal_errors[0],
 		'This +INFO block either does not contain ' .
 		'any views or it contains malformed views.'
-	);                         # 381
+	);                         # 386
 }
 
-ok(kill_servers()); # 382
+ok(kill_servers()); # 387
