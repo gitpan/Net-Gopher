@@ -52,7 +52,7 @@ use vars qw($VERSION);
 use Carp;
 use Net::Gopher::Utility qw($CRLF $NEWLINE);
 
-$VERSION = '0.17';
+$VERSION = '0.20';
 
 
 
@@ -158,7 +158,8 @@ sub content
 =item as_string()
 
 For both Gopher as well as Gopher+ requests, if the request was successful,
-then this method will return the entire response, every single byte, from the server. This includes the status line in Gopher+.
+then this method will return the entire response, every single byte, from the
+server. This includes the status line in Gopher+.
 
 =cut
 
@@ -184,12 +185,12 @@ context) or a reference to an array (in scalar context) containing hashrefs as
 its elements. Each hash contains the data for one menu item, and has the
 following keys:
 
-     type     (the item type, e.g., 0, 1, g, s, etc.);
-     text     (the item description, e.g., "A file you should download");
-     selector (the selector string, e.g., /foo/bar);
-     host     (the hostname, e.g., gopher.host.com);
-     port     (the port number, e.g., 70);
-     gopher+  (the Gopher+ string if this item is on a Gopher+ box);
+ type     = The item type (e.g., 0, 1, I, s, etc.);
+ text     = The item description (e.g., "A file you should download");
+ selector = The selector string (e.g., /foo/bar);
+ host     = The hostname (e.g., gopher.host.com);
+ port     = The port number (e.g., 70);
+ gopher+  = The Gopher+ string if this item is on a Gopher+ server);
 
 The array will only contain hashrefs of items that list some type of resource
 that can be downloaded; meaning that inline text is skipped ('i' item type).
@@ -240,12 +241,18 @@ context) with information block names as its keys and block values as its
 values. Please note that this method strips trailing colons from block names
 (e.g., ADMIN: becomes ADMIN). Also, it should be pointed out that since the
 structure of block values often differ from server to server, this method won't
-attempt to parse them; that is, except for INFO: blocks which each Gopher+
-server is mandated to return (and the same format) by the Gopher+ protocol
-(I'll be adding ADMIN: and VIEWS: block parsing soon). Since INFO: blocks
-contain tab separated item information just like you'd find in a menu, the hash
-value for 'INFO' will contain a reference to another hash, one in the format
-described above (L<as_menu()>).
+attempt to parse them; that is, except for INFO, ADMIN, and VIEWS blocks
+which each Gopher+ server is mandated to return (and the same format) by the
+Gopher+ protocol Since INFO blocks contain tab separated item information just
+like you'd find in a menu, the hash  value for 'INFO' will contain a reference
+to another hash, one in the format described above (L<as_menu()>):
+
+ print "Type: $blocks{'INFO'}->{'type'}\n",
+       "Description: $blocks{'INFO'}->{'text'}\n",
+       "On $blocks{'INFO'}->{'host'}\n",
+       "At $blocks{'INFO'}->{'port'}\n";
+
+VIEWS blocks contain information
 
 =cut
 
@@ -267,11 +274,43 @@ sub as_info
 		# remove the colon that most block names contain:
 		$name =~ s/:$//;
 
-		# info blocks get turned into hashrefs like the items in the
-		# array returned by as_menu():
-		if ($name =~ /^INFO$/i)
+		if ($name =~ /^INFO$/)
 		{
+			# info blocks get turned into hashrefs like the items
+			# in the array returned by as_menu():
 			$value = $self->_get_item_hashref($value);
+		}
+		elsif ($name =~ /^VIEWS$/)
+		{
+			# Views blocks contain attributes in the form
+			# of "MIMEtype: <size>" (e.g., "Text/plain: <10K>.").
+			# So we need to get all of the MIME types and sizes in
+			# the form of a hashref:
+			$value = $self->_get_infoblock_hashref($value);
+
+			# A size in the form of <55K> is of little use to the
+			# user. Let's change that to something more useful:
+			foreach my $mime_type (keys %$value)
+			{
+				if ($value->{$mime_type} =~ /<(\d+)(k)?>/i)
+				{
+					# turn <55> into 55 and <55K> into
+					# 55000:
+					$value->{$mime_type}  = $1;
+					$value->{$mime_type} *= 1000 if ($2);
+				}
+			}
+		}
+		elsif ($name =~ /^ADMIN$/)
+		{
+			# ADMIN blocks contain two attributes, Admin and
+			# Mod-Date, in the form of:
+			# 
+			# Admin: Foo Bar <foobar@foo.com>
+			# Mod-Date: Wed Jul 28 17:02:01 1993
+			# 
+			# So we need to get each of them in a hashref:
+			$value = $self->_get_infoblock_hashref($value);
 		}
 
 		# now save the block:
@@ -319,6 +358,32 @@ sub _get_item_hashref
 
 
 
+sub _get_infoblock_hashref
+{
+	my $self        = shift;
+	my $block_value = shift;
+
+	# first, get rid of all leading whitespace:
+	$block_value =~ s/^\s*//;
+
+	# now seaparate each attribute:
+	my @attributes = split(/$NEWLINE/, $block_value);
+
+	my %block_attributes;
+	foreach my $attribute (@attributes)
+	{
+		# get the "Name: value" attribute:
+		my ($name, $value) = $attribute =~ /^(\S+):\s*(\S*)/;
+
+		$block_attributes{$name} = $value;
+	}
+
+	return \%block_attributes;
+}
+
+
+
+
 
 #==============================================================================#
 
@@ -350,9 +415,6 @@ sub is_success
 		}
 		else
 		{
-			# the content contains the error message, so:
-			$self->error($self->{'content'});
-
 			return;
 		}
 	}
@@ -378,7 +440,6 @@ sub is_error
 	{
 		if ($self->{'status'} eq '-')
 		{
-			$self->error($self->{'content'});
 			return 1;
 		}
 		else
@@ -441,3 +502,24 @@ sub error
 		return $self->{'error'};
 	}
 }
+
+1;
+
+__END__
+
+=back
+
+=head1 BUGS
+
+Email any to me at <william_g_davis at users dot sourceforge dot net> or go
+to perlmonks.com and /msg me (William G. Davis) and I'll fix 'em.
+
+=head1 COPYRIGHT
+
+Copyright 2003, William G. Davis.
+
+This code is free software released under the GNU General Public License, the
+full terms of which can be found in the "COPYING" file that came with the
+distribution of the module.
+
+=cut

@@ -39,8 +39,11 @@ Net::Gopher - The Perl Gopher/Gopher+ client API.
  die "Not terminated by a period on a line by itself."
  	unless ($response->is_terminated);
  
- # get an arrayref containing all of the files and menus listed:
+ # get an arrayref containing all items listed on a menu:
  my $menu = $response->as_menu;
+ print "Type: ", $menu->[0]{'type'}, ";\n",
+       "Description: ", $menu->[0]{'text'}, ";\n",
+       "On: ", $menu->[0]{'host'}, ";\n";
  
  # or just get the entire response as a string:
  my $string = $response->as_string;
@@ -48,9 +51,13 @@ Net::Gopher - The Perl Gopher/Gopher+ client API.
 
 =head1 DESCRIPTION
 
-Net::Gopher is a Gopher/Gopher+ client API for Perl. This module brings
-Gopher/Gopher+ to perl and makes it extremely easy to interact with Gopher and
-Gopher+ servers.
+Net::Gopher is a Gopher/Gopher+ client API for Perl. Net::Gopher implements the
+Gopher and Gopher+ protocols as desbribed in
+I<RFC 1436: The Internet Gopher Protocol>, Anklesaria et al., and in
+I<Gopher+: Upward Compatible Enhancements to the Internet Gopher Protocol>,
+Anklesaria et al., bringing Gopher and Gopher+ support to Perl and enabling
+Perl 5 applications to easily interact with both Gopher as well as Gopher+
+servers.
 
 =head1 METHODS
 
@@ -73,11 +80,17 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.17';
+$VERSION = '0.20';
 
 
 
 
+
+=item new()
+
+The constructor method. Returns a reference to a Net::Gopher response.
+
+=cut
 
 sub new
 {
@@ -128,7 +141,7 @@ sub new
 =item connect($host [, Port => $port_num, Timeout => $seconds])
 
 This method attempts to connect to a Gopher server. If it's successful it
-returns true, false otherwise (call L<error()> to find out why). As its first
+returns true; false otherwise (call L<error()> to find out why). As its first
 argument it takes a mandatory hostname (e.g., gopher.host.com). As its second
 argument, 'Port', it takes an optional port number. If you don't supply 'Port'
 then the default of 70 will be used instead. As its final argument, 'Timeout',
@@ -141,21 +154,28 @@ connect to a Gopher server. If you don't supply 'Timeout' then the default of
 sub connect
 {
 	my $self  = shift;
-	my $host  = shift if @_ % 2;
+	my $host  = (scalar @_ % 2) ? shift : undef;
 	my %args  = @_;
+
 	# I eventually hope to have this class work like the other Net::*
 	# modules, looking for hostnames in libnet.cfg:
-	# my @hosts = defined $host ? $host : $Net::Config::NetConfig{ph_hosts};
+	# 
+	# my @hosts = defined $host
+	# 		? $host
+	# 		: @{ $Net::Config::NetConfig{gopher_hosts} };
+	# 
+	# $host = shift @hosts unless (defined $host);
+
 
 
 	# we at least need a hostname:
 	return $self->error("No hostname specified for connect()")
-		unless ($host);
+		unless (defined $host);
 
 	# default to IANA designated Gopher port:
-	my $port = $args{'Port'} || 70;
+	my $port    = $args{'Port'} || 70;
 
-	# default to 60 second timeout:
+	# default to a 60 second timeout:
 	my $timeout = $args{'Timeout'} || 60;
 
 	# connect to the Gopher server and store the IO::Socket socket in our
@@ -169,9 +189,6 @@ sub connect
 	) or return $self->error(
 		"Couldn't connect to $host at port ${port}: $@"
 	);
-
-	# no buffering:
-	$self->{'io_socket'}->autoflush(1);
 
 	# we'll need the timeout value for later:
 	$self->{'timeout'} = $timeout;
@@ -368,7 +385,7 @@ sub request
 		                     # the newline?
 
 		my $response_error;  # any errors while reading the buffer.
-		
+
 		FIRSTLINE: while (1)
 		{
 			# fill the buffer:
@@ -423,7 +440,7 @@ sub request
 			$ngr->{'status_line'} = $status_line;
 			$ngr->{'status'}      = $status;
 
-			# the request content is every single byte after the
+			# the request content is everything after the
 			# status line:
 			my $content;
 
@@ -489,8 +506,19 @@ sub request
 				}
 			}
 
+			# now add the entire response and just the content of
+			# the response to the Net::Gopher::Response object:
 			$ngr->{'response'} = $self->{'socket_data'};
 			$ngr->{'content'}  = $content;
+
+			# The Gopher+ response may have been an error. In which
+			# case the content contains an error code (number)
+			# followed by a description of the error (e.g., "1 Item
+			# is not available."):
+			if ($status eq '-')
+			{
+				$ngr->error($content);
+			}
 		}
 		else
 		{
@@ -498,18 +526,17 @@ sub request
 			# could find it but the line wasn't a Gopher+
 			# status line, then even though the request was a
 			# Gopher+ request, the server wasn't a Gopher+ server.
-			# So read any remaining bytes and store everything in
-			# the Net::Gopher::Response object:
+			# So read the rest of the response and store everything
+			# in the Net::Gopher::Response object like we would for
+			# a normal Gopher response:
 			$self->_get_response($ngr, $read_until_period);
 		}
 	}
 	else
 	{
 		# If we got here then this is a plain old Gopher request, not a
-		# Gopher+ request.
-
-		# Get the response from the Gopher server and store it in
-		# the Net::Gopher::Response object:
+		# Gopher+ request. Get the response from the Gopher server and
+		# store it in the Net::Gopher::Response object:
 		$self->_get_response($ngr, $read_until_period);
 
 		
@@ -530,10 +557,9 @@ sub request
 #	Purpose
 #		This method receives the response from a Gopher server, either
 #		reading until the server closes the connection or until it sees
-#		a period on a line on itself and stores the entire response in
-#		the and any errors encountered in theNet::Gopher::Object you
-#		specify. This method returns either the number of the the
-#		modified Net::Gopher::Response object.
+#		a period on a line on itself and stores the entire response and
+#		any errors encountered in theNet::Gopher::Object you specify.
+#		This method returns the modified Net::Gopher::Response object.
 #
 #	Parameters
 #		$response   - A Net::Gopher::Response object where the response
@@ -593,7 +619,8 @@ sub _get_response
 #		This method reads the socket stored in $self->{'io_socket'}
 #		for one $self->{'buffer_size'} length and stores the data in
 #		$self->{'socket_buffer'} and stores any error it encounters in
-#		the variable you specifiy. It returns either the number of
+#		the variable you specifiy. It also copies the buffer into
+#		$self->{'socket_data'}. This method returns either the number of
 #		bytes read into $self->{'socket_buffer'} or undef if an error
 #		occurred.
 #
@@ -674,6 +701,8 @@ sub request_url
 
 	# add a scheme if one isn't there yet:
 	$url = 'gohper://' . $url unless ($url =~ m/^[a-z0-9]+:\/\//);
+
+	
 	$url = new URI $url;
 	$url->scheme;
 
@@ -806,6 +835,10 @@ sub error
 	}
 }
 
+
+
+
+
 sub DESTROY
 {
 	my $self = shift;
@@ -816,3 +849,23 @@ sub DESTROY
 
 __END__
 
+=back
+
+=head1 BUGS
+
+Email any to me at <william_g_davis at users dot sourceforge dot net> or go
+to perlmonks.com and /msg me (William G. Davis) and I'll fix 'em.
+
+=head1 SEE ALSO
+
+Net::Gopher::Response
+
+=head1 COPYRIGHT
+
+Copyright 2003, William G. Davis.
+
+This code is free software released under the GNU General Public License, the
+full terms of which can be found in the "COPYING" file that came with the
+distribution of the module.
+
+=cut
