@@ -12,8 +12,8 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  my $gopher = new Net::Gopher;
  
  # connect to a gopher server:
- $gopher->connect($host, Port => $port, Timeout => $timeout)
- 	or die $gopher->error;
+ $gopher->connect('gopher.host.com', Port => 70, Timeout => 30)
+	 or die $gopher->error;
  
  # request something from the server:
  my $response = $gopher->request('/menu', Type => 1);
@@ -28,14 +28,21 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  # disconnect from the server:
  $gopher->disconnect;
  
- # or, if you have a (even partial) URL, you can do it this way:
- $repsonse = $gopher->request_url($url);
+ # or, if you have even a partial Gopher URL, you can do it this way:
+ $repsonse = $gopher->request_url('gopher.host.com/1/menu');
  
- # the content of the response:
- my $content = $gopher->content;
+ 
+ 
+ # use the content() method to get the content of the response, with periods
+ # unescaped and line endings converted for text types, or the trailing
+ # period on a line by itself removed for non-text types:
+ my $content = $repsonse->content;
  
  # or just get the entire (unmodified) response as a string:
- my $string = $response->as_string;
+ my $raw_response = $response->as_string;
+ 
+ # see Net::Gopher::Response for more methods you can use to manipulate Gopher
+ # and Gopher+ responses.
  ...
 
 =head1 DESCRIPTION
@@ -44,7 +51,7 @@ B<Net::Gopher> is a Gopher/Gopher+ client API for Perl. B<Net::Gopher>
 implements the Gopher and Gopher+ protocols as desbribed in
 I<RFC 1436: The Internet Gopher Protocol>, Anklesaria, et al., and in
 I<Gopher+: Upward Compatible Enhancements to the Internet Gopher Protocol>,
-Anklesaria, et al.; bringing Gopher and Gopher+ support to Perl, and enabling
+Anklesaria, et al.; bringing Gopher and Gopher+ support to Perl, enabling
 Perl 5 applications to easily interact with both Gopher as well as Gopher+
 servers.
 
@@ -67,7 +74,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.47';
+$VERSION = '0.57';
 
 
 
@@ -168,20 +175,17 @@ sub connect
 	my $host = (scalar @_ % 2) ? shift : undef;
 	my %args = @_;
 
-	# I eventually hope to have this class work like the other Net::*
-	# modules, looking for hostnames in libnet.cfg:
-	# 
-	# my @hosts = defined $host
-	# 		? $host
-	# 		: @{ $Net::Config::NetConfig{gopher_hosts} };
-	# 
-	# $host = shift @hosts unless (defined $host);
+	#my @hosts = defined $host
+	#		? $host
+	#		: @{ $Net::Config::NetConfig{'gopher_hosts'} };
+	#my $hostname = #shift @hosts;
+
+	my $hostname = $host;
 
 
 
 	# we at least need a hostname:
-	croak "No hostname specified for connect()"
-		unless (defined $host);
+	croak "No hostname specified" unless (defined $hostname);
 
 	# default to IANA designated Gopher port:
 	my $port    = $args{'Port'} || 70;
@@ -192,19 +196,19 @@ sub connect
 	# try connect to the Gopher server and store the IO::Socket socket in
 	# our Net::Gopher object:
 	$self->{'io_socket'} = new IO::Socket::INET (
-		PeerAddr => $host,
+		PeerAddr => $hostname,
 		PeerPort => $port,
 		Timeout  => $timeout,
 		Proto    => 'tcp',
 		Type     => SOCK_STREAM
 	) or return $self->error(
-		"Couldn't connect to $host at port ${port}: $@"
+		"Couldn't connect to $hostname at port ${port}: $@"
 	);
 
 	# show the hostname, IP address, and port number for debugging:
-	if ($self->{'debug'})
+	if ($self->debug)
 	{
-		print '#' x 79, "\nConnected to $host, ",
+		print '#' x 79, "\nConnected to $hostname, ",
 		      inet_ntoa($self->{'io_socket'}->peeraddr),
 		      " at port $port.\n",
 		      '-' x (79), "\n";
@@ -287,7 +291,7 @@ exclamation point or tab and dollar sign at the end of your selector.
 sub request
 {
 	my $self     = shift;
-	my $selector = shift;
+	my $selector = (scalar @_ % 2) ? shift : undef;
 	my %args     = @_;
 
 
@@ -336,7 +340,7 @@ sub request
 
 	# even if it's a Gopher+ request or an attribute information request,
 	# we won't act like a Gopher+ client if the user has told us not to:
-	$request_type = 1 unless ($self->{'gopher_plus'});
+	$request_type = 1 unless ($self->gopher_plus);
 
 
 
@@ -421,7 +425,7 @@ sub request
 		syswrite($self->{'io_socket'}, $request, length $request);
 
 	# show the request we just sent for debugging:
-	if ($self->{'debug'})
+	if ($self->debug)
 	{
 		print "Sent this request:\n$request\n",
 		      '-' x 79, "\n";
@@ -457,7 +461,7 @@ sub request
 		and my $status_line = $self->_get_status_line(\$response_error))
 	{
 		# show the status line for debugging:
-		if ($self->{'debug'})
+		if ($self->debug)
 		{
 			print "Got this status line:\n$status_line\n",
 			      '-' x 79, "\n";
@@ -552,7 +556,7 @@ sub request
 		}
 
 		# show the length of the response we got for debugging:
-		if ($self->{'debug'})
+		if ($self->debug)
 		{
 			print length($self->{'socket_data'}),
 			      ' bytes (total) in response, with ',
@@ -560,14 +564,15 @@ sub request
 			      '#' x 79, "\n\n";
 		}
 
-		if ($args{'Type'} eq 1
+		if ($args{'Type'} eq '0' or $args{'Type'} eq '1'
 			or (defined $args{'Representation'}
 				and $args{'Representation'} =~ m|^text/|i))
 		{
-			# For text files, lines that only contain periods are
-			# escaped by adding another period. Those lines must be
-			# shrunk:
-			$content =~ s/($NEWLINE)..($NEWLINE)/$1.$2/g;
+			# since this is a text item, we need to unescape the
+			# periods and convert CRLF and CR to LF, that way the
+			# user can use \n in regexes to match newlines in the
+			# content:
+			$content = $self->_unescape($content);
 		}
 		
 		
@@ -615,7 +620,7 @@ sub request
 			if ($response_error);
 
 		# show the length of the response we got for debugging:
-		if ($self->{'debug'})
+		if ($self->debug)
 		{
 			print length($self->{'socket_data'}),
 			      ' bytes (total) in response, with ',
@@ -638,21 +643,19 @@ sub request
 				s/($NEWLINE\.$NEWLINE?).*/$1/s;
 			}
 
-			if ($args{'Type'} ne 0 and $args{'Type'} ne 1
-				and exists $GOPHER_ITEM_TYPES{$args{'Type'}})
+			if ($args{'Type'} eq 0 or $args{'Type'} eq 1)
 			{
-				# remove the period on a line by itself
-				# in the response content (except for
-				# text files and menus):
-				$content =~ s/$NEWLINE\.$NEWLINE?//;
+				# since this is a text file or menu, we need to
+				# unescape the periods and convert CRLF and CR
+				# to LF, that way the user can use \n in
+				# regexes to match newlines in the content:
+				$content = $self->_unescape($content);
 			}
-
-			if ($args{'Type'} eq 1)
+			elsif (exists $GOPHER_ITEM_TYPES{$args{'Type'}})
 			{
-				# For text files, lines that only contain
-				# periods are escaped by adding another
-				# period. Those lines must be shrunk:
-				$content =~ s/($NEWLINE)..($NEWLINE)/$1.$2/g;
+				# remove the period on a line by itself in the
+				# response content for this non-text response:
+				$content =~ s/$NEWLINE\.$NEWLINE?//;
 			}
 		}
 
@@ -722,10 +725,7 @@ sub request_url
 
 	# make sure the URL's scheme isn't something other than gopher:
 	croak 'Protocol "' . $uri->scheme . '" is not supported'
-		unless ($uri->scheme eq 'gopher');
-
-	# set the scheme to gopher:
-	$uri->scheme('gopher');
+		unless ($uri->scheme =~ /^gopher$/i);
 
 	# grab the item type, selector, host, port, any search words, and the
 	# Gopher+ string:
@@ -1045,10 +1045,27 @@ sub _get_buffer
 
 
 
-sub DESTROY
+sub _unescape
 {
-	shift->disconnect;
+	my $self    = shift;
+	my $content = shift;
+
+	# For text files, lines that only contain periods are escaped by adding
+	# another period. Those lines must be shrunk:
+	$content =~ s/($NEWLINE)..($NEWLINE)/$1.$2/g;
+
+	# replace CRLF and CR with LF, that way we can use \n in regexes:
+	$content =~ s/\015\012/\012/g;
+	$content =~ s/\015/\012/g;
+
+	return $content;
 }
+
+
+
+
+
+sub DESTROY { shift->disconnect; }
 
 1;
 

@@ -37,7 +37,7 @@ else
 
 my @menu = $response->as_menu;
 
-if (@menu and exists $menu[0]{'type'}   and exists $menu[0]{'text'}
+if (@menu and exists $menu[0]{'type'}   and exists $menu[0]{'display'}
 	and exists $menu[0]{'selector'} and exists $menu[0]{'host'}
 	and exists $menu[0]{'port'}     and exists $menu[0]{'gopher_plus'})
 {

@@ -77,9 +77,9 @@ else
 	print "not ok 7\n";
 }
 
-my %info = $response->as_info_block;
+my %info = $response->as_info;
 
-if (exists $info{'type'} and exists $info{'text'}
+if (exists $info{'type'} and exists $info{'display'}
 	and exists $info{'selector'} and exists $info{'host'}
 	and exists $info{'port'})
 {
@@ -90,7 +90,7 @@ else
 	print "not ok 8\n";
 }
 
-my %admin = $response->as_admin_block;
+my %admin = $response->as_admin;
 
 if (@{ $admin{'Mod-Date'} } == 9)
 {
@@ -112,9 +112,9 @@ else
 
 my %blocks = $response->as_blocks;
 
-my $info = $response->as_info_block($blocks{'INFO'});
+my $info = $blocks{'INFO'}->as_info;
 
-if (exists $info->{'type'} and exists $info->{'text'}
+if (exists $info->{'type'} and exists $info->{'display'}
 	and exists $info->{'selector'} and exists $info->{'host'}
 	and exists $info->{'port'})
 {
@@ -125,7 +125,7 @@ else
 	print "not ok 11\n";
 }
 
-my $admin = $response->as_admin_block($blocks{'ADMIN'});
+my $admin = $blocks{'ADMIN'}->as_admin;
 
 if (@{ $admin->{'Mod-Date'} } == 9)
 {

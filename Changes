@@ -1,5 +1,9 @@
 Revision history for Perl extension Net::Gopher.
 
+0.57 - Added new Net::Gopher::Response::Blocks class and moved all block  value
+       manipulation methods  to  there.  All  newlines  are  now  converted  to
+       standard Unix linefeed characters in the response content.
+
 0.47 - Removed  the  ADMIN,  ASK,  INFO,  and  VIEWS  block  parsing  from  the
        _parse_blocks() method and  put  them  into  separate  as_admin_block(),
        as_ask_block(),    as_info_block(),    and    as_views_block()   methods
