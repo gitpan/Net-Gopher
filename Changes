@@ -1,44 +1,42 @@
 Revision history for Perl extension Net::Gopher.
 
-0.97 -
-      Improved the timeout checking, fixed several errors  in  the  POD,  fixed
-      as_xml(), and fixed the newly added content  length  checking  introduced
-      in 0.96. The test suite  is  now  also  fixed,  and  should  work  right.
-      Finally,    _get_status_line()    was    renamed     _read_status_line();
-      _parse_blocks(),  _extract_blocks();  _parse_error(),   _extract_error();
-      _parse_attributes(), _extract_attributes();  and  _parse_attr_timestamp()
-      to _extract_attribute_timestamp() to synchronize them all with the public
-      API.
+0.98 - *Really*  fixed  the  test  server  this  time,  and  also   fixed   the
+       extract_date_*() methods  and  their  corresponding  tests  to  use  the
+       Time::Local::timegm()    and    gmtime()    functions     instead     of
+       Time::Local::timelocal()  and  localtime().  The  Net::Gopher   internal
+       methods _read() and _write() have been renamed  _read_from_socket()  and
+       _write_to_socket() to synchronize  them  with  the  forthcoming  C  API.
+       Also,  the  request()  method  now  resets  _network_error()  to  ensure
+       subsequent calls using the same Net::Gopher  object  don't  inherit  the
+       same error, and it now check the return value of IO::Socket::INET  new()
+       instead of looking at $@ to determine success or failure.
 
-0.96 -
-      The _data_read() method is gone, long since outliving its usefulness  and
-      serving only as a redundant source of data copying. For Gopher+  response
-      with content lengths, Net::Gopher now makes sure  the  actual  length  of
-      the content is equal to the  alleged  content  length  (give  or  take  a
-      single byte), resulting in an error if it isn't.  There  are  also  three
-      new   constants   for   Gopher+   error   codes:    DOES_NOT_EXIST_ERROR,
-      TRY_AGAIN_LATER_ERROR,  and  HAS_MOVED_ERROR.   Several   new   debugging
-      statements have also been added.
+0.97 - Improved the timeout checking, fixed several  errors  in  the  POD,  and
+       fixed the newly added content length checking introduced  in  0.96.  The
+       test suite  is  now  also  fixed,  and  should  work   right.   Finally,
+       _get_status_line()  was  renamed  _read_status_line(),   _parse_blocks()
+       was    renamed    _extract_blocks(),    _parse_error()    was    renamed
+       _extract_error(), _parse_attributes() was renamed _extract_attributes(),
+       and _parse_attr_timestamp() was  renamed  _extract_attribute_timestamp()
+       to synchronize them with the public API.
+
+0.96 - The _data_read() method is gone, long since outliving its usefulness and
+       serving only  as  a  redundant  source  of  data  copying.  For  Gopher+
+       responses with content lengths, Net::Gopher now makes  sure  the  actual
+       length of the content is equal to the alleged content  length  (give  or
+       take a single byte), resulting in an error if it isn't. There  are  also
+       three new  constants  for  Gopher+  error  codes:  DOES_NOT_EXIST_ERROR,
+       TRY_AGAIN_LATER_ERROR,  and  HAS_MOVED_ERROR.  Several   new   debugging
+       statements have also been added.
 
 0.95 - Fixed the test server and added some major POD updates.
 
-0.94 -
-
-       (1) 
-           The Net::Gopher::MenuItem accessor methods are now  get/set  instead
-           of just being get.
-
-       (2) 
-           Added the Net::Gopher::Response  has_block()  method  to  see  if  a
-           particular block is in the response.
-
-       (3) 
-           You can now prepend dashes to the front of all named parameters  and
-           put underscores in them too.
-
-       (4) 
-           The test  suite  tests  the  Net::Gopher::Response::InformationBlock
-           methods much better.
+0.94 - The Net::Gopher::MenuItem accessor methods are now  get/set  instead  of
+       just being get. Added the Net::Gopher::Response  has_block()  method  to
+       see if a particular block is in the response. Also, You can now  prepend
+       dashes to the front of all parameter names and put underscores  in  them
+       too.      Finally,      the       test       suite       tests       the
+       Net::Gopher::Response::InformationBlock methods much better.
 
 0.93 -
 

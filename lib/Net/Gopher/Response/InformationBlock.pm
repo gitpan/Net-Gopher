@@ -85,7 +85,7 @@ use overload (
 	fallback => 1,
 );
 use Carp;
-use Time::Local 'timelocal';
+use Time::Local 'timegm';
 use Net::Gopher::Constants ':item_types';
 use Net::Gopher::Debugging;
 use Net::Gopher::Exception;
@@ -623,7 +623,7 @@ sub extract_date_expires
 C<+ASK> blocks contain a form to be filled out by the user, with Ask queries on
 lines by themselves consisting of query type followed by the question and any
 default values separated by tabs (e.g.,
-"Ask: Some question?\tdefault answer 1\tdefault answer 2",
+"Ask: Some question?\tdefault answer 1",
 "Choose: A question?choice 1\tchoice 2\tchoice3").
 
 The following methods are available specifically for parsing C<+ASK> blocks:
@@ -676,7 +676,7 @@ sub extract_queries
 
 		if ($type eq 'Choose')
 		{
-			$query->{'choices'} = \@fields;
+			$query->{'choices'} = [ @fields ];
 		}
 		else
 		{
@@ -741,8 +741,10 @@ sub extract_description
 		        'description or contains a malformed one.',
 			$self->name
 		)
-	) unless (defined $type_and_display and defined $selector
-		and defined $host and defined $port);
+	) unless (defined $type_and_display
+		and defined $selector
+		and defined $host
+		and defined $port);
 
 	# separate the item type and the display string:
 	my ($type, $display) =
@@ -909,7 +911,7 @@ sub _extract_attribute_timestamp
 
 	# now that we have the second, minute, hour, day, month, and year, we
 	# use them to get a corresponding time() value:
-	return timelocal($second, $minute, $hour, $day, $month, $year);
+	return timegm($second, $minute, $hour, $day, $month, $year);
 }
 
 1;
@@ -930,10 +932,10 @@ L<Net::Gopher|Net::Gopher>, L<Net::Gopher::Response|Net::Gopher::Response>
 
 =head1 COPYRIGHT
 
-Copyright 2003 by William G. Davis.
+Copyright 2003-2004 by William G. Davis.
 
-This code is free software released under the GNU General Public License, the
-full terms of which can be found in the "COPYING" file that came with the
-distribution of the module.
+This module is free software released under the GNU General Public License,
+the full terms of which can be found in the "COPYING" file that comes with
+the distribution.
 
 =cut

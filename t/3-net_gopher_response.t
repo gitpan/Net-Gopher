@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test;
 
-BEGIN { plan(tests => 140) }
+BEGIN { plan(tests => 143) }
 
 use Net::Gopher;
 use Net::Gopher::Constants qw(:all);
@@ -314,43 +314,42 @@ require './t/serverfunctions.pl';
 	#
 
 	{
-		my $ng = new Net::Gopher(
-			UpwardCompatible => 0
-		);
+		my $ng = new Net::Gopher;
 
 		my $response = $ng->gopher_plus(
-			Host     => 'localhost',
+			Host     => 'this-is-not-a-valid-hostname.comic',
 			Selector => '/index'
 		);
 
 		ok($response->is_error);    # 128
 		ok(!$response->is_success); # 129
 		ok($response->error,
-			'You sent a Gopher+ style request to a non-Gopher+ ' .
-			'server'
+			"Couldn't connect to \"this-is-not-a-valid-" .
+			"hostname.comic\" at port 70: Bad hostname " .
+			"'this-is-not-a-valid-hostname.comic'"
 		);                          # 130
 	}
 
 	{
-		my $ng = new Net::Gopher;
+		my $ng = new Net::Gopher (UpwardCompatible => 0);
 
-		my $response = $ng->gopher(
+		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Selector => '/nothing'
+			Selector => '/index'
 		);
 
 		ok($response->is_error);    # 131
 		ok(!$response->is_success); # 132
 		ok($response->error,
-			'The server closed the connection without returning ' .
-			'any response'
+			'You sent a Gopher+ style request to a non-Gopher+ ' .
+			'server'
 		);                          # 133
 	}
 
 	{
 		my $ng = new Net::Gopher;
 
-		my $response = $ng->gopher_plus(
+		my $response = $ng->gopher(
 			Host     => 'localhost',
 			Selector => '/nothing'
 		);
@@ -368,21 +367,37 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Selector => '/gp_partial_response'
+			Selector => '/nothing'
 		);
 
 		ok($response->is_error);    # 137
 		ok(!$response->is_success); # 138
 		ok($response->error,
+			'The server closed the connection without returning ' .
+			'any response'
+		);                          # 139
+	}
+
+	{
+		my $ng = new Net::Gopher;
+
+		my $response = $ng->gopher_plus(
+			Host     => 'localhost',
+			Selector => '/gp_partial_response'
+		);
+
+		ok($response->is_error);    # 140
+		ok(!$response->is_success); # 141
+		ok($response->error,
 			'Incomplete response received: only 121 bytes of a ' .
 			'suppossedly 140 byte response'
-		);                          # 139
+		);                          # 142
 	}
 
 
 
 
-	ok(kill_server()); # 140
+	ok(kill_server()); # 143
 }
 
 

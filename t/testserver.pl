@@ -7,24 +7,28 @@ use strict;
 use Cwd;
 use Errno 'EINTR';
 use Getopt::Std;
-use IO::Socket;
+use IO::Socket 'SOCK_STREAM';
 use IO::Select;
-use Net::Gopher::Constants qw(:request);
-use Net::Gopher::Utility qw($CRLF size_in_bytes remove_bytes);
+use Net::Gopher::Utility qw($CRLF size_in_bytes);
 
-use constant DEFAULT_PORT => 70;
-use constant BUFFER_SIZE  => 4096;
-use constant TIMEOUT      => 30;
+use constant HOSTNAME                => 'localhost';
+use constant DEFAULT_PORT            => 70;
+use constant BUFFER_SIZE             => 4096;
+use constant TIMEOUT                 => 60;
+use constant MAX_PENDING_CONNECTIONS => 32;
 
 my $error;
 my %opts;
 getopts('ep:', \%opts);
 
 my $server = new IO::Socket::INET (
-	LocalPort => $opts{'p'} || DEFAULT_PORT,
 	Type      => SOCK_STREAM,
+	Proto     => 'tcp',
+	LocalHost => HOSTNAME,
+	LocalPort => $opts{'p'} || DEFAULT_PORT,
+	Timeout   => TIMEOUT,
+	Listen    => MAX_PENDING_CONNECTIONS,
 	Reuse     => 1,
-	Listen    => 1
 ) or die "Couldn't listen on localhost at port $opts{'p'}: $@";
 
 
@@ -35,17 +39,13 @@ CLIENT: while (my $client = $server->accept)
 {
 	my $select = new IO::Select ($client);
 
-	# make sure we can read from the socket; that there's something in the
-	# OS buffer to read:
-	next unless ($select->can_read(TIMEOUT));
-
 	my $request = '';
 	my $buffer;
 	while (read_from_socket($client, $select, \$buffer))
 	{
 		$request .= $buffer;
 	}
-	die "(Test server) read error: $!" if ($error);
+	die $error if ($error);
 
 	my ($selector) = split(/(?:\t|$CRLF)/, $request);
 
@@ -55,7 +55,7 @@ CLIENT: while (my $client = $server->accept)
 	{
 		# echo: send back the request we were sent:
 		write_to_socket($client, $select, $request);
-		die "(Test server) write error: $!" if ($error);
+		die $error if ($error);
 	}
 	else
 	{
@@ -67,13 +67,16 @@ CLIENT: while (my $client = $server->accept)
 				: './t/items';
 
 		open(FILE, "< $path$selector")
-			|| die "Couldn't return file (.$path$selector): $!";
+			|| do {
+				error("Couldn't return file (.$path$selector): $!");
+				die $error;
+			};
 		binmode FILE;
 		my $item = join('', <FILE>);
 		close FILE;
 
 		write_to_socket($client, $select, $item);
-		die "(Test server) write error: $!" if ($error);
+		die $error if ($error);
 	}
 }
 
@@ -86,7 +89,8 @@ sub read_from_socket
 
 	# make sure we can read from the socket; that there's something in the
 	# OS buffer to read:
-	return error(1) unless ($select->can_read(TIMEOUT));
+	#	return error('timeout while reading.')
+	#	unless ($select->can_read(TIMEOUT));
 
 	while (1)
 	{
@@ -98,7 +102,7 @@ sub read_from_socket
 		{
 			redo if ($! == EINTR);
 
-			return error(1);
+			return error("read error: $!.");
 		}
 
 		return $num_bytes_read;
@@ -114,7 +118,8 @@ sub write_to_socket
 	my ($socket, $select, $data) = @_;
 
 	# make sure we can write to the socket; that the OS buffer isn't full:
-	return error(1) unless ($select->can_write(TIMEOUT));
+	#return error('timeout while writing.')
+	#	unless ($select->can_write(TIMEOUT));
 
 	# now send the response to the client:
 	while (1)
@@ -127,11 +132,11 @@ sub write_to_socket
 		{
 			redo if ($! == EINTR);
 
-			return error(1);
+			return error("write error: $!");
 		}
 
 		# make sure the entire response was sent:
-		return error(1)
+		return error("short write.")
 			unless (size_in_bytes($data) == $num_bytes_written);
 
 		return $num_bytes_written;
@@ -146,7 +151,7 @@ sub error
 {
 	if (@_)
 	{
-		$error = shift;
+		$error = '(Test Server) ' . shift;
 		return;
 	}
 	else

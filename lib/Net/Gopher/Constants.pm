@@ -35,11 +35,11 @@ string counterparts makes your program more readable.
 =cut
 
 use 5.005;
-use warnings;
 use strict;
+use warnings;
 use vars qw(@EXPORT_OK %EXPORT_TAGS);
 use base 'Exporter';
-
+use Carp;
 
 
 
@@ -263,10 +263,10 @@ L<Net::Gopher::Response|Net::Gopher::Response>
 
 =head1 COPYRIGHT
 
-Copyright 2003 by William G. Davis.
+Copyright 2003-2004 by William G. Davis.
 
-This code is free software released under the GNU General Public License, the
-full terms of which can be found in the "COPYING" file that came with the
-distribution of the module.
+This module is free software released under the GNU General Public License,
+the full terms of which can be found in the "COPYING" file that comes with
+the distribution.
 
 =cut

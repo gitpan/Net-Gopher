@@ -98,10 +98,10 @@ indicating the length of the content in bytes, followed by a newline (CRLF) and
 the content of the response.[2]
 
 This class contains methods to help you manipulate both Gopher as well as
-Gopher+ responses. In addition, there are two sub classes called
+Gopher+ responses. In addition, there are two sub classes,
 L<Net::Gopher::Response::InformationBlock|Net::Gopher::Response::InformationBlock>
-and L<Net::Gopher::Response::MenuItem|Net::Gopher::Response::MenuItem> that can
-be used in conjunction with methods in this class to parse and manipulate
+and L<Net::Gopher::Response::MenuItem|Net::Gopher::Response::MenuItem>, that
+can be used in conjunction with methods in this class to parse and manipulate
 item/directory attribute information blocks and parse and manipulate Gopher
 menu items.
 
@@ -119,7 +119,7 @@ use Carp;
 use IO::File;
 use IO::String;
 use XML::Writer;
-use Net::Gopher::Constants qw(:all);
+use Net::Gopher::Constants ':all';
 use Net::Gopher::Debugging;
 use Net::Gopher::Exception;
 use Net::Gopher::Response::InformationBlock;
@@ -145,7 +145,9 @@ push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 ################################################################################
 #
 # The following subroutines are wrapper methods around
-# Net::Gopher::Response::InformationBlock extract_* methods:
+# Net::Gopher::Response::InformationBlock extract_* methods. They enable the
+# user to call extract_* block methods directly on the response object for
+# item attribute information requests:
 #
 
 sub extract_admin
@@ -259,25 +261,26 @@ sub new
 		# the Net::Gopher object:
 		ng            => $ng,
 
-		# the Net::Gopher::Request object that was used to create this
-		# response object:
+		# the Net::Gopher::Request object that ultimately resulted in
+		# the creation of this response object:
 		request       => $request,
 
 		# the entire response--every single byte:
 		raw_response  => $raw_response,
 
-		# the first line of the response including the newline (CRLF)
-		# (only with Gopher+):
+		# the Gopher+ status line, the first line of the response,
+		# including the CRLF terminator:
 		status_line   => $status_line,
 
-		# the status code (+ or -) (only with Gopher+):
+		# the Gopher+ status code from the beginning of the status line
+		# ("+" or "-"):
 		status        => $status,
 
 		# the content of the response:
 		content       => $content,
 
-		# any error that occurred wil receiving the response or any
-		# Gopher+ server-side error (comprised of the error code,
+		# any network error that occurred wil receiving the response or
+		# any Gopher+ server-side error (comprised of the error code,
 		# administrator contact information, and error message):
 		error         => $error,
 
@@ -571,17 +574,18 @@ sub extract_items
 	# To compare the item type of each item in the menu with
 	# the ones we were told to get, or alternately, the ones we were told
 	# to ignore, we'll use a regex character class comprised of all of the
-	# item type characters.
+	# specified item type characters.
 	my $retrieval_class;
 	my $skip_class;
 	if (defined $of_types)
 	{
-		# grab all of the types to retrieve:
-		my @types_to_retrieve = ref $of_types ? @$of_types : $of_types;
- 
-		# Since one or more of the type characters may be meta symbols
-		# (like the + type for redundant servers), we need to quote
-		# them:
+		# grab all of the item types to retrieve:
+		my @types_to_retrieve =
+			(ref $of_types) ? @$of_types : $of_types;
+
+		# Since one or more of the type characters may also be regex
+		# meta symbols (like the + type for redundant servers), we need
+		# to quote them:
 		my $escaped_types = quotemeta join('', @types_to_retrieve);
 
 		# compile the character class:
@@ -590,13 +594,12 @@ sub extract_items
 	elsif (defined $except_types)
 	{
 		# grab all of the item types to ignore:
-		my @types_to_skip = ref $except_types
-						? @$except_types
-						: $except_types;
- 
-		# Since one or more of the type characters may be meta symbols
-		# (like the + type for redundant servers), we need to quote
-		# them:
+		my @types_to_skip =
+			(ref $except_types) ? @$except_types : $except_types;
+
+		# Since one or more of the type characters may also be regex
+		# meta symbols (like the + type for redundant servers), we need
+		# to quote them:
 		my $escaped_types = quotemeta join('', @types_to_skip);
 
 		# compile the character class:
@@ -691,7 +694,7 @@ I<Item> can be either a number indicating the N'th item in the response or it
 can be a reference to a hash (or array) containing one or more named parameters
 describing the item, which will be compared against each item's C<+INFO> block
 looking for an item that matches the template. The possible C<Name => value>
-pairs for an I<Item> template hash are:
+pairs for an I<Item> template are:
 
 =over 4
 
@@ -729,7 +732,7 @@ The Gopher+ string in the C<+INFO> block of the item.
 
 =back
 
-The value of any of the I<Item> template pair can either be a string or a
+The value of any of the I<Item> template pairs can either be a string or a
 pattern compiled with the C<qr//> operator (it tells the difference using
 C<ref()>). The first item that matches every parameter in the template is the
 item the specified block object will be returned from.
@@ -786,7 +789,7 @@ sub get_block
 	# object and store them in $self if we haven't done so yet:
 	unless (defined $self->{'_blocks'})
 	{
-		$self->_exract_blocks() || return;
+		$self->_extract_blocks() || return;
 	}
 
 
@@ -920,7 +923,7 @@ sub get_blocks
 	# object and store them in $self if we haven't done so yet:
 	unless (defined $self->{'_blocks'})
 	{
-		$self->_exract_blocks() || return;
+		$self->_extract_blocks() || return;
 	}
 
 
@@ -1027,7 +1030,7 @@ sub has_block
 	# object and store them in $self if we haven't done so yet:
 	unless (defined $self->{'_blocks'})
 	{
-		$self->_exract_blocks() || return;
+		$self->_extract_blocks() || return;
 	}
 
 	my @blocks_to_check;
@@ -1429,7 +1432,7 @@ sub error_code
 
 	unless ($self->{'error_code'})
 	{
-		$self->_exract_error || return
+		$self->_extract_error || return
 	}
 
 	return $self->{'error_code'};
@@ -1457,7 +1460,7 @@ sub error_admin
 
 	unless ($self->{'error_admin'})
 	{
-		$self->_exract_error || return
+		$self->_extract_error || return
 	}
 
 	return @{ $self->{'error_admin'} } if (ref $self->{'error_admin'});
@@ -1483,7 +1486,7 @@ sub error_message
 
 	unless ($self->{'error_message'})
 	{
-		$self->_exract_error || return
+		$self->_extract_error || return
 	}
 
 	return $self->{'error_message'};
@@ -1565,7 +1568,7 @@ sub _convert_newlines
 ################################################################################
 #
 #	Method
-#		_exract_blocks()
+#		_extract_blocks()
 #
 #	Purpose
 #		This method parses the information blocks in $self->content
@@ -1579,7 +1582,7 @@ sub _convert_newlines
 #		None.
 #
 
-sub _exract_blocks
+sub _extract_blocks
 {
 	my $self = shift;
 
@@ -1632,7 +1635,7 @@ sub _exract_blocks
 		convert_newlines($value);
 
 		# each line of a block value contains a leading space, so we
-		# strip the leading spaces for the "pure" value but leave
+		# strip the leading spaces for the "real" value but leave
 		# them intact for the "raw" value:
 		$value =~ s/^ //mg;
 
@@ -1672,7 +1675,7 @@ sub _exract_blocks
 ################################################################################
 #
 #	Method
-#		_exract_error()
+#		_extract_error()
 #
 #	Purpose
 #		This method parses $self->error and attempts to extract a
@@ -1685,7 +1688,7 @@ sub _exract_blocks
 #		None.
 #
 
-sub _exract_error
+sub _extract_error
 {
 	my $self = shift;
 
@@ -1903,10 +1906,10 @@ L<Net::Gopher::Response::InformationBlock|Net::Gopher::Response::InformationBloc
 
 =head1 COPYRIGHT
 
-Copyright 2003 by William G. Davis.
+Copyright 2003-2004 by William G. Davis.
 
-This code is free software released under the GNU General Public License, the
-full terms of which can be found in the "COPYING" file that came with the
-distribution of the module.
+This module is free software released under the GNU General Public License,
+the full terms of which can be found in the "COPYING" file that comes with
+the distribution.
 
 =cut

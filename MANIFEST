@@ -18,6 +18,7 @@ lib/Net/Gopher/Response/InformationBlock.pm
 lib/Net/Gopher/Response/MenuItem.pm
 lib/Net/Gopher/Response/XML.pm
 lib/Net/Gopher/Utility.pm
+t/0-test_server_test.t
 t/1-net_gopher_request.t
 t/2-net_gopher.t
 t/3-net_gopher_response.t

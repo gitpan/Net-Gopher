@@ -52,7 +52,7 @@ BEGIN
 {
 	$SIG{'__DIE__'} = sub { kill_server() };
 	$SIG{'INT'}     = sub { kill_server() };
-
+	$SIG{'CHLD'}    = 'IGNORE';
 }
 
 1;

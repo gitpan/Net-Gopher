@@ -1,7 +1,7 @@
-use strict;
 use warnings;
-use Test;
+use strict;
 use Socket;
+use Test;
 
 # make sure that we're connected to the net:
 BEGIN

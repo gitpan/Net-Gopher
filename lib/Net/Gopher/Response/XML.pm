@@ -1,16 +1,21 @@
-# Copyright 2003 by William G. Davis.
-# 
-# This module defines and exports on demand functions used to dynamcically
+# Copyright 2003-2004 by William G. Davis.
+#
+# This module is free software released under the GNU General Public License,
+# the full terms of which can be found in the "COPYING" file that comes with
+# the distribution.
+#
+# This module defines and exports on demand functions used to dynamically
 # generate XML for Gopher and Gopher+ responses. You really don't need to be
 # looking in here unless you plan on hacking Net::Gopher.
 
 package Net::Gopher::Response::XML;
 
 use 5.005;
-use warnings;
 use strict;
+use warnings;
 use vars qw(@EXPORT_OK);
 use base 'Exporter';
+use Carp;
 use Net::Gopher::Constants qw(:request :item_types);
 use Net::Gopher::Utility '%ITEM_DESCRIPTIONS';
 
