@@ -6,8 +6,8 @@ use Test;
 use constant TIMEOUT => 120;
 
 # make sure that we are connected to the net:
-BEGIN
 {
+	# XXX: Maybe connecting in the begin block was causing problems?
 	my $socket = new IO::Socket::INET (
 		Type     => SOCK_STREAM,
 		Proto    => 'tcp',

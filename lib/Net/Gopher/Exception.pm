@@ -29,22 +29,12 @@ use Carp ();
 $DEFAULT_WARN_HANDLER = sub {
 	my @warnings = @_;
 
-	# save the old Carp level to prevent overriding any user-defined level:
-	my $old_level = $Carp::CarpLevel;
-
-	# we need to go up one level because the carp() function is being
-	# called from a sub which is being called from another sub:
-	$Carp::CarpLevel = -1;
-
 	foreach my $warning (@warnings)
 	{
 		$warning = "WARNING: $warning Raised" if (defined $warning);
 	}
 
 	Carp::carp(@warnings);
-
-	# restore the Carp level:
-	$Carp::CarpLevel = $old_level;
 };
 
 # this stores the sub that will be called by the call_warn() method below
@@ -55,22 +45,12 @@ $WARN_HANDLER = $DEFAULT_WARN_HANDLER;
 $DEFAULT_DIE_HANDLER = sub {
 	my @fatal_errors = @_;
 
-	# save the old Carp level to prevent overriding any user-defined level:
-	my $old_level = $Croak::CarpLevel;
-
-	# we need to go up one level because the croak() function is being
-	# called from a sub which is being called from another sub:
-	$Carp::CarpLevel = -1;
-
 	foreach my $fatal_error (@fatal_errors)
 	{
 		$fatal_error = "$fatal_error Stopped" if (defined $fatal_error);
 	}
 
 	Carp::croak(@fatal_errors);
-
-	# restore the Carp level
-	$Carp::CarpLevel = $old_level;
 };
 
 # this stores the sub that will be called by the call_die() method below

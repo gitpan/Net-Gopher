@@ -14,6 +14,7 @@ use 5.005;
 use strict;
 use warnings;
 use vars qw(@ISA $DEBUG $LOG $LOG_FILE $STARTED);
+use Carp;
 use Net::Gopher::Exception;
 
 push(@ISA, 'Net::Gopher::Exception');

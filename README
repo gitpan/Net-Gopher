@@ -1,4 +1,4 @@
-Net::Gopher, version 1.10 (STABLE).
+Net::Gopher, version 1.11 (STABLE).
 ===============================================================================
 
 
@@ -36,9 +36,7 @@ PREREQUISITES
 
 
 Net::Gopher requires these modules:
- IO::String (at least version 1.0);
- IO::Socket (not really sure on this one... 1.26 should be OK);
- IO::Socket::INET (again, not really sure. 1.25 and up);
+ IO (at least version 1.20);
  URI (at least version 1.27);
 
 

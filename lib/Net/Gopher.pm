@@ -194,7 +194,7 @@ use constant MAX_STATUS_LINE_SIZE => 64;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '1.10';
+$VERSION = '1.11';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
