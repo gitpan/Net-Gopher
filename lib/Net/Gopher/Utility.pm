@@ -44,7 +44,6 @@ use vars qw(
 
 
 
-
 =item $CRLF
 
 This is the line ending used by Net::Gopher and Net::Gopher::response. You can

@@ -1,8 +1,9 @@
+
 package Net::Gopher;
 
 =head1 NAME
 
-Net::Gopher - The Perl Gopher/Gopher+ client API. 
+Net::Gopher - The Perl Gopher/Gopher+ client API 
 
 =head1 SYNOPSIS
 
@@ -26,7 +27,7 @@ Net::Gopher - The Perl Gopher/Gopher+ client API.
  }
  else
  {
-	 print $response->error;
+ 	print $response->error;
  }
  
  # disconnect from the server:
@@ -80,7 +81,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.20';
+$VERSION = '0.21';
 
 
 
@@ -88,7 +89,7 @@ $VERSION = '0.20';
 
 =item new()
 
-The constructor method. Returns a reference to a Net::Gopher response.
+The constructor method. Returns a reference to a Net::Gopher object.
 
 =cut
 
@@ -140,14 +141,14 @@ sub new
 
 =item connect($host [, Port => $port_num, Timeout => $seconds])
 
-This method attempts to connect to a Gopher server. If it's successful it
-returns true; false otherwise (call L<error()> to find out why). As its first
-argument it takes a mandatory hostname (e.g., gopher.host.com). As its second
-argument, 'Port', it takes an optional port number. If you don't supply 'Port'
-then the default of 70 will be used instead. As its final argument, 'Timeout',
-it takes the number of second at which a timeout will occur when attempting to
-connect to a Gopher server. If you don't supply 'Timeout' then the default of
-60 seconds will be used instead.
+This method attempts to connect to a Gopher server. If connect() is able to
+connect it returns true; false otherwise (call error() to find out why). As
+its first argument it takes a mandatory hostname (e.g., gopher.host.com). As
+its second argument, 'Port', it takes an optional port number. If you don't
+supply 'Port' then the default of 70 will be used instead. As its final
+argument, 'Timeout', it takes the number of second at which a timeout will
+occur when attempting to connect to a Gopher server. If you don't supply
+'Timeout' then the default of 60 seconds will be used instead.
 
 =cut
 
@@ -169,7 +170,7 @@ sub connect
 
 
 	# we at least need a hostname:
-	return $self->error("No hostname specified for connect()")
+	croak "No hostname specified for connect()"
 		unless (defined $host);
 
 	# default to IANA designated Gopher port:
@@ -288,7 +289,7 @@ sub request
 		}
 		else
 		{
-			# add a newline to the request:
+			# add a newline to terminat request:
 			$request .= $CRLF unless ($request =~ /$NEWLINE$/);
 		}
 	}
@@ -460,7 +461,6 @@ sub request
 					return $ngr->error($response_error)
 						if $ngr->error($response_error);
 
-					# the buffer contains content:
 					$content .= $self->{'socket_buffer'};
 				}
 
@@ -688,7 +688,7 @@ sub disconnect
 =item request_url($url)
 
 This method allows you to bypass the connect(), request(), and disconnect()
-methods. If you have a gopher URL you can simply supply it to this method
+methods. If you have a Gopher URL you can simply supply it to this method
 and it will connect to the server and request it for you. It will return
 a Net::Gopher::Response object just like request() does.
 
