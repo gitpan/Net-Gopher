@@ -1,4 +1,6 @@
-print "1..3\n";
+print "1..4\n";
+use strict;
+use warnings;
 use Net::Gopher;
 
 my $gopher = new Net::Gopher;
@@ -22,13 +24,24 @@ else
 	print "not ok 2\n";
 }
 
-my @menu = $response->as_menu;
-
-if (@menu)
+if ($response->is_menu)
 {
 	print "ok 3\n";
 }
 else
 {
 	print "not ok 3\n";
+}
+
+my @menu = $response->as_menu;
+
+if (@menu and exists $menu[0]{'type'}   and exists $menu[0]{'text'}
+	and exists $menu[0]{'selector'} and exists $menu[0]{'host'}
+	and exists $menu[0]{'port'}     and exists $menu[0]{'gopher+'})
+{
+	print "ok 4\n";
+}
+else
+{
+	print "not ok 4\n";
 }

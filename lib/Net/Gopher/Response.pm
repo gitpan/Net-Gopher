@@ -52,7 +52,7 @@ use Carp;
 use Time::Local;
 use Net::Gopher::Utility qw($CRLF $NEWLINE);
 
-$VERSION = '0.30';
+$VERSION = '0.32';
 
 
 
@@ -63,6 +63,13 @@ sub new
 	my $invo  = shift;
 	my $class = ref $invo || $invo;
 	my %args  = @_;
+	
+	# remove the socket class name from error messages (IO::Socket
+	# puts them in):
+	if (defined $args{'Error'})
+	{
+		$args{'Error'} =~ s/IO::Socket::INET:\s//g;
+	}
 
 	my $self = {
 		# any error that occurred while sending the request or while
@@ -269,19 +276,20 @@ specifying the block name or block names as arguments. If you don't supply any
 block names, then this method will return a list containing every block name
 for the item.
 
-These methods strips leading '+' and trailing ':' from block names, so rather
-than asking for '+INFO:' you should ask for just plain 'INFO'. These method
-will also strip leading spaces from each line of a block value.
+These methods strip leading '+' and trailing ':' from block names, so rather
+than asking for '+INFO:' you should ask for just plain 'INFO'. These methods
+will also strip leading spaces from each line of a multi-line block value.
 
 Since the only block values who's formats have been officially defined are
-INFO, ADMIN, and VIEWS, these methods will parse those values. Requesting
-any of these three blocks will return data structures (each is data structure
-is described below). With all others, just strings containing the block values
-will be returned. Now, since the format of INFO, ADMIN, and VIEWS block values
-have been officially defined, what do these methods do to them? Well, since
-INFO blocks contain tab separated item information just like you find in a
-menu, they will parse INFO block values and create hashes in the same format as
-the ones described above (L<as_menu()>), so you can use it like this:
+INFO, ADMIN, and VIEWS, these methods will parse those values. Requesting any
+of these three blocks will return data structures (each data structure is
+described below). With all other block names, just strings containing the
+block values will be returned. Now, since the format of INFO, ADMIN, and VIEWS
+block values have been officially defined, what do these methods do to them?
+Well, since INFO blocks contain tab separated item information just like you
+find in a menu, they will parse INFO block values and create hash refs in the
+same format as the ones described above (L<as_menu()>), so you can use it like
+this:
 
  my $info = $response->item_blocks('INFO');
  
@@ -295,10 +303,10 @@ and what the admin has done with the item in question. These methods will
 parse ADMIN blocks and create hash refs with (at least) two key=value pairs:
 Admin and Mod-Date.
 
-Admin attributes contain strings in the form of
-"John Doe <jdoe@fake.email>" about who the administrator of this Gopher+ server
-is. These methods will parse Admin attributes and turn them into a reference to
-a two-element array containing the name and email in that order.
+Admin attributes contain strings in the form of "John Doe <jdoe@fake.email>"
+about who the administrator of this Gopher+ server is. These methods will parse
+Admin attributes and turn them into a reference to a two-element array
+containing the name and email in that order.
 
 Mod-Date is a timestamp of when the item was last modified. These methods will
 convert the timestamp into an array containing values in the same format as
@@ -315,13 +323,14 @@ localtime):
  @{ $admin->{'Mod-Date'} };
 
 VIEWS blocks contain information about what type of applications can be used
-to view the item as well as the total size of the item in bytes and sometimes a
-language as well (e.g., text/plain En_US: <77K>). These methods will parse VIEWS
-block values and create an array containing each view in the form of a hash ref
-with the keys 'type', 'language', and 'size' with the MIME type, language, and
-size as the values respectively. Note, these method convert the <\d+K?> format
-used in Gopher+ to an integer you can perform arithmetic on; the total size in
-bytes (e.g., <80> becomes 80, <40K> becomes 40000, <.4K> becomes 400, etc.):
+to view the item as well as the total size of the item in bytes, and sometimes
+a language as well (e.g., text/plain En_US: <77K>). These methods will parse
+VIEWS block values and create an array containing each view in the form of a
+hash ref with the keys 'type', 'language', and 'size' with the MIME type,
+language, and size in bytes as the values respectively. Note, these method
+convert the <\d+K?> format used in Gopher+ to an integer you can perform
+arithmetic on; the total size in bytes (e.g., <80> becomes 80, <40K> becomes
+40000, <.4K> becomes 400, etc.):
 
  my $views = $response->item_blocks('VIEWS');
  
@@ -371,8 +380,15 @@ To get the ABSTRACT and ADMIN blocks for the third item, you'd do this:
  my ($abstract, $admin) = $response->directory_blocks(3, 'ABSTRACT', 'ADMIN');
 
 To get the names of all of the information blocks for a single item, don't
-specify any block names, only an item number. To get the total number of items,
-don't specify either block names or an item number.
+specify any block names, only an item number:
+
+ # the names of all of the blocks for the fourth item:
+ my @block_names = $response->directory_blocks(4);
+
+To get the total number of items, don't specify either block names or an item
+number:
+
+ my $items = $response->directory_blocks;
 
 =cut
 
@@ -386,7 +402,8 @@ sub directory_blocks
 
 	if ($item)
 	{
-		$item--;
+		$item--; # for zero indexing.
+
 		if (@block_names)
 		{
 			return @{ $self->{'info_blocks'}[$item] }{@block_names};
@@ -398,7 +415,7 @@ sub directory_blocks
 	}
 	else
 	{
-		return scalar @{ $self->{'info_blocks'}[$item] };
+		return scalar @{ $self->{'info_blocks'} };
 	}
 }
 
@@ -423,8 +440,7 @@ to the array:
  print "Type: $items[0]{'INFO'}{'type'}\n",
        "Description: $items[0]{'INFO'}{'text'}\n",
        "Selector: $items[0]{'INFO'}{'selector'}\n",
-       "On: $items[0]{'
-       INFO'}{'host'}\n",
+       "On: $items[0]{'INFO'}{'host'}\n",
        "Port: $items[0]{'INFO'}{'port'}\n";
 
 If you made an item attribute information request, then the block
@@ -451,7 +467,14 @@ sub as_blocks
 
 	my @blocks = @{ $self->{'info_blocks'} };
 
-	return wantarray ? @blocks : \@blocks;
+	if (scalar @blocks == 1)
+	{
+		return wantarray ? %{ $blocks[0] } : $blocks[0];
+	}
+	else
+	{
+		return wantarray ? @blocks : \@blocks;
+	}
 }
 
 
@@ -546,6 +569,63 @@ sub is_error
 
 #==============================================================================#
 
+=head2 is_blocks()
+
+This method will return true if the response contains item attribute
+information blocks; false otherwise.
+
+=cut
+
+sub is_blocks
+{
+	my $self = shift;
+
+	if ($self->{'content'} =~ /^(?:\+\S+\s.*?) (?:$NEWLINE\+\S+ \s .*?)*$/sx)
+	{
+		return 1;
+	}
+	else
+	{
+		return;
+	}
+}
+
+
+
+
+
+#==============================================================================#
+
+=head2 is_menu()
+
+This method will return true if the response is a Gopher menu which can be
+parsed with as_menu(); false otherwise.
+
+=cut
+
+sub is_menu
+{
+	my $self = shift;
+
+	my $item = qr/[^\t]* \t [^\t]* \t [^\t]* \t [^\t]* \t?.?/x;
+
+	if ($self->{'content'} =~
+		/^(?:$item (?:$NEWLINE | $NEWLINE \. $NEWLINE? | ) )+$/x)
+	{
+		return 1;
+	}
+	else
+	{
+		return;
+	}
+}
+
+
+
+
+
+#==============================================================================#
+
 =head2 is_terminated()
 
 This method checks if the response content was terminated by a period on a line
@@ -559,7 +639,7 @@ sub is_terminated
 	my $self  = shift;
 	my $error = shift;
 
-	if ($self->{'content'} =~ /$NEWLINE [.] $NEWLINE? $/x)
+	if ($self->{'content'} =~ /$NEWLINE \. $NEWLINE? $/x)
 	{
 		return 1;
 	}
@@ -587,27 +667,28 @@ sub error
 	my $self  = shift;
 	my $error = shift;
 
-	if (defined $error)
-	{
-		# remove the socket class name from error messages (IO::Socket
-		# puts them in):
-		$error =~ s/IO::Socket::INET:\s//g;
-
-		$self->{'error'} = $error;
-
-		# rather than returning undef like Net::Gopher, we return the
-		# object since that's what the user will expect:
-		return $self;
-	}
-	else
-	{
-		return $self->{'error'};
-	}
+	return $self->{'error'};
 }
 
 
 
 
+
+################################################################################
+#
+#	Method
+#		_get_item_hashref($item)
+#
+#	Purpose
+#		This method parses an item in a Gopher menu and extracts the
+#		item type, item description, selector string, host, port, and
+#		Gopher+ character. It returns a reference to hash with the
+#		following keys: "type"; "text"; "selector"; "host"; "port"; and
+#		"gopher+".
+#
+#	Parameters
+#		$item - A string containing the menu item.
+#
 
 sub _get_item_hashref
 {
@@ -643,10 +724,36 @@ sub _get_item_hashref
 
 
 
+################################################################################
+#
+#	Method
+#		_parse_blocks()
+#
+#	Purpose
+#		This method parses the information blocks in $self->{'content'}
+#		and stores them in $self->{'info_blocks'}, where
+#		$self->{'info_blocks'} is a reference to an array and each
+#		element in the array is reference to a hash containing the
+#		block names and block values for a single item.
+#
+#	Parameters
+#		None.
+#
+
 sub _parse_blocks
 {
 	my $self    = shift;
 	my $content = $self->{'content'};
+
+	# $self->{'info_blocks'} will contain a reference to an array which
+	# will have hashrefs as its elements. Each hash will contain the item
+	# attribute information block names and block values for a single item.
+	# For Gopher+ ! requests, the $self->{'info_blocks'} array will only
+	# contain one element (for the single item's blocks). But for
+	# Gopher+ $ requests, since $ retrieves item attribute information
+	# blocks for every item in a directory, the array will contain multiple
+	# elements:
+	$self->{'info_blocks'} = [];
 
 	# Each block name is denoted by '+' as the first character on a line.
 	# Any characters after the plus and up to the first space is the block
@@ -660,17 +767,8 @@ sub _parse_blocks
 	# name:
 	$content =~ s/^\s*\+//;
 
-	# $self->{'info_blocks'} will contain a reference to an array which
-	# will have hashrefs as its elements. Each hash will contain item
-	# attribute information block names and block values for a single item.
-	# For Gopher+ ! requests, the $self->{'info_blocks'} array will only
-	# contain one element (for the single item's blocks). But for
-	# Gopher+ $ requests, since $ retrieves item attribute information
-	# blocks for every item in a directory, the array will contain multiple
-	# elements:
-	$self->{'info_blocks'} = [];
-
-	# this will store the block names and block values for one item:
+	# this will store the block names and block values for each item, one
+	# at a time:
 	my %blocks;
 
 	foreach my $name_and_value (split(/$NEWLINE\+/, $content))
@@ -799,7 +897,7 @@ sub _parse_blocks
 
 				# now use the time() value to get the values we
 				# still don't have (e.g., the day of the year,
-				# is it daylight  savings time? etc.) and store
+				# is it daylight savings time? etc.) and store
 				# them in the Mod-Date attribute value:
 				$attributes->{'Mod-Date'} = [ localtime $time ];
 			}
@@ -818,6 +916,21 @@ sub _parse_blocks
 
 
 
+
+################################################################################
+#
+#	Method
+#		_get_attribute_hashref($block_value)
+#
+#	Purpose
+#		This method is used by _parse_blocks() to get the "Name: value"
+#		attributes within a block value. This method parses a block
+#		value and returns the "Name: value" attributes in the form of a
+#		hashref.
+#
+#	Parameters
+#		$block_value - The block value to parse.
+#
 
 sub _get_attribute_hashref
 {

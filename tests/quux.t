@@ -1,4 +1,6 @@
-print "1..7\n";
+print "1..12\n";
+use strict;
+use warnings;
 use Net::Gopher;
 
 my $gopher = new Net::Gopher;
@@ -55,11 +57,7 @@ else
 	print "not ok 5\n";
 }
 
-my $info = $response->item_blocks('INFO');
-
-if (exists $info->{'type'} and exists $info->{'text'}
-	and exists $info->{'selector'} and exists $info->{'host'}
-	and exists $info->{'port'})
+if ($response->is_blocks)
 {
 	print "ok 6\n";
 }
@@ -68,13 +66,66 @@ else
 	print "not ok 6\n";
 }
 
-my $admin = $response->item_blocks('ADMIN');
+my $info = $response->item_blocks('INFO');
 
-if (@{ $admin->{'Mod-Date'} } == 9)
+if (exists $info->{'type'} and exists $info->{'text'}
+	and exists $info->{'selector'} and exists $info->{'host'}
+	and exists $info->{'port'})
 {
 	print "ok 7\n";
 }
 else
 {
 	print "not ok 7\n";
+}
+
+my $admin = $response->item_blocks('ADMIN');
+
+if (@{ $admin->{'Mod-Date'} } == 9)
+{
+	print "ok 8\n";
+}
+else
+{
+	print "not ok 8\n";
+}
+
+if (scalar @{ $admin->{'Admin'} } == 2)
+{
+	print "ok 9\n";
+}
+else
+{
+	print "not ok 9\n";
+}
+
+my %blocks = $response->as_blocks;
+
+if (exists $blocks{'INFO'}{'type'} and exists $blocks{'INFO'}{'text'}
+	and exists $blocks{'INFO'}{'selector'} and exists $blocks{'INFO'}{'host'}
+	and exists $blocks{'INFO'}{'port'})
+{
+	print "ok 10\n";
+}
+else
+{
+	print "not ok 10\n";
+}
+
+if (@{ $blocks{'ADMIN'}{'Mod-Date'} } == 9)
+{
+	print "ok 11\n";
+}
+else
+{
+	print "not ok 11\n";
+}
+
+if (@{ $blocks{'ADMIN'}{'Admin'} } == 2)
+{
+	print "ok 12\n";
+}
+else
+{
+	print "not ok 12\n";
 }

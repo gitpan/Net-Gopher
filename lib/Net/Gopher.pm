@@ -79,7 +79,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.30';
+$VERSION = '0.32';
 
 
 
@@ -260,6 +260,9 @@ sub request
 	my %args     = @_;
 
 
+	# clear the socket buffer and all of the socket data that's been read:
+	$self->{'socket_buffer'} = undef;
+	$self->{'socket_data'}   = undef;
 
 	# remove the trailing newline from the selector:
 	$selector = '' unless (defined $selector);
