@@ -1,4 +1,4 @@
-Net::Gopher, version 1.02 (STABLE).
+Net::Gopher, version 1.05 (STABLE).
 ===============================================================================
 
 
@@ -36,11 +36,9 @@ PREREQUISITES
 
 
 Net::Gopher requires these modules:
- IO::String (at least version 1.0);
  IO::Socket (not really sure on this one... 1.26 should be OK);
  IO::Socket::INET (again, not really sure. 1.25 and up);
  URI (at least version 1.27);
- XML::Writer (at least version 0.4);
 
 
 TESTING
@@ -57,7 +55,7 @@ inexplicably fail.
 COPYRIGHT AND LICENSE
 
 
-Copyright 2003 by William G. Davis.
+Copyright 2004 by William G. Davis.
 
 This code is free software released under the GNU General Public  License,  the
 full terms of which can be found in the "COPYING" file in this directory.

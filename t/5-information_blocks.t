@@ -24,7 +24,14 @@ ok(launch_item_server()); # 1
 		Selector => '/item_blocks'
 	);
 
-	ok($response->is_success); # 2
+	if ($response->is_success)
+	{
+		ok(1); # 2
+	}
+	else
+	{
+		warn $response->error;
+	}
 
 	{
 		ok($response->has_block('INFO')); # 3
@@ -433,7 +440,14 @@ ok(launch_item_server()); # 1
 		Selector => '/directory_blocks'
 	);
 
-	ok($response->is_success); # 211
+	if ($response->is_success)
+	{
+		ok(1); # 211
+	}
+	else
+	{
+		warn $response->error;
+	}
 
 
 

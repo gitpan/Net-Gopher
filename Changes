@@ -1,5 +1,8 @@
 Revision history for Perl extension Net::Gopher.
 
+1.05 - Net::Gopher::Response::XML is gone, as is the as_xml()  method;  they're
+       now distributed separately in their own package.
+
 1.00 - First stable version.
 
 0.99 - Ok, I think I finally figured out what's wrong with the test server  and

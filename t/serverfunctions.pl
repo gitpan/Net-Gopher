@@ -5,8 +5,6 @@ use vars qw($PERL $PATH $ITEM_SERVER_PID $ECHO_SERVER_PID);
 use Config;
 use Cwd;
 
-use constant DEFAULT_PORT => 70;
-
 # hack devised by Gisle Aas:
 $PERL = $Config{'perlpath'};
 $PERL = $^X if ($^O eq 'VMS' or -x $^X && $^X =~ m|^([a-z]:)?/|i);

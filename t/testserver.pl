@@ -8,7 +8,6 @@ use Getopt::Std;
 use IO::Socket qw(SOCK_STREAM SOMAXCONN);
 use IO::Select;
 
-use constant DEFAULT_PORT => 70;
 use constant BUFFER_SIZE  => 4096;
 use constant TIMEOUT      => 60;
 
@@ -54,7 +53,14 @@ my $server = new IO::Socket::INET (
 ) or die "(Test server) Couldn't listen on localhost at port $opts{'p'}: $@";
 
 print "# Listening on port $opts{'p'}...\n";
-close STDOUT;
+if ($^O !~ /MSWin/i)
+{
+	open(STDOUT, '>/dev/null') || die "Can't redirect STDOUT: $!";
+}
+else
+{
+	close STDOUT;
+}
 
 
 while (my $client = $server->accept)

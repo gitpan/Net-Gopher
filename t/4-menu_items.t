@@ -56,7 +56,14 @@ ok(launch_item_server()); # 13
 		Selector => '/index'
 	);
 
-	ok($response->is_success); # 14
+	if ($response->is_success)
+	{
+		ok(1); # 14
+	}
+	else
+	{
+		warn $response->error;
+	}
 
 	my @items = $response->extract_items;
 
@@ -491,7 +498,14 @@ ok(launch_item_server()); # 13
 		Selector => '/gp_index'
 	);
 
-	ok($response->is_success); # 285
+	if ($response->is_success)
+	{
+		ok(1); # 285
+	}
+	else
+	{
+		warn $response->error;
+	}
 
 	my @items = $response->extract_items;
 

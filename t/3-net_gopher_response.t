@@ -36,12 +36,19 @@ require './t/serverfunctions.pl';
 			Selector => '/index'
 		);
 
-		ok($response->raw_response, $ITEMS_RAW{'index'}); # 2
-		ok($response->content, $ITEMS_CONTENT{'index'});  # 3
-		ok(!defined $response->status_line);              # 4
-		ok(!defined $response->status);                   # 5
-		ok(!$response->is_error);                         # 6
-		ok($response->is_success);                        # 7
+		if ($response->is_success)
+		{
+			ok(1);                                    # 2
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->raw_response, $ITEMS_RAW{'index'}); # 3
+		ok($response->content, $ITEMS_CONTENT{'index'});  # 4
+		ok(!defined $response->status_line);              # 5
+		ok(!defined $response->status);                   # 6
+		ok(!$response->is_error);                         # 7
 		ok(!$response->is_blocks);                        # 8
 		ok(!$response->is_gopher_plus);                   # 9
 		ok($response->is_menu);                           # 10
@@ -56,12 +63,19 @@ require './t/serverfunctions.pl';
 			Selector => '/gp_index'
 		);
 
-		ok($response->raw_response, $ITEMS_RAW{'gp_index'}); # 12
-		ok($response->content, $ITEMS_CONTENT{'gp_index'});  # 13
-		ok($response->status_line, "+322\015\012");          # 14
-		ok($response->status, OK);                           # 15
-		ok(!$response->is_error);                            # 16
-		ok($response->is_success);                           # 17
+		if ($response->is_success)
+		{
+			ok(1);                                       # 12
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->raw_response, $ITEMS_RAW{'gp_index'}); # 13
+		ok($response->content, $ITEMS_CONTENT{'gp_index'});  # 14
+		ok($response->status_line, "+322\015\012");          # 15
+		ok($response->status, OK);                           # 16
+		ok(!$response->is_error);                            # 17
 		ok(!$response->is_blocks);                           # 18
 		ok($response->is_gopher_plus);                       # 19
 		ok($response->is_menu);                              # 20
@@ -76,12 +90,19 @@ require './t/serverfunctions.pl';
 			Selector => '/gp_s_byte_term'
 		);
 
-		ok($response->raw_response, $ITEMS_RAW{'gp_s_byte_term'}); # 22
-		ok($response->content, $ITEMS_CONTENT{'gp_s_byte_term'});  # 23
-		ok($response->status_line, "+31\015\012");                 # 24
-		ok($response->status, OK);                                 # 25
-		ok(!$response->is_error);                                  # 26
-		ok($response->is_success);                                 # 27
+		if ($response->is_success)
+		{
+			ok(1);                                             # 22
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->raw_response, $ITEMS_RAW{'gp_s_byte_term'}); # 23
+		ok($response->content, $ITEMS_CONTENT{'gp_s_byte_term'});  # 24
+		ok($response->status_line, "+31\015\012");                 # 25
+		ok($response->status, OK);                                 # 26
+		ok(!$response->is_error);                                  # 27
 		ok(!$response->is_blocks);                                 # 28
 		ok($response->is_gopher_plus);                             # 29
 		ok(!$response->is_menu);                                   # 30
@@ -96,16 +117,25 @@ require './t/serverfunctions.pl';
 			Selector => '/gp_s_period_term'
 		);
 
-		ok($response->raw_response, $ITEMS_RAW{'gp_s_period_term'}); # 32
-		ok($response->content, $ITEMS_CONTENT{'gp_s_period_term'});  # 33
-		ok($response->status_line, "+-1\015\012");                   # 34
-		ok($response->status, OK);                                   # 35
-		ok(!$response->is_error);                                    # 36
-		ok($response->is_success);                                   # 37
-		ok(!$response->is_blocks);                                   # 38
-		ok($response->is_gopher_plus);                               # 39
-		ok(!$response->is_menu);                                     # 40
-		ok($response->is_terminated);                                # 41
+		if ($response->is_success)
+		{
+			ok(1);                               # 32
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->raw_response,
+			$ITEMS_RAW{'gp_s_period_term'});     # 33
+		ok($response->content,
+			$ITEMS_CONTENT{'gp_s_period_term'}); # 34
+		ok($response->status_line, "+-1\015\012");   # 35
+		ok($response->status, OK);                   # 36
+		ok(!$response->is_error);                    # 37
+		ok(!$response->is_blocks);                   # 38
+		ok($response->is_gopher_plus);               # 39
+		ok(!$response->is_menu);                     # 40
+		ok($response->is_terminated);                # 41
 	}
 
 	{
@@ -116,12 +146,19 @@ require './t/serverfunctions.pl';
 			Selector => '/gp_s_no_term'
 		);
 
-		ok($response->raw_response, $ITEMS_RAW{'gp_s_no_term'}); # 42
-		ok($response->content, $ITEMS_CONTENT{'gp_s_no_term'});  # 43
-		ok($response->status_line, "+-2\015\012");               # 44
-		ok($response->status, OK);                               # 45
-		ok(!$response->is_error);                                # 46
-		ok($response->is_success);                               # 47
+		if ($response->is_success)
+		{
+			ok(1);                                           # 42
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->raw_response, $ITEMS_RAW{'gp_s_no_term'}); # 43
+		ok($response->content, $ITEMS_CONTENT{'gp_s_no_term'});  # 44
+		ok($response->status_line, "+-2\015\012");               # 45
+		ok($response->status, OK);                               # 46
+		ok(!$response->is_error);                                # 47
 		ok(!$response->is_blocks);                               # 48
 		ok($response->is_gopher_plus);                           # 49
 		ok(!$response->is_menu);                                 # 50
@@ -136,12 +173,19 @@ require './t/serverfunctions.pl';
 			Selector => '/gp_byte_term'
 		);
 
-		ok($response->raw_response, $ITEMS_RAW{'gp_byte_term'}); # 52
-		ok($response->content, $ITEMS_CONTENT{'gp_byte_term'});  # 53
-		ok($response->status_line, "+3356\015\012");             # 54
-		ok($response->status, OK);                               # 55
-		ok(!$response->is_error);                                # 56
-		ok($response->is_success);                               # 57
+		if ($response->is_success)
+		{
+			ok(1);                                           # 52
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->raw_response, $ITEMS_RAW{'gp_byte_term'}); # 53
+		ok($response->content, $ITEMS_CONTENT{'gp_byte_term'});  # 54
+		ok($response->status_line, "+3356\015\012");             # 55
+		ok($response->status, OK);                               # 56
+		ok(!$response->is_error);                                # 57
 		ok(!$response->is_blocks);                               # 58
 		ok($response->is_gopher_plus);                           # 59
 		ok(!$response->is_menu);                                 # 60
@@ -156,12 +200,19 @@ require './t/serverfunctions.pl';
 			Selector => '/gp_period_term'
 		);
 
-		ok($response->raw_response, $ITEMS_RAW{'gp_period_term'}); # 62
-		ok($response->content, $ITEMS_CONTENT{'gp_period_term'});  # 63
-		ok($response->status_line, "+-1\015\012");                 # 64
-		ok($response->status, OK);                                 # 65
-		ok(!$response->is_error);                                  # 66
-		ok($response->is_success);                                 # 67
+		if ($response->is_success)
+		{
+			ok(1);                                              # 62
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->raw_response, $ITEMS_RAW{'gp_period_term'}); # 63
+		ok($response->content, $ITEMS_CONTENT{'gp_period_term'});  # 64
+		ok($response->status_line, "+-1\015\012");                 # 65
+		ok($response->status, OK);                                 # 66
+		ok(!$response->is_error);                                  # 67
 		ok(!$response->is_blocks);                                 # 68
 		ok($response->is_gopher_plus);                             # 69
 		ok(!$response->is_menu);                                   # 70
@@ -176,12 +227,19 @@ require './t/serverfunctions.pl';
 			Selector => '/gp_no_term'
 		);
 
-		ok($response->raw_response, $ITEMS_RAW{'gp_no_term'}); # 72
-		ok($response->content, $ITEMS_CONTENT{'gp_no_term'});  # 73
-		ok($response->status_line, "+-2\015\012");             # 74
-		ok($response->status, OK);                             # 75
-		ok(!$response->is_error);                              # 76
-		ok($response->is_success);                             # 77
+		if ($response->is_success)
+		{
+			ok(1);                                         # 72
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->raw_response, $ITEMS_RAW{'gp_no_term'}); # 73
+		ok($response->content, $ITEMS_CONTENT{'gp_no_term'});  # 74
+		ok($response->status_line, "+-2\015\012");             # 75
+		ok($response->status, OK);                             # 76
+		ok(!$response->is_error);                              # 77
 		ok(!$response->is_blocks);                             # 78
 		ok($response->is_gopher_plus);                         # 79
 		ok(!$response->is_menu);                               # 80
@@ -196,12 +254,19 @@ require './t/serverfunctions.pl';
 			Selector => '/item_blocks'
 		);
 
-		ok($response->raw_response, $ITEMS_RAW{'item_blocks'}); # 82
-		ok($response->content, $ITEMS_CONTENT{'item_blocks'});  # 83
-		ok($response->status_line, "+-1\015\012");              # 84
-		ok($response->status, OK);                              # 85
-		ok(!$response->is_error);                               # 86
-		ok($response->is_success);                              # 87
+		if ($response->is_success)
+		{
+			ok(1);                                          # 82
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->raw_response, $ITEMS_RAW{'item_blocks'}); # 83
+		ok($response->content, $ITEMS_CONTENT{'item_blocks'});  # 84
+		ok($response->status_line, "+-1\015\012");              # 85
+		ok($response->status, OK);                              # 86
+		ok(!$response->is_error);                               # 87
 		ok($response->is_blocks);                               # 88
 		ok($response->is_gopher_plus);                          # 89
 		ok(!$response->is_menu);                                # 90
@@ -216,14 +281,21 @@ require './t/serverfunctions.pl';
 			Selector => '/directory_blocks'
 		);
 
+		if ($response->is_success)
+		{
+			ok(1);                               # 92
+		}
+		else
+		{
+			warn $response->error;
+		}
 		ok($response->raw_response,
-			$ITEMS_RAW{'directory_blocks'});     # 92
+			$ITEMS_RAW{'directory_blocks'});     # 93
 		ok($response->content,
-			$ITEMS_CONTENT{'directory_blocks'}); # 93
-		ok($response->status_line, "+554\015\012");  # 94
-		ok($response->status, OK);                   # 95
-		ok(!$response->is_error);                    # 96
-		ok($response->is_success);                   # 97
+			$ITEMS_CONTENT{'directory_blocks'}); # 94
+		ok($response->status_line, "+554\015\012");  # 95
+		ok($response->status, OK);                   # 96
+		ok(!$response->is_error);                    # 97
 		ok($response->is_blocks);                    # 98
 		ok($response->is_gopher_plus);               # 99
 		ok(!$response->is_menu);                     # 100
@@ -309,7 +381,7 @@ require './t/serverfunctions.pl';
 
 	########################################################################
 	# 
-	# These tests make sure Net::Gopher::Response raises exceptions in the
+	# These tests make sure Net::Gopher::Response returns errors in the
 	# proper places:
 	#
 

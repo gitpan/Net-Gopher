@@ -277,8 +277,9 @@ sub get_attributes
 		# if it was called in scalar context, then rather than just
 		# returning the reference to the hash in $self->{'attributes'},
 		# we create a new hash with the same elements as the one in
-		# $self->{'attributes'} and return that instead to prevent the
-		# user from directly manipulating $self->{'attributes'}:
+		# $self->{'attributes'} and return a referense to that instead
+		# to prevent the user from directly manipulating
+		# $self->{'attributes'}:
 		return wantarray
 			? %{ $self->{'attributes'} }
 			: { %{ $self->{'attributes'} } };
@@ -732,7 +733,7 @@ sub extract_description
 	my $self = shift;
 
 	# get the item type and display string, selector, host, port,
-	# and Gopher+ string from the +INFO block value:
+	# and Gopher+ string from the block value:
 	my ($type_and_display, $selector, $host, $port, $gopher_plus) =
 			split(/\t/, $self->value);
 
@@ -817,7 +818,7 @@ sub extract_views
 
 	foreach my $view (split(/\n/, $self->value))
 	{
-		# separate the MIME type, language/country, and size:
+		# separate the MIME type, language/country codes, and size:
 		my ($mime_type, $language_and_country, $size) =
 			$view =~ /^([^:]*?) (?: \s ([^:]{5}) )?:(.*)$/x;
 
@@ -826,21 +827,23 @@ sub extract_views
 		if (defined $size and $size =~ /<(\.?\d+)(kb|k|b)?>/i)
 		{
 			# turn <55> into 55, <600B> into 600, <55K> into 56320,
-			# and <.5K> into 512:
-			$size_in_bytes  = $1;
+			# <.5K> into 512:
+			$size_in_bytes = $1;
 
 			if ($2 and lc $2 eq 'kb' || lc $2 eq 'k')
 			{
 				$size_in_bytes *= 1024;
 
-				# round up to nearest hole byte:
+				# round up to nearest whole byte:
 				$size_in_bytes += 0.9;
 				$size_in_bytes = int $size_in_bytes;
 			}
 		}
 
-		# get the ISO-639 language code and the ISO-3166 country code:
-		my ($language, $country) = split(/_/, $language_and_country)
+		# extract the ISO-639 language code and the ISO-3166 country
+		# code:
+		my ($language, $country);
+		($language, $country) = split(/_/, $language_and_country)
 			if (defined $language_and_country);
 
 		push(@views, {

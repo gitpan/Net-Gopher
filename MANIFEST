@@ -7,7 +7,6 @@ README
 bin/gget
 bin/out.txt
 examples/alternatestyle.pl
-examples/newservers.pl
 examples/screenshots.pl
 lib/Net/Gopher.pm
 lib/Net/Gopher/Constants.pm
@@ -17,7 +16,6 @@ lib/Net/Gopher/Request.pm
 lib/Net/Gopher/Response.pm
 lib/Net/Gopher/Response/InformationBlock.pm
 lib/Net/Gopher/Response/MenuItem.pm
-lib/Net/Gopher/Response/XML.pm
 lib/Net/Gopher/Utility.pm
 t/0-test_server_test.t
 t/1-net_gopher_request.t

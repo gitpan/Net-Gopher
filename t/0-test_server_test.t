@@ -10,7 +10,7 @@ use constant HOST        => 'localhost';
 use constant PORT        => 70;
 use constant TIMEOUT     => 30;
 
-BEGIN { plan(tests => 11) }
+BEGIN { plan(tests => 12) }
 
 
 
@@ -28,6 +28,10 @@ my $pid = open(PIPE, "perl ./t/testserver.pl -ep 70 |")
 
 ok($pid); # 2
 
+chomp(my $line = <PIPE>);
+ok($line, "# Listening on port 70..."); # 3
+
+
 my $socket = new IO::Socket::INET (
 	PeerAddr => HOST,
 	PeerPort => PORT,
@@ -36,26 +40,26 @@ my $socket = new IO::Socket::INET (
 	Timeout  => TIMEOUT
 );
 
-ok($socket); # 3
+ok($socket); # 4
 
 eval {
 	$socket->autoflush(1);
 	$socket->blocking(0);
 };
 
-ok(!$@); # 4
+ok(!$@); # 5
 
 my $select = new IO::Select ($socket);
 
-ok($select->can_write(TIMEOUT)); # 5
-ok($socket->send('test', 0), 4); # 6
-ok($socket->shutdown(SHUT_WR));  # 7
+ok($select->can_write(TIMEOUT)); # 6
+ok($socket->send('test', 0), 4); # 7
+ok($socket->shutdown(SHUT_WR));  # 8
 
-ok($select->can_read(TIMEOUT));               # 8
+ok($select->can_read(TIMEOUT));               # 9
 my $response;
-ok($socket->recv($response, BUFFER_SIZE, 0)); # 9
-ok($response, 'test');                        # 10
-ok($socket->close);                           # 11
+ok($socket->recv($response, BUFFER_SIZE, 0)); # 10
+ok($response, 'test');                        # 11
+ok($socket->close);                           # 12
 
 
 kill(INT => $pid);

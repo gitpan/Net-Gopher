@@ -124,7 +124,14 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 30
+		if ($response->is_success)
+		{
+			ok(1);                                    # 30
+		}
+		else
+		{
+			warn $response->error;
+		}
 		ok($response->raw_response, $request->as_string); # 31
 	}
 
@@ -139,8 +146,14 @@ require './t/serverfunctions.pl';
 		);
 
 		my $response = $ng->request($request);
-
-		ok($response->is_success);                        # 32
+		if ($response->is_success)
+		{
+			ok(1);                                    # 32
+		}
+		else
+		{
+			warn $response->error;
+		}
 		ok($response->raw_response, $request->as_string); # 33
 	}
 
@@ -157,7 +170,14 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 34
+		if ($response->is_success)
+		{
+			ok(1);                                    # 34
+		}
+		else
+		{
+			warn $response->error;
+		}
 		ok($response->raw_response, $request->as_string); # 35
 	}
 
@@ -174,7 +194,14 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 36
+		if ($response->is_success)
+		{
+			ok(1);                                    # 36
+		}
+		else
+		{
+			warn $response->error;
+		}
 		ok($response->raw_response, $request->as_string); # 37
 	}
 
@@ -192,7 +219,14 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 38
+		if ($response->is_success)
+		{
+			ok(1);                                    # 38
+		}
+		else
+		{
+			warn $response->error;
+		}
 		ok($response->raw_response, $request->as_string); # 39
 	}
 
@@ -210,7 +244,14 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 40
+		if ($response->is_success)
+		{
+			ok(1);                                    # 40
+		}
+		else
+		{
+			warn $response->error;
+		}
 		ok($response->raw_response, $request->as_string); # 41
 	}
 
@@ -226,7 +267,14 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 42
+		if ($response->is_success)
+		{
+			ok(1);                                    # 42
+		}
+		else
+		{
+			warn $response->error;
+		}
 		ok($response->raw_response, $request->as_string); # 43
 	}
 
@@ -242,7 +290,14 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request);
 
-		ok($response->is_success);                        # 44
+		if ($response->is_success)
+		{
+			ok(1);                                    # 44
+		}
+		else
+		{
+			warn $response->error;
+		}
 		ok($response->raw_response, $request->as_string); # 45
 	}
 
@@ -275,9 +330,18 @@ require './t/serverfunctions.pl';
 			SearchWords => ['red', 'green', 'blue']
 		);
 
-		ok($response->is_success);                                    # 46
-		ok($response->request->request_type, $request->request_type); # 47
-		ok($response->request->as_string, $request->as_string);       # 48
+		if ($response->is_success)
+		{
+			ok(1);                   # 46
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->request->request_type,
+			$request->request_type); # 47
+		ok($response->request->as_string,
+			$request->as_string);    # 48
 	}
 
 	{
@@ -297,9 +361,18 @@ require './t/serverfunctions.pl';
 			Representation => 'text/plain'
 		);
 
-		ok($response->is_success);                                    # 49
-		ok($response->request->request_type, $request->request_type); # 50
-		ok($response->request->as_string, $request->as_string);       # 51
+		if ($response->is_success)
+		{
+			ok(1);                   # 49
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->request->request_type,
+			$request->request_type); # 50
+		ok($response->request->as_string,
+			$request->as_string);    # 51
 	}
 
 	{
@@ -319,9 +392,18 @@ require './t/serverfunctions.pl';
 			Attributes     => '+ATTR'
 		);
 
-		ok($response->is_success);                                    # 52
-		ok($response->request->request_type, $request->request_type); # 53
-		ok($response->request->as_string, $request->as_string);       # 54
+		if ($response->is_success)
+		{
+			ok(1);                   # 52
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->request->request_type,
+			$request->request_type); # 53
+		ok($response->request->as_string,
+			$request->as_string);    # 54
 	}
 
 	{
@@ -341,9 +423,18 @@ require './t/serverfunctions.pl';
 			Attributes     => '+ATTR'
 		);
 
-		ok($response->is_success);                                    # 55
-		ok($response->request->request_type, $request->request_type); # 56
-		ok($response->request->as_string, $request->as_string);       # 57
+		if ($response->is_success)
+		{
+			ok(1);                   # 55
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($response->request->request_type,
+			$request->request_type); # 56
+		ok($response->request->as_string,
+			$request->as_string);    # 57
 	}
 }
 
@@ -390,10 +481,17 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);          # 59
-		ok($request == $last_request_obj);  # 60
-		ok($response== $last_response_obj); # 61
-		ok($content_matches);               # 62
+		if ($response->is_success)
+		{
+			ok(1);                       # 59
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($request  == $last_request_obj);  # 60
+		ok($response == $last_response_obj); # 61
+		ok($content_matches);                # 62
 	}
 
 	{
@@ -420,8 +518,15 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 63
-		ok($request == $last_request_obj);   # 64
+		if ($response->is_success)
+		{
+			ok(1);                       # 63
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($request  == $last_request_obj);  # 64
 		ok($response == $last_response_obj); # 65
 		ok($content_matches);                # 66
 	}
@@ -450,10 +555,17 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);         # 67
-		ok($request, $last_request_obj);   # 68
-		ok($response, $last_response_obj); # 69
-		ok($content_matches);              # 70
+		if ($response->is_success)
+		{
+			ok(1);                       # 67
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($request  == $last_request_obj);  # 68
+		ok($response == $last_response_obj); # 69
+		ok($content_matches);                # 70
 	}
 
 	{
@@ -480,8 +592,15 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 71
-		ok($request == $last_request_obj);   # 72
+		if ($response->is_success)
+		{
+			ok(1);                       # 71
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($request  == $last_request_obj);  # 72
 		ok($response == $last_response_obj); # 73
 		ok($content_matches);                # 74
 	}
@@ -510,8 +629,15 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 75
-		ok($request == $last_request_obj);   # 76
+		if ($response->is_success)
+		{
+			ok(1);                       # 75
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($request  == $last_request_obj);  # 76
 		ok($response == $last_response_obj); # 77
 		ok($content_matches);                # 78
 	}
@@ -540,8 +666,15 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 79
-		ok($request == $last_request_obj);   # 80
+		if ($response->is_success)
+		{
+			ok(1);                       # 79
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($request  == $last_request_obj);  # 80
 		ok($response == $last_response_obj); # 81
 		ok($content_matches);                # 82
 	}
@@ -570,8 +703,15 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 83
-		ok($request == $last_request_obj);   # 84
+		if ($response->is_success)
+		{
+			ok(1);                       # 83
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($request  == $last_request_obj);  # 84
 		ok($response == $last_response_obj); # 85
 		ok($content_matches);                # 86
 	}
@@ -600,8 +740,15 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 87
-		ok($request == $last_request_obj);   # 88
+		if ($response->is_success)
+		{
+			ok(1);                       # 87
+		}
+		else
+		{
+			warn $response->error;
+		}
+		ok($request  == $last_request_obj);  # 88
 		ok($response == $last_response_obj); # 89
 		ok($content_matches);                # 90
 	}
@@ -621,7 +768,14 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request, File => 'test.txt');
 
-		ok($response->is_success);                # 91
+		if ($response->is_success)
+		{
+			ok(1);                            # 91
+		}
+		else
+		{
+			warn $response->error;
+		}
 		ok(open(TEST, 'test.txt'));               # 92
 		ok(join('', <TEST>), $response->content); # 93
 		close TEST;
@@ -639,7 +793,15 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request, File => 'test2.txt');
 
-		ok($response->is_success);                 # 96
+
+		if ($response->is_success)
+		{
+			ok(1);                             # 96
+		}
+		else
+		{
+			warn $response->error;
+		}
 		ok(open(TEST2, 'test2.txt'));              # 97
 		ok(join('', <TEST2>), $response->content); # 98
 		close TEST2;

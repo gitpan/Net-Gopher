@@ -187,7 +187,7 @@ use constant MAX_STATUS_LINE_SIZE => 64;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '1.02';
+$VERSION = '1.05';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -434,6 +434,8 @@ sub request
 
 	my ($file, $handler) = check_params(['File', 'Handler'], \@_);
 
+
+
 	# the response object we'll return:
 	my $response = new Net::Gopher::Response;
 	   $response->ng($self);
@@ -459,11 +461,20 @@ sub request
 			or $request->request_type == ITEM_ATTRIBUTE_REQUEST
 			or $request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
 
+	# Is this a Gopher+ style request/response cycle? (Complete with
+	# additional tab delimited fields in the request string we're going to
+	# send and a status line prefixing the response we're going to receive?)
+	my $is_gopher_plus;
+	$is_gopher_plus = 1
+		if ($request->request_type == GOPHER_PLUS_REQUEST
+			or $request->request_type == ITEM_ATTRIBUTE_REQUEST
+			or $request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
+
 	# clear any previous network error that occurred during a prior call to
 	# request():
 	$self->_network_error(undef);
 
-	# try to connect to the server:
+	# now, try to connect to the server:
 	my $socket = new IO::Socket::INET (
 		PeerAddr => $request->host,
 		PeerPort => $request->port,
@@ -477,15 +488,6 @@ sub request
 	if ($socket)
 	{
 		$self->_socket($socket);
-
-		# show the hostname, IP address, and port number for debugging:
-		$self->debug_print(
-			sprintf("Connected to \"%s\" (%s) at port %d.",
-				$request->host,
-				$self->_socket->peerhost,
-				$self->_socket->peerport
-			)
-		);
 	}
 	else
 	{
@@ -504,18 +506,27 @@ sub request
 		return $response->error($self->_network_error);
 	}
 
+	# show the hostname, IP address, and port number for debugging:
+	$self->debug_print(
+		sprintf("Connected to \"%s\" (%s) at port %d.",
+			$request->host,
+			$self->_socket->peerhost,
+			$self->_socket->peerport
+		)
+	);
+
 	# we want non-buffering, non-blocking (*especially* non-blocking) IO:
 	$self->_socket->autoflush(1);
 	$self->_socket->blocking(0);
 
-	# the IO::Select object for our socket (we'll use this to check for
-	# timeouts):
-	$self->_select(new IO::Select ($self->_socket));
+	# we'll use this to check for timeouts:
+	$self->_select(
+		new IO::Select ($self->_socket)
+	);
 
 
 
-	# generate a string containing the request from the request object
-	# and send it to the server:
+	# now we're ready to send the request:
 	my $request_string = $request->as_string;
 
 	$self->_write_to_socket($request_string);
@@ -533,16 +544,9 @@ sub request
 
 
 
-	# is this a Gopher+ style request/response cycle? (Complete with
-	# additional tab delimited fields in the request string that we sent
-	# and a status line prefixing the response we're about to receive?)
-	my $is_gopher_plus;
-	$is_gopher_plus = 1
-		if ($request->request_type == GOPHER_PLUS_REQUEST
-			or $request->request_type == ITEM_ATTRIBUTE_REQUEST
-			or $request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
-
-	# this sub is used to store the received response inside of the
+	# Now for the server's response:
+	# 
+	# This sub is used to store the received response inside of the
 	# response object and make sure any user-defined response handler is
 	# called. It takes a buffer as its only argument, adds it to the
 	# response object, and calls any user-defined response handler with the
@@ -572,11 +576,11 @@ sub request
 
 	# This branch of code below is used to receive the response. It does so
 	# in one of two ways: either as a Gopher+ style request/response cycle
-	# or as a plain-old Gopher request/response cycle. For Gopher+, we
-	# first need to read the status line prefixing the response so we can
-	# look at the transfer type and decide how to receive the response. For
-	# Gopher, we just read from the stream until the server closes the
-	# connection.
+	# or as a plain-old Gopher request/response cycle. For Gopher+
+	# responses, we first need to read the status line prefixing the
+	# response so we can look at the transfer type and decide how to
+	# receive it. For Gopher, we just read from the stream until the server
+	# closes the connection.
 	# 
 	# For Gopher+, $remainder will store any additional bytes we end up
 	# reading beyond the status line, or if we don't find the status line,
@@ -587,9 +591,11 @@ sub request
 	{
 		$response->_add_raw($status_line);
 
-		# get the status (+ or -) and transfer type (either -1, -2, or
-		# the length of the response content in bytes) of the response:
-		my ($status,$transfer_type) = $status_line =~ /^(.)(.+?)$CRLF$/;
+		# get the status character (+ or -) and transfer type (either
+		# -1, -2, or the length of the response content in bytes) of
+		# the response:
+		my $status        = substr($status_line, 0, 1);
+		my $transfer_type = substr($status_line, 1, -2);
 
 		$response->status_line($status_line);
 		$response->status($status);
@@ -650,11 +656,11 @@ sub request
 
 		# If the transfer type was not -1 or -2 and instead contained
 		# the length of the response content, then we'll make sure we
-		# received a response containing that many bytes, but--since
-		# we live in a world structured by things such as NULL
-		# terminators--it makes sense to allow for at least a one byte
-		# discrepancy between the size in the transfer type and actual
-		# size of the response content:
+		# received a response containing at least that many bytes,
+		# but--since we live in a world structured by things such as
+		# NULL terminators--it makes sense to allow for at least a one
+		# byte discrepancy between the size in the transfer type and
+		# the actual size of the response content:
 		if ($transfer_type != PERIOD_TERMINATED
 			and $transfer_type != NOT_TERMINATED)
 		{

@@ -116,17 +116,13 @@ use strict;
 use warnings;
 use vars qw(@ISA);
 use Carp;
-use IO::File;
-use IO::String;
-use XML::Writer;
 use Net::Gopher::Constants ':all';
 use Net::Gopher::Debugging;
 use Net::Gopher::Exception;
 use Net::Gopher::Response::InformationBlock;
 use Net::Gopher::Response::MenuItem;
-use Net::Gopher::Response::XML qw(gen_block_xml gen_menu_xml gen_text_xml);
 use Net::Gopher::Utility qw(
-	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS
+	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN
 
 	check_params
 	convert_newlines
@@ -1062,135 +1058,6 @@ sub has_block
 
 #==============================================================================#
 
-=head2 as_xml([OPTIONS])
-
-This method converts a Gopher or Gopher+ response to XML; either returning the
-generated XML or saving it to disk.
-
-This method takes several named parameters:
-
-=over 4
-
-=item File
-
-The I<File> parameter is used to specify the filename of the file where the XML
-will be outputted to. If a file with that name doesn't exist, it will be
-created. If a file with that name already exists, anything in it will be
-overwritten.
-
-=item Pretty
-
-The I<Pretty> parameter is used to control the style of the markup. If
-I<Pretty> is true, then this method will insert linebreaks between tags and
-add indentation. By default, pretty is true.
-
-=item Declaration
-
-The I<Declaration> parameter tells the method whether or not it should generate
-an XML C<E<lt>?xml ...?E<gt> declaration at the beginning of the generated XML.
-By default, this is true.
-
-=back
-
-If you don't specify I<File>, then rather than being saved to disk, a string
-containing the generated XML will be returned to you.
-
-=cut
-
-sub as_xml
-{
-	my $self = shift;
-
-	$self->call_warn(
-		sprintf("You sent a %s request for a %s item. The response " .
-		        "shouldn't contain text and shouldn't be " .
-			"convertable to XML.",
-			$self->request->request_type == GOPHER_PLUS_REQUEST
-				? 'Gopher+'
-				: 'Gopher',
-			$ITEM_DESCRIPTIONS{$self->request->item_type}
-		)
-	) unless ($self->is_text
-		or !exists $ITEM_DESCRIPTIONS{$self->request->item_type});
-
-	my ($filename, $pretty, $declaration) =
-		check_params(['File', 'Pretty', 'Declaration'], \@_);
-
-	# default to on if either was not supplied:
-	$pretty      = (defined $pretty) ? $pretty : 1;
-	$declaration = (defined $declaration) ? $declaration : 1;
-
-
-
-	# either an IO::Handle object if a filename was supplied or an
-	# IO::String object:
-	my $handle;
-
-	# this will store the generated XML to be returned if no filename was
-	# supplied:
-	my $xml;
-
-	if (defined $filename)
-	{
-		$handle = new IO::File ("> $filename")
-			or return $self->call_die(
-				"Couldn't open file ($filename) to " .
-				"save XML to: $!."
-			);
-	}
-	else
-	{
-		# use a string instead:
-		$handle = new IO::String ($xml);
-	}
-
-
-
-	my $writer = new XML::Writer (
-		OUTPUT      => $handle,
-		DATA_MODE   => $pretty ? 1 : 0, # add newlines.
-		DATA_INDENT => $pretty ? 3 : 0  # use a three-space indent.
-	);
-
-	$writer->xmlDecl('UTF-8') if ($declaration);
-
-	if (($self->request->request_type == ITEM_ATTRIBUTE_REQUEST
-		or $self->request->request_type == DIRECTORY_ATTRIBUTE_REQUEST)
-			and $self->is_blocks)
-	{
-		gen_block_xml($self, $writer);
-	}
-	elsif (($self->request->item_type eq GOPHER_MENU_TYPE
-		or $self->request->item_type eq INDEX_SEARCH_SERVER_TYPE)
-			and $self->is_menu)
-	{
-		gen_menu_xml($self, $writer);
-	}
-	else
-	{
-		gen_text_xml($self, $writer);
-	}
-
-	$writer->end;
-
-
-
-	if (defined $filename)
-	{
-		$handle->close;
-	}
-	else
-	{
-		return $xml;
-	}
-}
-
-
-
-
-
-#==============================================================================#
-
 =head2 is_success()
 
 This method will return true if the request was successful, undef otherwise.
@@ -1596,10 +1463,9 @@ sub _extract_blocks
 
 	my $raw_response = $self->raw_response;
 
-	# remove the status line:
+	# remove any status line and terminating period on a line by itself
+	# so we're left with just the blocks and nothing else:
 	strip_status_line($raw_response) if ($self->is_gopher_plus);
-
-	# remove the terminating period on a line by itself:
 	strip_terminator($raw_response) if ($self->is_terminated);
 
 	# remove the leading + for the first block name:

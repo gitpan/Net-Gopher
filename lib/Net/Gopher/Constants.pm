@@ -230,6 +230,7 @@ sub UNIX_UUENCODED_FILE_TYPE()     { return 6 }
 sub INDEX_SEARCH_SERVER_TYPE()     { return 7 }
 sub TELNET_SESSION_TYPE()          { return 8 }
 sub BINARY_FILE_TYPE()             { return 9 }
+sub REDUNDANT_SERVER_TYPE()        { return '+' }
 sub GIF_IMAGE_TYPE()               { return 'g' }
 sub IMAGE_FILE_TYPE()              { return 'I' }
 sub TN3270_SESSION_TYPE()          { return 'T' }
