@@ -9,7 +9,7 @@ use strict;
 use warnings;
 use Carp;
 use Time::Local qw(timelocal);
-use Net::Gopher::Utility qw($NEWLINE);
+use Net::Gopher::Utility qw(check_params $NEWLINE);
 
 
 
@@ -23,11 +23,12 @@ sub new
 {
 	my $invo  = shift;
 	my $class = ref $invo || $invo;
-	my %args  = @_;
+
+	my ($name, $value) = check_params(['BlockName', 'BlockValue'], @_);
 
 	my $self = {
-		name  => $args{'BlockName'},
-		value => $args{'BlockValue'}
+		name  => $name,
+		value => $value
 	};
 
 	bless($self, $class);
@@ -287,7 +288,7 @@ sub as_views
 	foreach my $view (split(/\n/, $self->content))
 	{
 		# separate the MIME type, language, and size:
-		my ($mime_type, $lang, $size) =
+		my ($mime_type, $language, $size) =
 			$view =~ /^([^:]*?) (?: \s ([^:]{5}) )?:(.*)$/x;
 
 		if (defined $size and $size =~ /<(\.?\d+)(?:(k)|b)?>/i)
@@ -300,7 +301,7 @@ sub as_views
 
 		push(@views, {
 				type     => $mime_type,
-				language => $lang,
+				language => $language,
 				size     => $size
 			}
 		);
@@ -312,6 +313,8 @@ sub as_views
 
 
 
+
+#==============================================================================#
 
 sub is_attributes
 {
@@ -332,6 +335,8 @@ sub is_attributes
 
 
 
+
+#==============================================================================#
 
 sub parse
 {
@@ -358,6 +363,8 @@ sub parse
 
 
 
+
+#==============================================================================#
 
 sub _get_attributes_hash
 {

@@ -1,6 +1,7 @@
 Changes
 COPYING
 lib/Net/Gopher.pm
+lib/Net/Gopher/Request.pm
 lib/Net/Gopher/Response.pm
 lib/Net/Gopher/Utility.pm
 lib/Net/Gopher/Response/Blocks.pm

@@ -1,5 +1,56 @@
 Revision history for Perl extension Net::Gopher.
 
+0.77 - This version incorporates a wealth of new functionality into
+       Net::Gopher, including:
+
+       (a)
+           A  new  class,  Net::Gopher::Response,  is   used   to   encapsulate
+           requests. This class has accessor methods to modify  every  relevant
+           aspect of a Gopher/Gopher+ request, as well  as  named  constructors
+           you can import for each type of request.
+
+       (b)
+           The Net::Gopher connect() and disconnect()  methods  are  gone.  The
+           request() method now takes care of connecting and  disconnecting  by
+           itself.
+
+       (c)
+           The request() method now takes a Net::Gopher::Request object as  its
+           first argument. In addition, it  takes  the  parameters  "File"  and
+           "Callback," with the first specifying  a  file  where  the  response
+           content should be outputted to, and the other, a reference to a  sub
+           that will be called as the response is collected.
+
+       (d)
+           The request_url() method is gone.
+
+       (e)
+           Net::Gopher  now  has  the  Net::Gopher::Request  shortcut   methods
+           gopher(), gopher_plus(), item() and directory().
+
+       (f)
+           _get_buffer() is gone, replaced with _read() to do all reading,  and
+           a new function, _write(), used to do all writing.
+
+       (g)
+           The code to generate the request string from the parameters or  from
+           a URL has been moved to Net::Gopher::Request.
+
+       (h)
+           All   response   content-modifying   code   has   been   moved    to
+           Net::Gopher::Response,    which    means    _unescape    is    gone.
+           Net::Gopher::Response now has the  methods  _convert_newlines()  and
+           _clean_period_termination() to do that work.
+
+       (i)
+           Net::Gopher::Response  now  has  the   convenient   is_gopher_plus()
+           method and the is_text() method.
+
+       (j)
+           Added check_params()  routine  to  Net::Gopher::Utility.  This  will
+           ensure that param names are not misspelled, raising an error if  the
+           user supplies an invalid parameter name when calling a method.
+
 0.57 - Added new Net::Gopher::Response::Blocks class and moved all block  value
        manipulation methods  to  there.  All  newlines  are  now  converted  to
        standard Unix linefeed characters in the response content.

@@ -9,7 +9,7 @@ Net::Gopher::Response - Class encapsulating Gopher responses
 
  use Net::Gopher;
  ...
- my $response = $gopher->request($selector, Type => $type);
+ my $response = $gopher->request($request);
  
  if ($response->is_success) {
  	if ($response->is_menu) {
@@ -26,7 +26,7 @@ Net::Gopher::Response - Class encapsulating Gopher responses
  
  	if ($response->is_blocks) {
 		# when issuing item attribute information requests, use
-		# item_blocks() to retieve Net::Gopher::Response::Blocks
+		# item_blocks() to retrieve Net::Gopher::Response::Blocks
 		# objects, which you can call methods like as_info() and
 		# as_admin() on to parse the block values:
  		my %info = $response->item_blocks('INFO')->as_info;
@@ -56,7 +56,7 @@ from Gopher and Gopher+ servers.
 In Gopher, a response is just a series of bytes terminated by a period on a
 line by itself. In Gopher+, a response consists of a status line (the first
 line), of which the first character is the status (success or failure; + or -),
-followed by a newline (CRLF), and the content of the response. This class
+followed by a newline (CRLF) and the content of the response. This class
 contains methods to help you manipulate both Gopher as well as Gopher+
 responses.
 
@@ -70,7 +70,10 @@ use 5.005;
 use strict;
 use warnings;
 use Carp;
-use Net::Gopher::Utility qw($CRLF $NEWLINE);
+use Net::Gopher::Utility qw(
+	check_params
+	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
+);
 use base qw(Net::Gopher::Response::Blocks);
 
 
@@ -83,35 +86,35 @@ sub new
 {
 	my $invo  = shift;
 	my $class = ref $invo || $invo;
-	my %args  = @_;
 	
-	# remove the socket class name from error messages (IO::Socket
-	# puts them in):
-	if (defined $args{'Error'})
-	{
-		$args{'Error'} =~ s/IO::Socket::INET:\s//g;
-	}
+	my ($error, $request, $response, $status_line, $status, $content) =
+		check_params(
+			[
+				'Error', 'Request', 'Response',
+				'StatusLine', 'Status', 'Content'
+			], @_
+		);
 
 	my $self = {
 		# any error that occurred while sending the request or while
 		# receiving the response:
-		error       => $args{'Error'},
+		error       => $error,
 
-		# the request that was sent to the server:
-		request     => $args{'Request'},
+		# the request object:
+		request     => $request,
 
-		# the entire response, every single byte:
-		response    => $args{'Response'},
+		# the entire response--every single byte:
+		response    => $response,
 
 		# the first line of the response including the newline (only
 		# in Gopher+):
-		status_line => $args{'StatusLine'},
+		status_line => $status_line,
 
 		# the status code (+ or -) (only in Gopher+):
-		status      => $args{'Status'},
+		status      => $status,
 
 		# content of the response:
-		content     => $args{'Content'},
+		content     => $content,
 
 		# if this was a Gopher+ item/directory attribute information
 		# request, then this will be used to store the parsed
@@ -120,6 +123,14 @@ sub new
 	};
 
 	bless($self, $class);
+
+	# remove the socket class name from error messages (IO::Socket
+	# puts them in):
+	if (defined $self->error)
+	{
+		$self->{'error'} =~ s/IO::Socket::INET:\s//g;
+	}
+
 	return $self;
 }
 
@@ -166,16 +177,16 @@ sub status { return shift->{'status'} }
 Both C<content()> and C<as_string()> can be used to retrieve the strings
 containing the server's response. With C<content()>, however, if the item
 requested was text, then escaped periods are unescaped (i.e., '..' at the start
-of a line becomes '.'). Also, if the response was terminated by a period on a
+of a line becomes '.'). Also if the response was terminated by a period on a
 line by itself but it isn't a text file or menu, then the period on a line by
 itself will be removed from the content (though you can still check to see if
 it was period terminated using the
 L<is_terminated()|Net::Gopher::Response/is_terminated()> method). This is
 because if you were requesting an image or some other non-text file, odds are
-you don't want the newline and period at the end the content. And finally, if
+you don't want the newline and period at the end the content. And finally if
 the item was text, then line endings are converted from CRLF and CR to LF. This
-is done so you can use '\n', '.', etc., in patterns (if any of that sounded
-unusual to you, please read C<perldoc -f binmode>).
+is done so you can use '\n', '.', etc., in patterns (please read
+C<perldoc -f binmode> (it's short)).
 
 In Gopher+, besides the modifications listed above, C<content()> does not
 include the status line (first line) of the response (since the status line
@@ -213,7 +224,7 @@ If you got a Gopher menu as your response from the server, then you can use
 this method to parse it and return its values. When called, this method will
 parse the content returned by C<content()> and return either an array (in list
 context) or a reference to an array (in scalar context) containing references
-to hashes as its elements. Each hash contains the data for one menu item, and
+to hashes as its elements. Each hash contains the data for one menu item and
 has the following key=value pairs:
 
  type        = The item type (e.g., 0, 1, I, g, etc.);
@@ -269,15 +280,16 @@ sub as_menu
 		);
 	}
 
-	if (wantarray)
-	{
-		return @menu;
-	}
-	else
-	{
-		return \@menu;
-	}
+	return (wantarray) ? @menu : \@menu;
 }
+
+
+
+
+
+#==============================================================================#
+
+sub request { return shift->{'request'} };
 
 
 
@@ -447,37 +459,49 @@ sub directory_blocks
 			%match = %$from_item;
 		}
 
+		my ($n,$type,$display,$selector,$host,$port,$gopher_plus) =
+			check_params(
+				[
+					'N', 'Type', 'Display', 'Selector',
+					'Host', 'Port', 'GopherPlus'
+				], %match
+		);
+
 		# a reference to hash contaiing the block names and values
 		# for the item the user specified:
 		my $matching_item;
 
 		# the items to search:
-		my @items = $match{'N'}
-				? $self->{'blocks'}[$match{'N'} - 1]
+		my @items = (defined $n)
+				? $self->{'blocks'}[$n - 1]
 				: @{ $self->{'blocks'} };
 
-		# the %match keys and corresponding as_info() keys:
-		my %keys = (
-			Type       => 'type',
-			Display    => 'display',
-			Selector   => 'selector',
-			Host       => 'host',
-			GopherPlus => 'gopher_plus'
+
+
+		my %template = (
+			type        => $type,
+			display     => $display,
+			selector    => $selector,
+			host        => $host,
+			port        => $port,
+			gopher_plus => $gopher_plus
 		);
 
 		# now search the items looking for the one that matches:
 		foreach my $item (@items)
 		{
+			# get the item's INFO block:
 			my %info = $item->{'INFO'}->as_info;
 
 			my $matches = 1;
-			while (my ($m, $i) = each %keys)
+			foreach my $key (keys %template)
 			{
-				next unless (defined $match{$m});
+				next unless (defined $template{$key});
 
-				if (ref $match{$m} eq 'Regexp')
+				# check the value against the template:
+				if (ref $template{$key} eq 'Regexp')
 				{
-					unless ($info{$i} =~ $match{$m})
+					unless ($info{$key} =~ $template{$key})
 					{
 						$matches = 0;
 						last;
@@ -485,7 +509,7 @@ sub directory_blocks
 				}
 				else
 				{
-					unless ($info{$i} eq $match{$m})
+					unless ($info{$key} eq $template{$key})
 					{
 						$matches = 0;
 						last;
@@ -499,8 +523,6 @@ sub directory_blocks
 				last;
 			}
 		}
-
-
 
 		return unless ($matching_item);
 
@@ -718,6 +740,34 @@ sub is_blocks
 	{
 		return;
 	}
+	
+}
+
+
+
+
+
+#==============================================================================#
+
+=head2 is_gopher_plus()
+
+This method will return true if the response was a Gopher+ style response with
+a status line, status, etc.
+
+=cut
+
+sub is_gopher_plus
+{
+	my $self = shift;
+
+	if ($self->status_line)
+	{
+		return 1;
+	}
+	else
+	{
+		return;
+	}
 }
 
 
@@ -728,7 +778,7 @@ sub is_blocks
 
 =head2 is_menu()
 
-This method will return true if the response is a Gopher menu which can be
+This method will return true if the response is a Gopher menu that can be
 parsed with as_menu(); false otherwise.
 
 =cut
@@ -786,6 +836,48 @@ sub is_terminated
 
 
 
+sub is_text
+{
+	my $self = shift;
+
+	return unless ($self->is_success);
+
+	if ($self->is_gopher_plus)
+	{
+		if ($self->request->item_type eq '0'
+			or $self->request->item_type eq '1'
+			or (defined $self->request->representation
+				and $self->request->representation =~
+					/^(text\/.*|
+					   Directory\/.*|
+					   application\/gopher\+?\-menu)/ix))
+		{
+			return 1;
+		}
+		else
+		{
+			return;
+		}
+			
+	}
+	else
+	{
+		if ($self->request->item_type eq '0'
+			or $self->request->item_type eq '1')
+		{
+			return 1;
+		}
+		else
+		{
+			return;
+		}
+	}
+}
+
+
+
+
+
 #==============================================================================#
 
 =head2 error()
@@ -796,6 +888,93 @@ error has occurred.
 =cut
 
 sub error { return shift->{'error'} }
+
+
+
+
+
+################################################################################
+#
+#	Method
+#		_convert_newlines()
+#
+#	Purpose
+#		This method is used to conver all CRLF and CR line endings in
+#		the response content with LF so the '\n', '.', '\s', etc. meta
+#		symbols will work in pattern matches (see <perldoc -f binmode>
+#		for more).
+#
+#	Parameters
+#		None.
+#
+
+sub _convert_newlines
+{
+	my $self = shift;
+
+	# replace CRLF and CR with LF:
+	$self->{'content'} =~ s/\015\012/\012/g;
+	$self->{'content'} =~ s/\015/\012/g;
+}
+
+
+
+
+
+################################################################################
+#
+#	Method
+#		_clean_period_termination()
+#
+#	Purpose
+#		For responses that are terminated by periods on lines by
+#		themselves, this method will remove from the response content
+#		everything on after the period on a line by itself, unescape
+#		escaped periods, and--for non-text items--remove the period on
+#		a line by itself too.
+#
+#	Parameters
+#		None.
+#
+
+sub _clean_period_termination
+{
+	my $self = shift;
+
+	# For items terminated by periods on lines by themselves, lines that
+	# only contain periods are escaped by adding another period. Those
+	# lines must be unescaped:
+	$self->{'content'} =~ s/($NEWLINE)\.\.($NEWLINE)/$1.$2/g;
+
+	# remove anything after the period on a line by itself:
+	$self->{'content'} =~ s/($NEWLINE\.$NEWLINE?).*/$1/s;
+
+	# if there's a status, then the response was a Gopher+ request, item
+	# attribute information request, or a directory attribute information
+	# request:
+	my $type = $self->request->item_type;
+	unless ($self->is_text)
+	{
+		if ($self->is_gopher_plus)
+		{
+			if (exists $GOPHER_PLUS_ITEM_TYPES{$type})
+			{
+				# remove the period on a line by itself in the
+				# response content for this non-text response:
+				$self->{'content'} =~ s/$NEWLINE\.$NEWLINE?//;
+			}
+		}
+		else
+		{
+			if (exists $GOPHER_ITEM_TYPES{$type})
+			{
+				# remove the period on a line by itself in the
+				# response content for this non-text response:
+				$self->{'content'} =~ s/$NEWLINE\.$NEWLINE?//;
+			}
+		}
+	}
+}
 
 
 
@@ -821,7 +1000,7 @@ sub _parse_blocks
 {
 	my $self    = shift;
 
-	# $self->{'blocks'} will contain a reference to an array which
+	# $self->{'blocks'} will contain a reference to an array that
 	# will have hashrefs as its elements. Each hash will contain the item
 	# attribute information block names and block values for a single item.
 	# For Gopher+ '!' requests, the $self->{'blocks'} array will only
@@ -1059,6 +1238,10 @@ then this method will return true; false otherwise.
 If you encounter bugs, you can alert me of them by emailing me at
 <william_g_davis at users dot sourceforge dot net> or, if you have PerlMonks
 account, you can go to perlmonks.org and /msg me (William G. Davis).
+
+=head1 SEE ALSO
+
+Net::Gopher, Net::Gopher::Request
 
 =head1 COPYRIGHT
 

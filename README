@@ -1,4 +1,4 @@
-Net::Gopher version 0.57
+Net::Gopher version 0.77
 ========================
 
 
@@ -36,7 +36,8 @@ there's nothing (to) horribly wrong with your distribution.
 DEPENDENCIES
 
 
-This module requires these other modules and libraries:
+This module requires these other modules and libraries that do not come  with
+the standard library:
 
  URI.
 
