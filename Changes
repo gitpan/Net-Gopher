@@ -1,5 +1,7 @@
 Revision history for Perl extension Net::Gopher.
 
+0.80 - Many more POD changes.
+
 0.78 - POD changes in each module.
 
 0.77 - This version incorporates a wealth of new functionality into

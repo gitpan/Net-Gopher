@@ -53,12 +53,16 @@ The L<Net::Gopher|Net::Gopher> C<request()>, C<gopher()>, C<gopher_plus()>,
 C<item()>, and C<directory()> methods all return B<Net::Gopher::Response>
 objects. These objects encapsulate responses from Gopher and Gopher+ servers.
 
-In Gopher, a response is just a series of bytes terminated by a period on a
+In Gopher, a response consists of a series of bytes terminated by a period on a
 line by itself. In Gopher+, a response consists of a status line (the first
 line), of which the first character is the status (success or failure; + or -),
-followed by a newline (CRLF) and the content of the response. This class
-contains methods to help you manipulate both Gopher as well as Gopher+
-responses.
+followed by a newline (CRLF) and the content of the response.
+
+This class contains methods to help you manipulate both Gopher as well as
+typical Gopher and Gopher+ responses. In addition, there's a sub class called
+L<Net::Gopher::Response::Blocks|Net::Gopher::Response/BLOCK METHODS> that is
+used in conjunction with several methods in this class to help you parse and
+manipulate item and directory attribute information blocks.
 
 =head1 METHODS
 
@@ -301,7 +305,8 @@ sub request { return shift->{'request'} };
 
 C<item_blocks()>, C<directory_blocks()>, and C<as_blocks()> allow you to parse
 information blocks. Each of these methods returns one or more information
-blocks in the form of L<Net::Gopher::Response::Blocks|BLOCK METHODS> objects.
+blocks in the form of
+L<Net::Gopher::Response::Blocks|Net::Gopher::Response/BLOCK METHODS> objects.
 
 This method is a more simple alternative to the C<directory_blocks()> method.
 Use this method when you make item attribute information requests (!) and
@@ -359,7 +364,8 @@ sub item_blocks
 
 C<item_blocks()>, C<directory_blocks()>, and C<as_blocks()> allow you to parse
 information blocks. Each of these methods returns one or more information
-blocks in the form of L<Net::Gopher::Response::Blocks|BLOCK METHODS> objects.
+blocks in the form of
+L<Net::Gopher::Response::Blocks|Net::Gopher::Response/BLOCK METHODS> objects.
 
 If the request was a Gopher+ directory attribute information request, then you
 can use method to get attribute information blocks for any of the items in the
@@ -421,7 +427,7 @@ specify any block names, only a parameters hash or item number:
  	}
  );
 
-Or:
+or:
 
  # the names of all of the blocks for the fourth item:
  my @block_names = $response->directory_blocks(4);
@@ -567,7 +573,8 @@ sub directory_blocks
 
 C<item_blocks()>, C<directory_blocks()>, and C<as_blocks()> allow you to parse
 information blocks. Each of these methods returns one or more information
-blocks in the form of L<Net::Gopher::Response::Blocks|BLOCK METHODS> objects.
+blocks in the form of
+L<Net::Gopher::Response::Blocks|Net::Gopher::Response/BLOCK METHODS> objects.
 
 This method can be used to directly get all of the information blocks at once.
 If you made a directory attribute information request, then the blocks are

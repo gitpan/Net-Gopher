@@ -16,7 +16,7 @@ Net::Gopher::Request - Class encapsulating Gopher requests
  	ItemType => 1
  );
  
- # or, to create a Gopher+ request:
+ # to create a Gopher+ request:
  my $request = new Net::Gopher::Request ('GopherPlus',
  	Host           => 'gopher.host.com',
  	Selector       => '/item',
@@ -24,14 +24,14 @@ Net::Gopher::Request - Class encapsulating Gopher requests
  	ItemType       => 0
  );
  
- # or, to create a Gopher+ item attribute information request:
+ # to create a Gopher+ item attribute information request:
  $request = new Net::Gopher::Request ('ItemAttribute',
  	Host       => 'gopher.host.com',
  	Selector   => '/some_item.txt',
  	Attributes => ['+INFO', '+VIEWS']
  );
  
- # or, to create a Gopher+ directory attribute information request:
+ # to create a Gopher+ directory attribute information request:
  $request = new Net::Gopher::Request ('DirectoryAttribute',
  	Host       => 'gopher.host.com',
  	Selector   => '/some_dir',
@@ -42,8 +42,8 @@ Net::Gopher::Request - Class encapsulating Gopher requests
  $request = new Net::Gopher::Request ('URL', 'gopher://gopher.host.com/1');
 
  # you can also send arguments as a hashref instead:
- my $request = new Net::Gopher::Request (
- 	'Gopher' => {
+ my $request = new Net::Gopher::Request ('Gopher',
+ 	{
  		Host     => 'gopher.host.com',
  		Selector => '/menu',
  		ItemType => 1
@@ -61,9 +61,9 @@ This module encapsulates Gopher and Gopher+ requests. Typical usage of this
 module is calling the C<new()> method to create a new request object, then
 passing it on to the B<Net::Gopher> C<request()> method.
 
-An aternative to C<new()> are the five named constructors detailed below in
-L<FUNCTIONS|Net::Gopher::Request/FUNCTIONS>. You can also import them and call
-them like functions.
+An aternative to the C<new()> method are the five named constructors detailed
+below in L<FUNCTIONS|Net::Gopher::Request/FUNCTIONS>. You can also import them
+and call them like functions.
 
 For storing and manipulating requests, this class also provides accessor
 methods to manipulate each element of a request object.
@@ -106,21 +106,21 @@ use URI;
 This method creates a new Net::Gopher::Request object, encapsulating a Gopher
 or Gopher+ request.
 
-The first argument specifies what type of request you're sending. You're
-options are as follows: Gopher, for a Gopher request; GopherPlus, for a Gopher+
-request; ItemAttribute, for a Gopher+ item attribute information request;
-DirectoryAttribute, for a Gopher+ directory attribute information request; and
-URL, which allows you to create one of the aforementioned requests using a URL
-instead of a series of named parameters.
+The first argument specifies what type of request you're creating. You're
+options are as follows: I<Gopher>, for a Gopher request; I<GopherPlus>, for a
+Gopher+ request; I<ItemAttribute>, for a Gopher+ item attribute information
+request; I<DirectoryAttribute>, for a Gopher+ directory attribute information
+request; and I<URL>, which allows you to create one of the aforementioned
+requests using a URL instead of a series of named parameters.
 
-For all types other than URL, following the type are a series of named
+For all types other than I<URL>, following the type are a series of named
 parameters optionally in the form of a hash ref.
 
 Depending on which type you specify, your usage will vary:
 
 =over 4
 
-=item Gopher
+=item I<Gopher>
 
 For Gopher requests the available Name=value pairs are:
 
@@ -138,20 +138,20 @@ E.g.:
  	ItemType    => 0
  );
 
-Also note that you can send the search words as a reference to an array
-containing each word as opposed to one big string containing the words:
+You can send the search words as a reference to an array containing each word
+as opposed to one big string containing the words:
 
  my $request = new Net::Gopher::Request ('Gopher',
  	Host        => 'gopher.host.com',
-	Selector    => '/search_engine.pl',
+ 	Selector    => '/search_engine.pl',
  	SearchWords => ['red', 'green', 'blue'],
  	ItemType    => 7
  );
 
-=item GopherPlus
+=item I<GopherPlus>
 
-For Gopher+ requests, in addition to the I<Host>, I<Port>, and I<Selector>
-options, you have the following Name=value pairs:
+For Gopher+ requests, in addition to the I<Host>, I<Port>, I<Selector>, and
+I<ItemType> options, you have the following Name=value pairs:
 
  Representation = What format you want the resource in (e.g., 'text/plain');
  DataBlock      = For Gopher+ Ask forms. Data to be sent to the server.
@@ -160,12 +160,12 @@ E.g.:
 
  my $request = new Net::Gopher::Request ('GopherPlus',
  	Host           => 'gopher.host.com',
-	Selector       => '/script',
-	Representation => 'text/plain',
-	DataBlock      => "Some data"
+ 	Selector       => '/script',
+ 	Representation => 'text/plain',
+ 	DataBlock      => "Some data"
  );
 
-=item ItemAttribute
+=item I<ItemAttribute>
 
 For item attribute information requests, in addition to the I<Host>, I<Port>,
 and I<Selector> options, you have the following Name=value pairs:
@@ -176,8 +176,8 @@ E.g.:
 
  my $request = new Net::Gopher::Request ('ItemAttribute',
  	Host       => 'gopher.host.com',
-	Selector   => '/item',
-	Attributes => '+VIEWS+ADMIN'
+ 	Selector   => '/item',
+ 	Attributes => '+VIEWS+ADMIN'
  );
 
 Also note that you can specify the block names in a list as opposed to a
@@ -190,12 +190,12 @@ for you):
  	Attributes => ['VIEWS', 'ADMIN']
  );
 
-=item DirectoryAttribute
+=item I<DirectoryAttribute>
 
 For directory attribute information requests, you have the same parameters as
 with item attribute information requests:
 
- my $request = new Net::Gopher::Request ('ItemAttribute',
+ my $request = new Net::Gopher::Request ('DirectoryAttribute',
  	Host       => 'gopher.host.com',
  	Selector   => '/directory',
  	Attributes => ['INFO', 'VIEWS']
@@ -214,9 +214,9 @@ hash reference:
  	}
  );
 
-There is also a function oriented alternative to new(). See
-L<FUNCTIONS|Net::Gopher::Request/FUNCTIONS> below on how to import and use the
-functions.
+In addition to C<new()>, there are named constructors you can import and call
+like functions L<FUNCTIONS|Net::Gopher::Request/FUNCTIONS> below on how to
+import and use the functions.
 
 =cut
 
@@ -525,7 +525,7 @@ sub as_string
 =head2 request_type()
 
 This method returns the current request type: either "Gopher," "GopherPlus,"
-"ItemAttribute," or "DirectoryAttribute" (but never "URL" since URL types
+"ItemAttribute," or "DirectoryAttribute" (but never "URL" since I<URL> types
 evaluate to one of the other four types of requests). 
 
 =cut
@@ -540,7 +540,7 @@ sub request_type { return shift->{'request_type'} }
 
 =head2 host([$hostname])
 
-This is a get/set method for the Host parameter. You can change the hostname
+This is a get/set method for the I<Host> parameter. You can change the hostname
 by supplying a new one. If you don't supply a new hostname, then the current
 one will be returned to you.
 
@@ -569,9 +569,9 @@ sub host
 
 =head2 port([$port_num])
 
-This is a get/set method for the Port parameter. You can change the port number
-by supplying a new one. If you don't supply a new port number, then the current
-one will be returned to you.
+This is a get/set method for the I<Port> parameter. You can change the port
+number by supplying a new one. If you don't supply a new port number, then the
+current port number will be returned to you.
 
 =cut
 
@@ -598,7 +598,7 @@ sub port
 
 =head2 selector([$selector])
 
-This is a get/set method for the Selector parameter. You can change the
+This is a get/set method for the I<Selector> parameter. You can change the
 selector string by supplying a new one. If you don't supply a new selector
 string, then the current one will be returned to you.
 
@@ -627,13 +627,13 @@ sub selector
 
 =head2 search_words([$words | @words])
 
-With Gopher and GopherPlus type requests, this is a get/set method for the
-SearchWords parameter. You can supply new search words in one of two formats:
-as a string containing the words or as a reference to a list containing
-individual words, which will be joined together by spaces. If you don't supply
-new words, then the current search words will be returned to you as either a
-list containing the individual words (in list context) or a string containing
-all of the words (in scalar context).
+With I<Gopher> and I<GopherPlus> type requests, this is a get/set method for
+the I<SearchWords> parameter. You can supply new search words in one of two
+formats: as a string containing the words or as a reference to a list
+containing individual words, which will be joined together by spaces. If you
+don't supply new words, then the current search words will be returned to you
+as either a list containing the individual words (in list context) or a string
+containing all of the words (in scalar context).
 
 =cut
 
@@ -664,10 +664,10 @@ sub search_words
 
 =head2 representation([$mime_type])
 
-With GopherPlus type requests, this is a get/set method for the Representation
-parameter. You can change the representation by supplying a new one. If you
-don't supply a new representation, then the current one will be returned to
-you.
+With I<GopherPlus> type requests, this is a get/set method for the
+I<Representation> parameter. You can change the representation by supplying a
+new one. If you don't supply a new representation, then the current one will be
+returned to you.
 
 =cut
 
@@ -698,9 +698,10 @@ sub representation
 
 =head2 data_block([$data])
 
-With GopherPlus type requests, this is a get/set method for the DataBlock
-parameter. You can change the data block by supplying new data. If you don't
-supply new data, then the current data block will be returned to you.
+With I<GopherPlus> type requests, this is a get/set method for the
+I<DataBlock> parameter. You can change the data block by supplying new data.
+If you don't supply new data, then the current data block will be returned to
+you.
 
 =cut
 
@@ -731,14 +732,14 @@ sub data_block
 
 =head2 attributes([$attributes | @attributes])
 
-With item attribute and directory attribute requests, this is a get/set method
-for the Attributes parameter. You can supply new block names in one of two
-formats: as a string containing the block names or as a reference to a list
-containing individual block names (with optional leading pluses, which will be
-added for you if you don't). If you don't supply new block names, then the
-current block names will be returned to you as either a list containing the
-individual names (in list context) or a string containing all of the names (in
-scalar context).
+With item attribute and directory attribute information requests, this is a
+get/set method for the I<Attributes> parameter. You can supply new block names
+in one of two formats: as a string containing the block names or as a reference
+to a list containing individual block names (with optional leading pluses,
+which will be added for you if you don't). If you don't supply new block names,
+then the current block names will be returned to you as either a list
+containing the individual names (in list context) or a string containing all of
+the names (in scalar context).
 
 =cut
 
@@ -769,7 +770,7 @@ sub attributes
 
 =head2 item_type([$type])
 
-This is a get/set method for the ItemType parameter. You can change the item
+This is a get/set method for the I<ItemType> parameter. You can change the item
 type by supplying item type. If you don't supply new type, then the current
 item type character will be returned to you.
 

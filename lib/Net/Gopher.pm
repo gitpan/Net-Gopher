@@ -12,7 +12,15 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  my $ng = new Net::Gopher;
  
  # create a new Net::Gopher::Request object:
- my $request = new Net::Gopher::Request(
+ my $request = new Net::Gopher::Request('Gopher',
+ 	Host     => 'gopher.host.com',
+ 	Selector => '/menu',
+ 	ItemType => 1
+ );
+ 
+ # you can also send parameters in a hash reference; which ever style you
+ # prefer:
+ $request = new Net::Gopher::Request(
  	Gopher => {
  		Host     => 'gopher.host.com',
  		Selector => '/menu',
@@ -20,7 +28,10 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  	}
  );
  
- # request something from the server and get the Net::Gopher::Response object:
+ 
+ 
+ # Send the request to the server and get the Net::Gopher::Response object
+ # for the server's response:
  my $response = $ng->request($request);
  
  # ...or store the content of the response in a separate file:
@@ -79,12 +90,33 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
 =head1 DESCRIPTION
 
 B<Net::Gopher> is a Gopher/Gopher+ client API for Perl. B<Net::Gopher>
-implements the Gopher and Gopher+ protocols as desbribed in
+implements the Gopher and Gopher+ protocols as described in
 I<RFC 1436: The Internet Gopher Protocol>, Anklesaria, et al. and in
 I<Gopher+: Upward Compatible Enhancements to the Internet Gopher Protocol>,
 Anklesaria, et al.; bringing Gopher and Gopher+ support to Perl, enabling
 Perl 5 applications to easily interact with both Gopher as well as Gopher+
 servers.
+
+B<Net::Gopher> works in conjunction with two other classes:
+L<Net::Gopher::Request> and L<Net::Gopher::Response>. The first is used to
+create and manipulate Gopher and Gopher+ requests. The second is used to
+manipulate Gopher and Gopher+ responses.
+
+The request/response cycle implemented by B<Net::Gopher> is as follows: you
+create a B<Net::Gopher::Request> object encapsulating your request, you pass it
+on to the B<Net::Gopher> C<request()> method, which returns a
+B<Net::Gopher::Response> for you to manipulate. B<Net::Gopher::Request> has
+methods and functions to make creating request objects easier and more flexible.
+In addition, this class has shortcut methods that create the request object for
+you, send the request, and return the response object.
+
+Just like the modules in libnet (e.g., L<IO::Socket>, L<Net::FTP>, etc.), many
+of the methods in B<Net::Gopher>, in B<Net::Gopher::Request>, and in
+B<Net::Gopher::Response> take arguments in the form of Name => "value"
+parameters. Also like in libnet, the case of these parameter names is sensitive.
+Unlike in libnet, if you specify an invalid parameter (e.g., "Somename" when the
+method expected "SomeName"), then the class will croak, listing the offending
+parameters.
 
 =head1 METHODS
 
@@ -103,7 +135,7 @@ use Net::Gopher::Request;
 use Net::Gopher::Response;
 use Net::Gopher::Utility qw(check_params $CRLF);
 
-$VERSION = '0.78';
+$VERSION = '0.80';
 
 
 
@@ -114,7 +146,7 @@ $VERSION = '0.78';
 =head2 new([BufferSize => $num_bytes, Timeout => $seconds, Debug => $boolean])
 
 This is the constructor method. It creates a new B<Net::Gopher> object and
-returns a reference to it. This method takes several optional named parameters.
+returns a reference to it. This method takes several optional named parameters:
 
 I<BufferSize> is the size (in bytes) of the buffer to use when reading data
 from the socket. If you don't specify I<BufferSize>, then the default of 1024
@@ -125,13 +157,13 @@ trying to connect to the server, when sending requests to it, when reading
 responses from it, etc. If you don't specify a number of seconds, then the
 default of 30 seconds will be used instead.
 
-Finally, I<Debug> allows you turn on or turn of debugging information, which by
-default is off. If debugging is turned on, then formatted diagnostic messages
-about the current request/response cycle will be outputted to the terminal.
+Finally, I<Debug> allows you turn on or turn off debugging information, which
+by default is off. If debugging is turned on, then formatted diagnostic
+messages about the current request/response cycle will be outputted to the
+terminal.
 
-Also see the corresponding get/set
+See also the corresponding get/set
 L<buffer_size()|Net::Gopher/buffer_size([$size])>,
-L<gopher_plus()|Net::Gopher/gopher_plus([$boolean])>,
 L<timeout()|Net::Gopher/timeout([$seconds])>,
 and L<debug()|Net::Gopher/debug($boolean)> methods below.
 
@@ -165,7 +197,7 @@ sub new
 		buffer      => undef,
 
 		# the size of buffer:
-		buffer_size => (defined $buffer_size) ? $buffer_size : 1024,
+		buffer_size => (defined $buffer_size) ? $buffer_size : 4096,
 
 		# the number seconds before timeout occurs:
 		timeout     => (defined $timeout) ? $timeout : 30,
@@ -193,17 +225,18 @@ sub new
 This method connects to a Gopher/Gopher+ server, sends a request, and
 disconnects from the server.
 
-This method takes one required argument, a Net::Gopher::Request object
+This method takes one required argument, a B<Net::Gopher::Request> object
 encapsulating a Gopher or Gopher+ request. Some typical usage of request
 objects in conjunction with this method is illustrated in the
-L<Net::Gopher/SYNOPSIS|SYNOPSIS>. For a more detailed description, see
+L<SYNOPSIS|Net::Gopher/SYNOPSIS>. For a more detailed description, see
 L<Net::Gopher::Request>.
 
-If you never specified the I<Port> parameter for your request object (and never
-set it later on with the C<port()>), then the default IANA designated port of
-70 will be used when connecting to the server. If you didn't specify the
-I<ItemType> parameter for Gopher or GopherPlus type requests (and never set it
-using C<item_type()>), then '1', Gopher menu type, will be assumed.
+If you didn't specify the I<Port> parameter for your request object (and
+never set it using the C<port()> method), then the default IANA designated port
+of 70 will be used when connecting to the server. If you didn't specify the
+I<ItemType> parameter for I<Gopher> or I<GopherPlus> type requests (and never
+set it using the C<item_type()> method), then "1", Gopher menu type, will be
+assumed.
 
 In addition to the request object, this method takes two optional named
 parameters:
@@ -213,8 +246,8 @@ specified, Net::Gopher will output the content of the response to this file,
 overwriting anything in the file.
 
 The second named parameter, I<Callback>, is a reference to a subroutine that
-will be called as the response is collected, with the portion of the content
-sent as the first argument to the callback routine.
+will be called as the response is collected, with the content sent as the first
+argument to the callback routine.
 
 =cut
 
@@ -269,7 +302,7 @@ sub request
 	# show the hostname, IP address, and port number for debugging:
 	$self->_debug_start(
 		'Connected to ', $request->host, ', ',
-		inet_ntoa($self->{'socket'}->peeraddr),
+		inet_ntoa($self->_socket->peeraddr),
 		" at port $port."
 	);
 
@@ -290,10 +323,12 @@ sub request
 			or $request->request_type eq 'DirectoryAttribute)');
 
 	# send the request to the server:
-	$self->_write($request->as_string);
+	my $request_string = $request->as_string;
+
+	$self->_write($request_string);
 
 	# show the request we just sent for debugging:
-	$self->_debug_print("Sent this request:\n", $request->as_string);
+	$self->_debug_print("Sent this request:\n", $request_string);
 
 
 
@@ -380,9 +415,9 @@ sub request
 
 		# show the length of the response we got for debugging:
 		$self->_debug_end(
-			length($self->_data_read),
+			length $self->_data_read,
 			' bytes (total) in response, with ',
-			length($content), ' bytes of content.'
+			length $content , ' bytes of content.'
 		);
 
 		# If we've gotten this far, then we didn't encounter any
@@ -404,7 +439,7 @@ sub request
 			Content    => $content
 		);
 
-		# if the response length was -1, then the response was
+		# If the response length was -1, then the response was
 		# terminated by a period on a line by itself, which means we
 		# need to unescape escaped periods, remove everything after the
 		# terminating period on a line by itself, and remove the period
@@ -422,10 +457,14 @@ sub request
 
 		if ($is_gopher_plus)
 		{
-			# if we got here, then either we couldn't get the status
-			# line of the response or got the first line but it
-			# wasn't in the proper format (wasn't a status line)
-			# or we ran into an error:
+			# if we got here, then either we couldn't get the
+			# status line of the response or got the first line but
+			# it wasn't in the proper format (wasn't a status
+			# line):
+			$is_gopher_plus = 0;
+
+			# or maybe, while getting the status line, we ran into
+			# a network error:
 			return $self->_error if ($self->_error);
 		}
 
@@ -474,16 +513,16 @@ sub request
 		}
 	}
 
+	# disconnect from the server:
+	$self->{'socket'}->shutdown(2);
+
 	# if the item is a text item, we need convert the CRLF and CR line
 	# endings to LF, that way the user can use \n in regexes to match
-	# newlines in the content (again, see <perldoc -f binmode>):
+	# newlines in the content (see <perldoc -f binmode>):
 	if ($response->is_text)
 	{
 		$response->_convert_newlines;
 	}
-
-	# disconnect from the server:
-	$self->{'socket'}->shutdown(2);
 
 	# output the content of the response to the file the user specified:
 	if ($file)
