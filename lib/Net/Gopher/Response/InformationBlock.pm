@@ -10,29 +10,29 @@ Net::Gopher::Response::InformationBlock - Manipulate Gopher+ information blocks
  use Net::Gopher;
  ...
  
- my $block = $response->get_blocks(Blocks => '+ADMIN');
+ my $block = $response->get_block('+ADMIN');
  printf("%s: %s\n", $block->name, $block->value);
  
  # if you don't need to do anything fancy, you can just treat block
  # objects as strings, and they'll behave correctly, returning what's
  # returned by value():
- print $response->get_blocks(Blocks => '+ABSTRACT');
+ print $response->get_block('+ABSTRACT');
  
  
  
  # if a block value contains attributes, you can retrieve all of the
  # attributes within it at once in the form of a hash using
- # attributes_as_hash():
- my %attributes = $block->attributes_as_hash;
+ # get_attributes():
+ my %attributes = $block->get_attributes;
  print(
  	"Gopherspace name: $attributes{'Site'}\n",
  	"    Organization: $attributes{'Org'}\n",
  	"        Location: $attributes{'Loc'}\n"
  );
  
- # ...or you retrieve one or more individual attribute values by name
- # using get_attributes():
- printf("    Adminstrator: %s\n", $block->get_attributes('Admin'));
+ # ...or you can retrieve individual attribute values by name using
+ # get_attribute():
+ printf("    Adminstrator: %s\n", $block->get_attribute('Admin'));
  
  
  
@@ -40,7 +40,7 @@ Net::Gopher::Response::InformationBlock - Manipulate Gopher+ information blocks
  # attributes. For example, the extract_description() method parses
  # +INFO blocks and extracts their contents:
  my ($type, $display, $selector, $host, $port, $gopher_plus) =
- 	$response->get_blocks(Blocks => '+INFO')->extract_description;
+ 	$response->get_block('+INFO')->extract_description;
  
  # finally, note that for all of the block and attribute parsing methods
  # in this class, there are wrappers in Net::Gopher::Response which
@@ -50,11 +50,11 @@ Net::Gopher::Response::InformationBlock - Manipulate Gopher+ information blocks
  
  # ...is the same as:
  ($admin_name, $admin_email) =
- 	$response->get_blocks(Blocks => '+ADMIN')->extract_admin;
+ 	$response->get_block('+ADMIN')->extract_admin;
 
 =head1 DESCRIPTION
 
-The L<Net::Gopher::Response|Net::Gopher::Response> C<get_blocks()> method
+The L<Net::Gopher::Response|Net::Gopher::Response> C<get_block()> method
 returns one or more item/directory attribute information blocks in the form of
 B<Net::Gopher::Response::InformationBlocks> objects. This class contains
 methods to parse and manipulate these block objects.
@@ -66,7 +66,8 @@ strings, returning what the C<value()> method does.
 
 The first series of methods in this class retrieve block names, block values,
 and attributes within block values. After that, there are methods to extract
-specific bits of information from certain blocks.
+specific bits of information from certain blocks and certain attributes within
+certain blocks.
 
 =head1 METHODS
 
@@ -88,7 +89,7 @@ use Net::Gopher::Constants ':item_types';
 use Net::Gopher::Debugging;
 use Net::Gopher::Exception;
 use Net::Gopher::Request;
-use Net::Gopher::Utility 'check_params';
+use Net::Gopher::Utility qw($ITEM_PATTERN $NEWLINE_PATTERN check_params);
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -157,8 +158,8 @@ sub response { return shift->{'response'}; }
 
 =head2 name()
 
-This method returns the block name (prefixed with a leading "+" character,
-e.g., "+ADMIN").
+This method returns the name of the block stored in the block object (prefixed
+with the leading "+" character, e.g., "+ADMIN").
 
 =cut
 
@@ -173,7 +174,7 @@ sub name { return '+' . shift->{'name'} }
 =head2 value()
 
 This method will return the content of the block value, with the leading space
-at the beginning of each line removed.
+at the beginning of each line removed for multiline values.
 
 =cut
 
@@ -200,27 +201,30 @@ sub raw_value { return shift->{'raw_value'} };
 
 #==============================================================================#
 
-=head2 attributes_as_hash()
+=head2 get_attribute($name)
 
 If the block value contains a series of C<Name: value> attributes on lines by
-themselves, then you can use this method to retrieve them all as a hash. This
-method will return a hash (in list context) or a reference to a hash (in scalar
-context) containing the attribute names and values.
+themselves, then you can use this method to retrieve an attribute value by
+name. Just supply the name of the attribute you want and this method will
+return it if it exists.
 
 =cut
 
-sub attributes_as_hash
+sub get_attribute
 {
-	my $self = shift;
+	my ($self, $name) = @_;
 
-	$self->_parse_attributes unless (defined $self->{'attributes'});
+	return $self->call_die(
+		'The name of the attribute to retrieve was not supplied.'
+	) unless ($name);
 
-	# if it was called in list context, then rather than just returning the
-	# hash in $self->{'attributes'}, we return a copy of it, to prevent the
-	# user from directly manipulating $self->{'attributes'}:
-	return wantarray
-		? %{$self->{'attributes'}}
-		: { %{$self->{'attributes'}} };
+	unless (defined $self->{'attributes'})
+	{
+		return unless ($self->_parse_attributes);
+	}
+
+	return $self->{'attributes'}->{$name}
+		if (exists $self->{'attributes'}->{$name});
 }
 
 
@@ -229,31 +233,62 @@ sub attributes_as_hash
 
 #==============================================================================#
 
-=head2 get_attributes(@names)
+=head2 get_attributes()
 
 If the block value contains a series of C<Name: value> attributes on lines by
-themselves, then you can use this method to retrieve one or more attribute
-values by name. Just supply the names of the attributes you want, and this
-method will return them.
+themselves, then you can use this method to retrieve them all as a hash. This
+method will return a hash (in list context) or a reference to a hash (in scalar
+context) containing the attribute names and values.
 
 =cut
 
 sub get_attributes
 {
-	my ($self, @names) = @_;
-
-	return $self->call_die(
-		'The names of the attributes to get were not supplied.'
-	) unless (@names);
+	my $self = shift;
 
 	unless (defined $self->{'attributes'})
 	{
-		return unless ($self->_parse_attributes);
+		$self->_parse_attributes || return;
 	}
 
-	my @values = @{ $self->{'attributes'} }{@names};
+	# if it was called in scalar context, then rather than just returning
+	# the reference to the hash in $self->{'attributes'}, we create a new
+	# hash with the same elements as the one in $self->{'attributes'} and
+	# return that instead to prevent the user from directly manipulating
+	# $self->{'attributes'}:
+	return wantarray
+		? %{ $self->{'attributes'} }
+		: { %{ $self->{'attributes'} } };
+}
 
-	return wantarray ? @values : shift @values;
+
+
+
+
+#==============================================================================#
+
+=head2 has_attribute()
+
+If the block value contains a series of C<Name: value> attributes on lines by
+themselves, then you can use this method to check to see if the block has a
+particular attribute. Just supply the attribute name and this method will
+return true if it exists; undef otherwise.
+
+=cut
+
+sub has_attribute
+{
+	my ($self, $name) = @_;
+
+	return $self->call_die('The name of the attribute was not supplied.')
+		unless ($name);
+
+	unless (defined $self->{'attributes'})
+	{
+		$self->_parse_attributes || return;
+	}
+
+	return 1 if (exists $self->{'attributes'}->{$name});
 }
 
 
@@ -276,10 +311,28 @@ sub is_attributes
 
 	my $attribute = qr/ .+?:(?: .*)?/o;
 
-	if ($self->raw_value =~ /^$attribute(?:\n$attribute)*$/o)
-	{
-		return 1;
-	}
+	return 1 if ($self->raw_value =~
+		/^$attribute(?:$NEWLINE_PATTERN$attribute)*$/o);
+}
+
+
+
+
+
+#==============================================================================#
+
+=head2 is_description()
+
+This method checks to see if the block value contains an item descpription like
+you'd find in a Gopher menu or a Gopher+ +INFO block.
+
+=cut
+
+sub is_description
+{
+	my $self = shift;
+
+	return 1 if ($self->value =~ $ITEM_PATTERN);
 }
 
 
@@ -290,7 +343,8 @@ sub is_attributes
 
 =head2 as_request()
 
-Documentation.
+If the block value contains an item description, then you can use this method
+to create a request object from it.
 
 =cut
 
@@ -309,7 +363,8 @@ sub as_request
 
 =head2 as_url()
 
-Documentation.
+If the block value contains an item description, then you can use this method
+to create a URL from it.
 
 =cut
 
@@ -339,7 +394,8 @@ sub as_url
 
 =head1 METHODS SPECIFIC TO +ABSTRACT BLOCKS
 
-C<+ABSTRACT> blocks contain a short synopsis of the item. 
+C<+ABSTRACT> blocks contain a short synopsis of the item, or a description of
+where the synopsis can be found.
 
 =head2 extract_abstract()
 
@@ -349,7 +405,34 @@ sub extract_abstract
 {
 	my $self = shift;
 
-	
+	return $self->call_warn(
+		sprintf("The block object contains a %s block, not an " .
+		        "+ABSTRACT block. Are you sure there's an item " .
+			"abstract to extract?",
+			$self->name
+		)
+	) unless ($self->has_attribute('Admin'));
+
+	if ($self->value =~ $ITEM_PATTERN)
+	{
+		my $ng = $self->response->ng;
+
+		my $request = $self->as_request;
+
+		my $response = $ng->request($request);
+
+		return $self->call_die(
+			sprintf("Couldn't retrieve abstract: %s.",
+				$response->error
+			)
+		) if ($response->is_error);
+
+		return $response->content;
+	}
+	else
+	{
+		return $self->value;
+	}
 }
 
 
@@ -383,12 +466,24 @@ sub extract_admin
 {
 	my $self = shift;
 
-	if (my $attribute = $self->get_attributes('Admin'))
-	{
-		my ($name, $email) = $attribute =~ /(.+?)\s*<(.*?)>\s*/;
+	return $self->call_die(
+		sprintf('The %s block has no Admin attribute to extract ' .
+		        'item administrator information from.',
+			$self->name
+		)
+	) unless ($self->has_attribute('Admin'));
 
-		return($name, $email);
-	}
+
+
+	my $attribute = $self->get_attribute('Admin');
+
+	my ($admin_name, $admin_email) = $attribute =~ /(.+?)\s*<(.*?)>\s*/;
+
+	return $self->call_die(
+		'The block contains a malformed Admin attribute.'
+	) unless (defined $admin_name and defined $admin_email);
+
+	return($admin_name, $admin_email);
 }
 
 
@@ -413,10 +508,14 @@ sub extract_date_modified
 {
 	my $self = shift;
 
-	if (my $attribute = $self->get_attributes('Mod-Date'))
-	{
-		return $self->_parse_timestamp($attribute);
-	}
+	return $self->call_die(
+		sprintf('The %s block has no Mod-Date attribute to extract ' .
+		        'a modification date from.',
+			$self->name
+		)
+	) unless ($self->has_attribute('Mod-Date'));
+
+	return $self->_parse_attr_timestamp('Mod-Date');
 }
 
 
@@ -441,10 +540,14 @@ sub extract_date_created
 {
 	my $self = shift;
 
-	if (my $attribute = $self->get_attributes('Creation-Date'))
-	{
-		return $self->_parse_timestamp($attribute);
-	}
+	return $self->call_die(
+		sprintf('The %s block has no Creation-Date attribute to ' .
+		        'extract a creation date from.',
+			$self->name
+		)
+	) unless ($self->has_attribute('Creation-Date'));
+
+	return $self->_parse_attr_timestamp('Creation-Date');
 }
 
 
@@ -469,11 +572,16 @@ sub extract_date_expires
 {
 	my $self = shift;
 
-	if (my $attribute = $self->get_attributes('Expiration-Date'))
-	{
-		return $self->_parse_timestamp($attribute);
-	}
+	return $self->call_die(
+		sprintf('The %s block has no Expiration-Date attribute to ' .
+		        'extract an expiration date from.',
+			$self->name
+		)
+	) unless ($self->has_attribute('Expiration-Date'));
+
+	return $self->_parse_attr_timestamp('Expiration-Date');
 }
+
 
 
 
@@ -493,7 +601,7 @@ The following methods are available specifically for parsing C<+ASK> blocks:
 
 =head2 extract_queries()
 
-This method parses the C<+ASK> block and returns an array containing references
+This method parses an C<+ASK> block and returns an array containing references
 to hashes for each Ask query in the order they appeared, with each hash having
 the following key=value pairs:
 
@@ -529,11 +637,10 @@ sub extract_queries
 		my ($question, @defaults) = split(/\t/, $question_and_defaults);
 
 		push(@ask, {
-				type     => $type,
-				question => $question,
-				defaults => \@defaults
-			}
-		);
+			type     => $type,
+			question => $question,
+			defaults => \@defaults
+		});
 	}
 
 	return @ask;
@@ -581,15 +688,22 @@ sub extract_description
 {
 	my $self = shift;
 
-
-
 	# get the item type and display string, selector, host, port,
 	# and Gopher+ string from the +INFO block value:
 	my ($type_and_display, $selector, $host, $port, $gopher_plus) =
 			split(/\t/, $self->value);
 
+	return $self->call_die(
+		sprintf('The %s block either does not contain an item ' .
+		        'description or contains a malformed one.',
+			$self->name
+		)
+	) unless (defined $type_and_display and defined $selector
+		and defined $host and defined $port);
+
 	# separate the item type and the display string:
-	my ($type, $display) = $type_and_display =~ /^(.)(.*)/;
+	my ($type, $display) =
+		(substr($type_and_display, 0, 1), substr($type_and_display, 1));
 
 	return($type, $display, $selector, $host, $port, $gopher_plus);
 }
@@ -664,29 +778,32 @@ sub extract_views
 
 		# get the size in bytes:
 		my $size_in_bytes;
-		if (defined $size and $size =~ /<(\.?\d+) (?: (k)|b )?>/ix)
+		if (defined $size and $size =~ /<(\.?\d+)(kb|k|b)?>/i)
 		{
-			# turn <55> into 55, <600B> into 600, <55K> into 55000,
-			# and <.5K> into 500:
+			# turn <55> into 55, <600B> into 600, <55K> into 56320,
+			# and <.5K> into 512:
 			$size_in_bytes  = $1;
-			$size_in_bytes *= 1000 if ($2);
+
+			if ($2 and lc $2 eq 'kb' || lc $2 eq 'k')
+			{
+				$size_in_bytes *= 1024;
+
+				# round up to nearest hole byte:
+				$size_in_bytes += 0.9;
+				$size_in_bytes = int $size_in_bytes;
+			}
 		}
 
 		# get the ISO-639 language code and the ISO-3166 country code:
-		my ($language, $country);
-		if (defined $language_and_country)
-		{
-			($language, $country) =
-				split(/_/, $language_and_country);
-		}
+		my ($language, $country) = split(/_/, $language_and_country)
+			if (defined $language_and_country);
 
 		push(@views, {
-				type     => $mime_type,
-				language => $language,
-				country  => $country,
-				size     => $size_in_bytes
-			}
-		);
+			type     => $mime_type,
+			language => $language,
+			country  => $country,
+			size     => $size_in_bytes
+		});
 	}
 
 	return @views;
@@ -704,10 +821,18 @@ sub _parse_attributes
 	foreach my $attribute (split(/\n/, $self->value))
 	{
 		# parse the "AttributeName: attribute value" string:
-		my ($name, $value) = $attribute =~ /^(.+?):\s?(.*)/;
+		my ($name, $value) = $attribute =~ /^(.+?): ?(.*)/;
+
+		return $self->call_die(
+			sprintf('This %s block either does not contain ' .
+				'attributes or contains malformed attributes.',
+				$self->name
+			)
+		) unless ($name);
 
 		$attributes{$name} = $value;
 	}
+	
 
 	$self->{'attributes'} = \%attributes;
 }
@@ -716,21 +841,21 @@ sub _parse_attributes
 
 
 
-sub _parse_timestamp
+sub _parse_attr_timestamp
 {
-	my ($self, $timestamp) = @_;
+	my ($self, $attribute) = @_;
 
-	return unless (defined $timestamp);
+	my $timestamp = $self->get_attribute($attribute);
 
 	# get the values from the timestamp:
 	my ($year, $month, $day, $hour, $minute, $second) =
-		$timestamp =~ /<(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})>/x;
+		$timestamp =~ /<(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})>/;
 
-	unless (defined $year and defined $month and defined $day
-		and defined $hour and defined $minute and defined $second)
-	{
-		return;
-	}
+	return $self->call_die(
+		"The $attribute attribute either does not contain a " .
+		"timestamp or contains a malformed one."
+	) unless (defined $year and defined $month and defined $day
+		and defined $hour and defined $minute and defined $second);
 
 	# we need to convert the year value into the  number years since 1900
 	# (i.e., 2003 -> 103), since that's the format returned by localtime():

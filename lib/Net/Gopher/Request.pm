@@ -114,7 +114,7 @@ push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
 #==============================================================================#
 
-=head2 new(TYPE, OPTIONS | URL)
+=head2 new(TYPE [, OPTIONS | URL])
 
 This method creates a new B<Net::Gopher::Request> object, encapsulating a
 Gopher or Gopher+ request.
@@ -295,7 +295,7 @@ sub new
 		}
 		else
 		{
-			$uri = new URI (undef, 'Gopher');
+			$uri = new URI (undef, 'gopher');
 		}
 
 
@@ -465,8 +465,8 @@ sub DirectoryAttribute
 =head2 as_string()
 
 This method returns a string containing a textual representation of the
-request. (The B<Net::Gopher> C<request()> method calls this method and sends
-the result to the server.)
+request. (The B<Net::Gopher> C<request()> method calls this method on the
+request object supplied to it and sends the result to the server.)
 
 =cut
 
@@ -582,7 +582,7 @@ sub as_url
 			if (defined $self->attributes);
 	}
 
-	$uri->string($gopher_plus_string);
+	$uri->string($gopher_plus_string) if (defined $gopher_plus_string);
 
 	return $uri->as_string;
 }

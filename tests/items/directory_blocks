@@ -1,0 +1,17 @@
++568
++INFO: 1Gopher+ Index	/gp_index	localhost	70	+
++ADMIN
+ Admin: John Q. Sixpack <j_q_sixpack@yahoo.com>
+ Mod-Date: <20030728173012>
++INFO: 0Byte terminated file	/gp_byte_term	localhost	70	+
++ADMIN
+ Admin: John Q. Sixpack <j_q_sixpack@yahoo.com>
+ Mod-Date: <20031201123000>
++INFO: 0Period terminated file	/gp_period_term	localhost	70	+
++ADMIN
+ Admin: John Q. Sixpack <j_q_sixpack@yahoo.com>
+ Mod-Date: <20040101070206>
++INFO: 0Non-terminated file	/gp_no_term	localhost	70	+
++ADMIN
+ Admin: John Q. Sixpack <j_q_sixpack@yahoo.com>
+ Mod-Date: <20040201182005>

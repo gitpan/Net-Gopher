@@ -55,7 +55,7 @@ sub debug_print
 	if ($STARTED)
 	{
 		# separate this message from the last one:
-		$message .= "\n" . '-' x 80 . "\n";
+		$message .= "\n";
 	}
 	else
 	{

@@ -1,12 +1,17 @@
+#!/usr/bin/perl -w
+use strict;
 use vars qw($TEST_SERVER_PID);
+use constant DEFAULT_PORT => 70;
 
 $TEST_SERVER_PID = undef;
 
 
 
+
+
 sub run_server
 {
-	my $port = shift || 70;
+	my $port = shift || DEFAULT_PORT;
 
 	my $pid = open(SERVER, "| perl ./tests/testserver.pl -p $port")
 		or die "Couldn't launch the test server: $!.\n";
@@ -16,7 +21,7 @@ sub run_server
 
 sub run_echo_server
 {
-	my $port = shift || 70;
+	my $port = shift || DEFAULT_PORT;
 
 	my $pid = open(SERVER, "| perl ./tests/testserver.pl -e -p $port")
 		or die "Couldn't launch the test server: $!.\n";
@@ -36,11 +41,15 @@ sub kill_server
 	close SERVER;
 }
 
+
+
+
+
 BEGIN
 {
-	$SIG{__DIE__} = sub {
-		kill_server();
-	};
+	$SIG{'__DIE__'} = sub { kill_server() };
+	$SIG{'INT'}     = sub { kill_server() };
+
 }
 
 1;

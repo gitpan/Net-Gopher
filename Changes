@@ -1,47 +1,71 @@
 Revision history for Perl extension Net::Gopher.
 
-0.92 -
+0.93 -
+
        (1) 
+           The information block method attributes_as_hash() has  been  renamed
+           get_attributes().
+
+       (2) 
+           Added the new information block method get_attribute() that  returns
+           a single block attribute, and has_attribute() to check to see  if  a
+           block has a particular attribute.
+
+       (3) 
+           Added the Net::Gopher::Response get_block()  method  to  retrieve  a
+           single block, and has_block() method to see if  a  particular  block
+           is in the response.
+
+       (4) 
+           The Net::Gopher::MenuItem methods are now get/set  instead  of  just
+           being get.
+
+       (5) 
+           Infromation block methods warn and die much more.
+
+0.92 - (Gone from CPAN?)
+
+       (1) 
+           Build.pl: you can  use  Module::Build  to  install  now  instead  of
+           MakeMaker.
+
+       (2) 
            A new, much improved, much enhanced test  suite  complete  with  its
            own (almost) functional server.
 
-       (2) 
+       (3) 
            Net::Gopher now fully supports  (experimentally)  Unicode.  Selector
            strings,  attributes,  data  blocks--everything--can   now   contain
            multi-byte UTF-8 characters.
 
-       (3) 
+       (4) 
            Net::Gopher now dies and warns much, much more and with  much,  much
            more detailed messages (using carp() and croak(), but this  behavior
            can be controlled with the options listed next).
 
-       (4) 
+       (5) 
            The   Net::Gopher   constructor   takes   several   new   arguments:
            WarnHandler, DieHandler, Silent, and LogFile.
 
-       (5) 
+       (6) 
            The request() method option "Callback" has been renamed "Handler".
 
-       (6) 
+       (7) 
            User-defined response handler subs  for  the  request()  method  now
            receive the following arguments in this order: the  raw,  unmodified
            buffer; the request object; the response object.
 
-       (7) 
+       (8) 
            Net::Gopher::Response   has   three   new   methods:   error_code(),
            error_admin(), and error_message() to parse Gopher+ errors.
 
-       (8) 
+       (9) 
            The extract_menu_items() method has been renamed extract_items().
 
-       (9) 
+       (10) 
            The    extract_administrator()    method    has     been     renamed
            extract_admin(),  and   extract_ask_queries()   has   been   renamed
            extract_queries().
-
-       (10) 
-           The  Net::Gopher::MenuItem  as_string()  method  has  been   renamed
-           raw_item().
 
 0.90 - First beta release:
        (1) 

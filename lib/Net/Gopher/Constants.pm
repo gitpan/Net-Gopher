@@ -80,9 +80,12 @@ my @item_type_constants = qw(
 @EXPORT_OK = (@request_constants, @response_constants, @item_type_constants);
 
 %EXPORT_TAGS = (
-	request    => [@request_constants],
-	response   => [@response_constants],
-	item_types => [@item_type_constants]
+	all        => [
+		@request_constants, @response_constants, @item_type_constants
+	],
+	request    => \@request_constants,
+	response   => \@response_constants,
+	item_types => \@item_type_constants
 );
 
 
@@ -128,10 +131,10 @@ See L<request_type()|Net::Gopher::Request/request_type()>.
 
 =cut
 
-sub GOPHER_REQUEST              () { return 100 }
-sub GOPHER_PLUS_REQUEST         () { return 200 }
-sub ITEM_ATTRIBUTE_REQUEST      () { return 300 }
-sub DIRECTORY_ATTRIBUTE_REQUEST () { return 400 }
+sub GOPHER_REQUEST              () { return 1 }
+sub GOPHER_PLUS_REQUEST         () { return 2 }
+sub ITEM_ATTRIBUTE_REQUEST      () { return 3 }
+sub DIRECTORY_ATTRIBUTE_REQUEST () { return 4 }
 
 
 
@@ -197,8 +200,6 @@ or directory attribute information request.
  MULAW_AUDIO_TYPE = Evaluates to "s";
 
 =back
-
-See L<status()|Net::Gopher::Response/status()>.
 
 =cut
 

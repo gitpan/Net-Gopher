@@ -150,10 +150,10 @@ CLIENT: while (my $client = $server->accept)
 		$selector =  "/$selector" unless (substr($selector,0,1) eq '/');
 
 		my $path = (getcwd() =~ m|/tests$|)
-				? '/items'
-				: '/tests/items';
+				? './items'
+				: './tests/items';
 
-		open(FILE, "< .$path$selector")
+		open(FILE, "< $path$selector")
 			|| die "Couldn't return file (.$path$selector): $!";
 		binmode FILE;
 		my $item = join('', <FILE>);

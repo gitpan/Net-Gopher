@@ -1,3 +1,7 @@
+# Copyright 2003 by William G. Davis.
+#
+# This class contains methods to be inherited Net::Gopher. You really don't
+# need to be looking in here unless you plan on hacking Net::Gopher.
 
 package Net::Gopher::Exception;
 
@@ -31,7 +35,7 @@ $DEFAULT_WARN_HANDLER = sub {
 
 	Carp::carp(@warnings);
 
-	# now just reset the Carp level:
+	# restore the Carp level:
 	$Carp::CarpLevel = $old_level;
 };
 
@@ -57,6 +61,7 @@ $DEFAULT_DIE_HANDLER = sub {
 
 	Carp::croak(@fatal_errors);
 
+	# restore the Carp level
 	$Carp::CarpLevel = $old_level;
 };
 

@@ -1,8 +1,8 @@
 #!/usr/bin/perl -w
 # 
 # newservers.pl - Requests a list a new Gopher servers since 1999 from 
-#                 gopher.floodgap.com, prints it out to the console, and saves
-#                 the list to a file it creates named newservers.xml.
+#                 gopher.floodgap.com and saves the list as XML to a file it
+#                 creates named newservers.xml.
 # 
 
 use strict;
@@ -11,11 +11,9 @@ use Net::Gopher::Constants qw(:item_types);
 
 
 
-
+print "Downloading list of new servers from floodgap.com...\n";
 
 my $ng = new Net::Gopher;
-
-print "Downloading list of new servers from floodgap.com...\n";
 
 my $response = $ng->gopher(
 	Host     => 'gopher.floodgap.com',
@@ -26,7 +24,6 @@ my $response = $ng->gopher(
 die "Couldn't get list of new servers: " . $response->error
 	if ($response->is_error);
 
-my @items = $response->extract_items(ExceptTypes => INLINE_TEXT_TYPE);
 $response->as_xml(File => './newservers/newservers.xml');
 
 print "\n...Saved to ./newservers/newservers.xml\n";

@@ -1,10 +1,9 @@
-#!/usr/bin/perl -w
 use strict;
+use warnings;
 use Test;
 use Socket;
-use Net::Gopher;
 
-# make sure that we are connected to the net:
+# make sure that we're connected to the net:
 BEGIN
 {
 	if (gethostbyname('www.cpan.org'))
@@ -14,7 +13,6 @@ BEGIN
 	else
 	{
 		plan(tests => 0);
-
 		exit;
 	}
 }
@@ -22,6 +20,8 @@ BEGIN
 
 
 
+
+use Net::Gopher;
 
 {
 	my $ng = new Net::Gopher;

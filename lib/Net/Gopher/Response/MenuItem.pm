@@ -30,8 +30,8 @@ Net::Gopher::Response::MenuItem - Manipulate Gopher/Gopher+ menu items
  	my $request = $menu_item->as_request;
  	$response   = $ng->request($request);
 
-	# the menu item as it appeared in the Gopher menu:
-	print $menu_item->raw_item;
+	# a string containing the item:
+	print $menu_item->as_string;
  }
 
 =head1 DESCRIPTION
@@ -52,7 +52,7 @@ use strict;
 use warnings;
 use vars qw(@ISA);
 use overload (
-	'""'     => sub { shift->raw_item },
+	'""'     => sub { shift->as_string },
 	fallback => 1,
 );
 use Carp;
@@ -78,10 +78,8 @@ sub new
 	my $invo  = shift;
 	my $class = ref $invo || $invo;
 
-	my ($raw_item, $item_type, $display, $selector, $host, $port,
-	    $gopher_plus) =
+	my ($item_type, $display, $selector, $host, $port, $gopher_plus) =
 		check_params([qw(
-			RawItem
 			ItemType
 			Display
 			Selector
@@ -91,7 +89,6 @@ sub new
 		);
 
 	my $self = {
-		raw_item    => $raw_item,
 		item_type   => $item_type,
 		display     => $display,
 		selector    => $selector,
@@ -111,13 +108,28 @@ sub new
 
 #==============================================================================#
 
-=head2 raw_item()
+=head2 as_string()
 
-This method returns a string containing the item as it appeared in the menu.
+This method returns a string containing the item.
 
 =cut
 
-sub raw_item { return shift->{'raw_item'} }
+sub as_string
+{
+	my $self = shift;
+
+	my $string = sprintf("%s%s\t%s\t%s\t%s",
+		$self->item_type,
+		$self->display,
+		$self->selector,
+		$self->host,
+		$self->port
+	);
+
+	$string .= "\t" . $self->gopher_plus if (defined $self->gopher_plus);
+
+	return $string;
+}
 
 
 
@@ -147,42 +159,15 @@ sub as_request
 	my $request;
 	if (defined $self->gopher_plus and length $self->gopher_plus)
 	{
-		my ($request_char, $other_stuff) =
-		(substr($self->gopher_plus,0,1), substr($self->gopher_plus,1));
+		my $request_char = substr($self->gopher_plus, 0, 1);
 
-		# The usage of $other_stuff here to allow someone to put an
-		# item representation following the "+" or to allow someone
-		# to create a menu item pointing to an attribute/directory
-		# information request and then even put attributes following
-		# the "!" or "$" in the Gopher+ string field isn't in the
-		# Gopher+ standard, but it's possible someone will attempt to
-		# use Gopher+ menu items in this way:
 		if ($request_char eq '+' or $request_char eq '?')
 		{
 			$request = new Net::Gopher::Request ('GopherPlus',
 				Host           => $self->host,
 				Port           => $self->port,
 				Selector       => $self->selector,
-				Representation => $other_stuff,
 				ItemType       => $self->item_type
-			);
-		}
-		elsif ($request_char eq '!')
-		{
-			$request = new Net::Gopher::Request ('ItemAttribute',
-				Host       => $self->host,
-				Port       => $self->port,
-				Selector   => $self->selector,
-				Attributes => $other_stuff
-			);
-		}
-		elsif ($request_char eq '$')
-		{
-			$request = new Net::Gopher::Request ('DirectoryAttribute',
-				Host       => $self->host,
-				Port       => $self->port,
-				Selector   => $self->selector,
-				Attributes => $other_stuff
 			);
 		}
 		else
@@ -193,7 +178,7 @@ sub as_request
 					"into a request object: the Gopher+",
 					"string contains an invalid request",
 					'type character ("$request_char"). It',
-					'should be "+", "?", "!", or "$".'
+					'should be "+" or "?".'
 				)
 			);
 		}

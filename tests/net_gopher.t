@@ -2,13 +2,10 @@ use strict;
 use warnings;
 use Test;
 
-BEGIN
-{
-	plan(tests => 107);
-}
+BEGIN { plan(tests => 107) }
 
 use Net::Gopher;
-use Net::Gopher::Request qw(:all);
+use Net::Gopher::Request;
 use Net::Gopher::Constants qw(:item_types);
 
 require './tests/serverfunctions.pl';
@@ -363,12 +360,12 @@ require './tests/serverfunctions.pl';
 	# other than 70:
 	#
 
-	run_server(80);
+	run_server(7070);
 
 	{
 		my $response = $ng->gopher(
 			Host     => 'localhost',
-			Port     => 80,
+			Port     => 7070,
 			Selector => '/index'
 		);
 
@@ -721,12 +718,10 @@ require './tests/serverfunctions.pl';
 		ok(@fatal_errors, 1); # 106
 		ok($fatal_errors[0],
 			join(' ',
-				"You never specified a hostname and it's",
-				"impossible to send a request without one.",
-				"Specify one using the \"Host\" parameter (or",
-				"within the URL if it's a URL request) when",
-				"creating the request object, or specify it",
-				"later on using the host() method."
+				"You never specified a hostname; it's",
+				"impossible to send your request without one.",
+				"Specify it during object creation or later on",
+				"with the host() method."
 			));           # 107
 	}
 

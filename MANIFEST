@@ -4,7 +4,7 @@ Changes
 MANIFEST
 Makefile.PL
 README
-dummytest.pl
+examples/alternatestyle.pl
 examples/gget
 examples/newservers.pl
 examples/screenshots.pl
@@ -39,6 +39,6 @@ tests/menu_items.t
 tests/net_gopher.t
 tests/net_gopher_request.t
 tests/net_gopher_response.t
-tests/number_each_test.pl
+tests/newlines.pl
 tests/serverfunctions.pl
 tests/testserver.pl

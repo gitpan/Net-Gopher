@@ -10,13 +10,13 @@ Net::Gopher::Response - Class encapsulating Gopher/Gopher+ responses
  use Net::Gopher;
  ...
  my $response = $ng->request($request);
-
+ 
  die $response->error if ($response->is_error);
  
  if ($response->is_menu) {
  	# You can use extract_items() to parse a Gopher menu
  	# and retrieve its items as Net::Gopher::Response::MenuItem
-	# objects:
+ 	# objects:
  	my @items = $response->extract_items(ExceptTypes => 'i');
  
  	foreach my $item_obj (@items)
@@ -34,10 +34,10 @@ Net::Gopher::Response - Class encapsulating Gopher/Gopher+ responses
  	# can you can call on these objects.
  } elsif ($response->is_blocks) {
  	# When issuing item/directory attribute information
- 	# requests, use get_blocks() to retrieve the
+ 	# requests, use get_block() to retrieve the
  	# Net::Gopher::Response::InformationBlock objects for each
  	# block, which you can call methods like
-	# extract_description() and extract_adminstrator() on:
+ 	# extract_description() and extract_adminstrator() on:
  	my ($type, $display, $selector, $host, $port, $plus) =
  		$response->extract_description;
  
@@ -48,7 +48,7 @@ Net::Gopher::Response - Class encapsulating Gopher/Gopher+ responses
  	print "Maintained by $name who can be emailed at $email\n";
  
  	# See Net::Gopher::Response::InformationBlock for documentation
-	# on how to manipulate block objects.
+ 	# on how to manipulate block objects.
  } else {
  	print $response->content;
  }
@@ -88,6 +88,7 @@ use 5.005;
 use strict;
 use warnings;
 use vars qw(@ISA);
+use Carp;
 use IO::File;
 use IO::String;
 use XML::Writer;
@@ -98,7 +99,7 @@ use Net::Gopher::Response::InformationBlock;
 use Net::Gopher::Response::MenuItem;
 use Net::Gopher::Response::XML qw(gen_block_xml gen_menu_xml gen_text_xml);
 use Net::Gopher::Utility qw(
-	$NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS 
+	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS 
 	check_params get_os_name
 );
 
@@ -112,49 +113,84 @@ push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
 ################################################################################
 #
-# The following functions are wrapper methods around
+# The following subroutines are wrapper methods around
 # Net::Gopher::Response::InformationBlock extract_* methods:
 #
 
 sub extract_admin
 {
-	my $block = shift->get_blocks(Blocks => '+ADMIN') or return;
+	my $self = shift;
+
+	my $block = $self->get_block('+ADMIN');
+
+	return $self->call_die('No +ADMIN block in response.')
+		unless (defined $block);
 
 	return $block->extract_admin;
 }
 sub extract_date_created
 {
-	my $block = shift->get_blocks(Blocks => '+ADMIN') or return;
+	my $self = shift;
+
+	my $block = $self->get_block('+ADMIN');
+
+	return $self->call_die('No +ADMIN block in response.')
+		unless (defined $block);
 
 	return $block->extract_date_created;
 }
 sub extract_date_expires
 {
-	my $block = shift->get_blocks(Blocks => '+ADMIN') or return;
+	my $self = shift;
+
+	my $block = $self->get_block('+ADMIN');
+
+	return $self->call_die('No +ADMIN block in response.')
+		unless (defined $block);
 
 	return $block->extract_date_expires;
 }
 sub extract_date_modified
 {
-	my $block = shift->get_blocks(Blocks => '+ADMIN') or return;
+	my $self = shift;
+
+	my $block = $self->get_block('+ADMIN');
+
+	return $self->call_die('No +ADMIN block in response.')
+		unless (defined $block);
 
 	return $block->extract_date_modified;
 }
 sub extract_queries
 {
-	my $block = shift->get_blocks(Blocks => '+ASK') or return;
+	my $self = shift;
+
+	my $block = $self->get_block('+ASK');
+
+	return $self->call_die('No +ASK block in response.')
+		unless (defined $block);
 
 	return $block->extract_queries;
 }
 sub extract_description
 {
-	my $block = shift->get_blocks(Blocks => '+INFO') or return;
+	my $self = shift;
+
+	my $block = $self->get_block('+INFO');
+
+	return $self->call_die('No +INFO block in response.')
+		unless (defined $block);
 
 	return $block->extract_description;
 }
 sub extract_views
 {
-	my $block = shift->get_blocks(Blocks => '+VIEWS') or return;
+	my $self = shift;
+
+	my $block = $self->get_block('+VIEWS');
+
+	return $self->call_die('No +VIEWS block in response.')
+		unless (defined $block);
 
 	return $block->extract_views;
 }
@@ -165,7 +201,7 @@ sub extract_views
 
 ################################################################################
 # 
-# The following functions are public methods:
+# The following subroutines are public methods:
 # 
 
 sub new
@@ -388,18 +424,16 @@ endings whatever Perl considers "\n" to be on your platform; that way you can,
 for example, use "\n", ".", "\s", and other meta symbols in patterns to match
 newlines in the content and it will work correctly. (If that made no sense,
 please read C<perlfunc binmode>. Actually, even if that made sense, read it
-anyway--it's short)).
-
-If the request was period terminated, then any escaped periods are unescaped
-(".." at the start of a line becomes ".")
+anyway--it's short)). Also, if the request was period terminated then any
+escaped periods are unescaped (".." at the start of a line becomes ".")
 
 The modifications listed above should go largely unnoticed by you, however, if
-you try to download a non-text file like, for example, a JPEG via Gopher but
-instead tell B<Net::Gopher> you're downloading a text item like a Gopher menu
-(probably because you forgot set the I<ItemType> parameter for your request
-object so it defaulted to type "1", Gopher menu) it'll probably make changes to
-the content it shouldn't. Just remember you can always get the entire, original, 
-unmodified response via the C<raw_response()> method.
+you try to download a non-text file like, for example, a JPEG but instead tell
+B<Net::Gopher> you're downloading a text item like a Gopher menu (probably
+because you forgot set the I<ItemType> parameter for your request object so it
+defaulted to type "1", Gopher menu) it'll probably make changes to the content
+it shouldn't. Just remember you can always get the entire, original, unmodified
+response with the C<raw_response()> method.
 
 In Gopher+, besides the modifications mentioned, C<content()> does not
 include the status line (the first line) of the response (since the status line
@@ -458,13 +492,13 @@ if they are of those types:
 If there are certain items you would rather not retrieve (e.g., if you don't
 want inline text items, only items that list downloadable resources), then you
 can instead supply the item types of the items to skip to the I<ExceptTypes>
-parameter as just as described above for I<OfTypes>:
+parameter in the same format as described above for I<OfTypes>:
 
  # get the Net::Gopher::Response::MenuItem object for each item on the
  # menu except for inline text and GIF images:
  my @items = $response->extract_items(ExceptTypes => 'ig');
  
- # the same thing, but instead skip DOS binary files, mirrors, and
+ # the same thing but instead skip DOS binary files, mirrors, and
  # inline text:
  my @items = $response->extract_items(ExceptTypes => ['5', '+', 'i']);
 
@@ -591,7 +625,6 @@ sub extract_items
 
 		push(@menu_items,
 			new Net::Gopher::Response::MenuItem (
-				RawItem    => $raw_item,
 				ItemType   => $type,
 				Display    => $display,
 				Selector   => $selector,
@@ -611,39 +644,183 @@ sub extract_items
 
 #==============================================================================#
 
+=head2 get_block(NAME [, OPTIONS])
+
+This method is used to retrieve an individual
+I<Net::Gopher::Response::InformationBlock> object. The first argument this
+method always takes is the name of the block to retrieve. The leading "+"
+character in the block name is optional. If you made a directory attribute
+information request, than you'll have to be more specific as to which item
+you want the block from; use the I<Item> parameter to specify which item you
+want the block from.
+
+I<Item> can be either a number indicating the N'th item in the response or it
+can be a reference to a hash (or array) containing one or more named parameters
+describing the item, which will be compared against each item's C<+INFO> block
+looking for an item that matches the template. The possible parameters for
+I<Item> are:
+
+=over 4
+
+=item N
+
+The N'th item in the response. If specified, then the rest of the template will
+only be compared against this item.
+
+=item ItemType
+
+The item type character in the +INFO block, for example, "0", "1", or "g".
+B<Net::Gopher::Constants> contains constants you can use to specify an item
+type which are exported when you C<use()> B<Net::Gopher::Constants> with either
+the I<:item_types> or I<:all> export tags.
+
+=item Display
+
+The display string field in the C<+INFO> block of the item.
+
+=item Selector
+
+The selector string field in the C<+INFO> block of the item.
+
+=item Host
+
+The host field in the C<+INFO> block of the item.
+
+=item Port
+
+The port field in the C<+INFO> block of the item.
+
+=item GopherPlus
+
+The Gopher+ string in the C<+INFO> block of the item.
+
+=back
+
+The value of any of the I<Item> template parameters can either be a string or a
+pattern compiled with the C<qr//> operator (it tells the difference using
+C<ref()>). The first item that matches every parameter in the template is the
+item the specified block object will be returned from.
+
+This, for example, tries to retrieve the +ADMIN block object from the second
+item:
+
+ my $block = $response->get_block('+ADMIN', Item => 2);
+
+Remember that the leading "+" is optional:
+
+ my $block = $response->get_block('VIEWS',
+ 	Item => {
+ 		Display => qr/Memeber Directory \(updated \d+\)/
+ 	}
+ );
+
+Specify more options for more accuracy:
+
+ my $block = $response->get_block('+ABSTRACT',
+ 	Item => {
+ 		N        => 4,
+		ItemType => TEXT_FILE_TYPE,
+ 		Display  => qr/^My big (?:eassy|article)$/,
+ 		Selector => qr/^\/stuff\/essay(?:\.txt)?$/,
+		Host     => 'gopher.host.com',
+		Port     => 70
+ 	}
+ );
+
+Which means the fourth item in the response, which must be a text file, must
+have a display string of "My big essay" or "My big article," must have a
+selector string of "/stuff/essay.txt" or "/stuff/essay", and must be on
+gopher.host.com and port 70.
+
+See L<Net::Gopher::Response::InformationBlock|Net::Gopher::Response::InformationBlock>
+for methods you can call on these objects.
+
+=cut
+
+sub get_block
+{
+	my $self = shift;
+	my $name = shift;
+
+	$self->call_warn(
+		join(' ',
+			"You didn't send an item attribute or directory",
+			"attribute information request, so why would the",
+			"response contain attribute information blocks?"
+		)
+	) unless ($self->request->request_type == ITEM_ATTRIBUTE_REQUEST
+		or $self->request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
+
+	# parse each block into a Net::Gopher::Response::InformationBlock
+	# object and store them in $self if we haven't done so yet:
+	unless (defined $self->{'_blocks'})
+	{
+		$self->_parse_blocks() || return;
+	}
+
+	my @item_wanted_from;
+	if (@_)
+	{
+		my $item = check_params(['Item'], \@_);
+
+		@item_wanted_from = $self->_find_item_blocks($item);
+	}
+	else
+	{
+		@item_wanted_from = @{ $self->{'_blocks'}->[0] };
+	}
+
+
+
+	$name = '+' . $name unless (substr($name, 0, 1) eq '+');
+
+	my $block_to_return;
+	foreach my $block (@item_wanted_from)
+	{
+		if ($block->name eq $name)
+		{
+			$block_to_return = $block;
+			last;
+		}
+	}
+
+	return $block_to_return;
+}
+
+
+
+
+
+#==============================================================================#
+
 =head2 get_blocks([OPTIONS])
 
 This method is used to retrieve one or more Gopher+ item or directory attribute
 information blocks in the form of B<Net::Gopher::Response::InformationBlock>
 objects.
 
-This method takes two named parameters:
+This method takes two optional named parameters:
 
 =over 4
 
 =item Item
 
-The first, I<Item>, is used only for directory attribute information requests,
-where the response will contain the information blocks for every item in a
-directory. This parameter is used to specify the item you want blocks
-from. I<Item> can be either a reference to a hash containing name=value pairs
-that identify the item you want or a number indicating the n'th item.
+This optional parameter is the same as the I<Item> parameter for C<get_block()>
+described above.
 
-The hash can contain any of the following C<Name =E<gt> "value"> pairs:
-
- N          = The item must be the n'th item in the response;
- ItemType   = The item must be of this type;
- Display    = The item must have this display string;
- Selector   = The item must have this selector string;
- Host       = The item must be on this host;
- Port       = The item must be at this port;
- GopherPlus = The item must have this Gopher+ string;
+If you don't supply I<Item>, then blocks from every item in the response will
+be returned.
 
 =item Blocks
 
-The I<Blocks> parameter is used to specify the blocks you want. You can specify
-an individual block as a string, or if you want to retrieve multiple block
-names, as a reference to an array of strings.
+The optional I<Blocks> parameter is used to specify which blocks you want. You
+can specify an individual block as a string, or if you want to retrieve
+multiple blocks, as a reference to an array of strings.
+
+If you don't supply this then the all of the blocks for the specified item
+will be returned.
+
+=back
 
 So to get the C<+VIEWS> and C<+ADMIN>
 B<Net::Gopher::Response::InformationBlock> objects for the item with the
@@ -669,20 +846,15 @@ Use more options for more accuracy:
  	Item   => {
 		N        => 7,
  		Selector => '/welcome',
- 		Host     => 'gopher.somehost.com',
+ 		Host     => qr/^(?:gopher)?.somehost.com/,
  		Port     => '70',
  	},
 	Blocks => '+VIEWS'
  );
 
 Which means the C<+VIEWS> B<Net::Gopher::Response::InformationBlock> object for
-the 7th item in the response with a selector string of /welcome and host and
-port fields of gopher.somehost.com and 70.
-
-For item attribute information blocks, you need not supply the I<Item>
-parameter, since there's only one item:
-
- my $info = $response->get_blocks(Blocks => 'INFO');
+the 7th item in the response with a selector string of /welcome, a host field of
+either "gopher.somehost.com" or ".somehost.com", and a port field of 70.
 
 Note that in either case, the leading '+' character is optional when specifying
 block names. You can add it if you like, though:
@@ -692,8 +864,6 @@ block names. You can add it if you like, though:
  my ($abstract, $views) = $response->get_blocks(
  	Blocks => ['ABSTRACT', 'VIEWS']
  );
-
-=back
 
 See L<Net::Gopher::Response::InformationBlock|Net::Gopher::Response::InformationBlock>
 for methods you can call on these objects.
@@ -726,13 +896,15 @@ sub get_blocks
 
 	# this hash will contain the name of every block requested, including
 	# the leading "+," which we'll add if it was absent:
-	my %blocks_to_extract;
+	my %blocks_to_get;
 	if (defined $blocks)
 	{
 		foreach my $name (ref $blocks ? @$blocks : $blocks)
 		{
-			$name = '+' . $name unless (substr($name, 0, 1) eq '+');
-			$blocks_to_extract{$name} = 1;
+			$name = '+' . $name
+				unless (substr($name, 0, 1) eq '+');
+
+			$blocks_to_get{$name} = 1;
 		}
 	}
 
@@ -740,116 +912,54 @@ sub get_blocks
 	# block object from the requested item (or from the *only* item if it
 	# was an item attribute information request) or nothing if no item was
 	# specified:
-	my @item_to_extract_from;
+	my @item_to_get_from;
 
-	if (defined $item and ref $item)
+	if (ref $item)
 	{
 		# If Item argument contains a reference to a hash or array,
-		# then it contains named parameters to specify a particular
-		# item by elements in its +INFO block:
-		my ($n, @template) = check_params([qw(
-			N ItemType Display Selector Host Port GopherPlus
-			)], $item
-		);
+		# then it contains a template of named parameters that specify
+		# which item to get the blocks from. So we go through each
+		# item comparing its +INFO block against the template and
+		# when we find the first one that matches, we'll use its blocks:
+		@item_to_get_from = $self->_find_item_blocks($item);
 
-
-
-		# If an item number was specified, then we'll only check that
-		# item against the template. Otherwise, we'll check each item
-		# agaisnt the template looking for one that matches:
-		my @items_to_search = (defined $n)
-					? $self->{'_blocks'}->[$n - 1]
-					: @{ $self->{'_blocks'} };
-
-		# now search the items looking for the first item that
-		# matches:
-		foreach my $item (@items_to_search)
-		{
-			my $info_block = $item->[0];
-
-			# skip it if there was no +INFO block:
-			next unless ($info_block
-				and $info_block->name eq '+INFO');
-
-			# parse the item's +INFO block:
-			my @info = $info_block->extract_description or next;
-
-			# We assume the item matches. It's only when user
-			# specifies certain parameters in the template and
-			# those parameters don't match the corresponding fields
-			# in the +INFO block that the item doesn't match:
-			my $does_not_match;
-			for (my $i = 0; $i <= $#template; $i++)
-			{
-				my ($temp, $value) = ($template[$i], $info[$i]);
-
-				next unless (defined $temp);
-
-				# check the value against the template:
-				if (ref $temp eq 'Regexp')
-				{
-					if ($value !~ $temp)
-					{
-						$does_not_match++;
-						last;
-					}
-				}
-				else
-				{
-					if ($value ne $temp)
-					{
-						$does_not_match++;
-						last;
-					}
-				}
-
-			}
-
-			# check the next item if this one didn't match the
-			# template:
-			next if ($does_not_match);
-
-			# we found one that matches:
-			@item_to_extract_from = @$item;
-			last;
-		}
-
-		return unless (@item_to_extract_from);
+		return unless (@item_to_get_from);
 	}
 	elsif (defined $item)
 	{
-		# for zero-indexing:
+		# $item contains a number specifying the n'th item to get
+		# blocks from:
 		my $i = $item - 1;
 
-		my @item_to_extract_from = @{ $self->{'_blocks'}->[$i] };
+		my @item_to_get_from = @{ $self->{'_blocks'}->[$i] };
 
-		return unless (@item_to_extract_from);
+		return unless (@item_to_get_from);
 	}
 	elsif ($self->request->request_type == ITEM_ATTRIBUTE_REQUEST)
 	{
-		# it was an item attribute information request, so we'll
-		# extract from the first, only item:
-		@item_to_extract_from = @{ $self->{'_blocks'}->[0] };
+		# it was an item attribute information request, so we'll get
+		# blocks from the first and only item:
+		@item_to_get_from = @{ $self->{'_blocks'}->[0] };
 	}
 
 
 
 	my @blocks_to_return;
-	if (@item_to_extract_from)
+	if (@item_to_get_from)
 	{
-		# extract the request blocks, or if none we're request, extract
-		# all of them for from the specified item:
-		if (%blocks_to_extract)
+		# get only the requested blocks, or, if none we're request,
+		# get all of them from the specified item:
+		if (%blocks_to_get)
 		{
-			foreach my $block (@item_to_extract_from)
+			foreach my $block (@item_to_get_from)
 			{
 				push(@blocks_to_return, $block)
-					if ($blocks_to_extract{$block->name});
+					if ($blocks_to_get{$block->name});
 			}
 		}
 		else
 		{
-			@blocks_to_return = @item_to_extract_from;
+			@blocks_to_return = @item_to_get_from;
 		}
 	}
 	else
@@ -1072,7 +1182,8 @@ sub is_blocks
 
 	my $block = qr/\+\S+ .*?/s;
 
-	if ($self->content =~ /^$block(?:\n$block)*$/so)
+	if (defined $self->content
+		and $self->content =~ /^$block(?:\n$block)*$/so)
 	{
 		return 1;
 	}
@@ -1119,8 +1230,9 @@ sub is_menu
 {
 	my $self = shift;
 
-	if ($self->content =~
-		/^$ITEM_PATTERN (?:\n $ITEM_PATTERN)* (?:\n\.\n|\n\.|\n|)$/xo)
+	if (defined $self->content
+		and $self->content =~ /^$ITEM_PATTERN (?:\n $ITEM_PATTERN)*
+		                       (?:\n\.\n|\n\.|\n|)$/xo)
 	{
 		return 1;
 	}
@@ -1147,7 +1259,8 @@ sub is_terminated
 	# have the period on a line by itself in it; but that also means the
 	# line endings weren't converted to LF, so we can't use \n to match the
 	# period on a line by itself:
-	if ($self->raw_response =~ /$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$/o)
+	if (defined $self->raw_response
+		and $self->raw_response =~ /$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$/o)
 	{
 		return 1;
 	}
@@ -1164,6 +1277,7 @@ sub is_text
 	my $self = shift;
 
 	return 1 if ($self->is_error);
+	return unless (defined $self->content);
 
 	if ($self->is_gopher_plus)
 	{
@@ -1251,7 +1365,10 @@ sub error_code
 
 	return unless ($self->is_error);
 
-	$self->_parse_error unless ($self->{'error_code'});
+	unless ($self->{'error_code'})
+	{
+		$self->_parse_error || return
+	}
 
 	return $self->{'error_code'};
 }
@@ -1276,10 +1393,12 @@ sub error_admin
 
 	return unless ($self->is_error);
 
-	$self->_parse_error unless ($self->{'error_admin'});
+	unless ($self->{'error_admin'})
+	{
+		$self->_parse_error || return
+	}
 
-	return @{ $self->{'error_admin'} }
-		if (ref $self->{'error_admin'});
+	return @{ $self->{'error_admin'} } if (ref $self->{'error_admin'});
 }
 
 
@@ -1300,7 +1419,10 @@ sub error_message
 
 	return unless ($self->is_error);
 
-	$self->_parse_error unless ($self->{'error_message'});
+	unless ($self->{'error_message'})
+	{
+		$self->_parse_error || return
+	}
 
 	return $self->{'error_message'};
 }
@@ -1309,30 +1431,31 @@ sub error_message
 
 
 
+
+
 ################################################################################
 # 
-# The following functions are private methods:
+# The following subroutines are private methods:
 # 
 
 sub _add_raw
 {
-	my $self = shift;
+	my ($self, $buffer) = @_;
 
-	if (defined $_[0])
-	{
-		$self->{'raw_response'} .= $_[0];
-	}
+	$self->{'raw_response'} .= $buffer if (defined $buffer);
 }
+
+
+
+
 
 sub _add_content
 {
-	my $self = shift;
+	my ($self, $buffer) = @_;
 
-	if (defined $_[0])
-	{
-		$self->{'content'} .= $_[0];
-	}
+	$self->{'content'} .= $buffer if (defined $buffer);
 }
+
 
 
 
@@ -1357,13 +1480,13 @@ sub _convert_newlines
 	{
 		# convert Windows CRLF and Unix LF line endings to MacOS CR:
 		$self->{'content'} =~ s/\015\012/\015/g;
-		$self->{'content'} =~ s/\012/\015/g;
+		$self->{'content'} =~ tr/\012/\015/;
 	}
 	else
 	{
 		# convert Windows CRLF and MacOS CR line endings to Unix LF:
 		$self->{'content'} =~ s/\015\012/\012/g;
-		$self->{'content'} =~ s/\015/\012/g;
+		$self->{'content'} =~ tr/\015/\012/;
 	}
 }
 
@@ -1400,20 +1523,25 @@ sub _parse_blocks
 	# elements:
 	$self->{'_blocks'} = [];
 
-	my $content = $self->content;
+	my $raw_response = $self->raw_response;
+
+	# remove the status line:
+	$raw_response =~ s/.+?$CRLF//s if ($self->is_gopher_plus);
+
+	# remove the terminating period on a line by itself if it's period
+	# terminated:
+	$raw_response =~ s/$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$//
+		if ($self->is_terminated);
 
 	# remove the leading + for the first block name:
-	$content =~ s/^\+// or return $self->call_die(
+	$raw_response =~ s/^\+// or return $self->call_die(
 		join(' ',
-			'There was no leading "+" for the first block name in',
-			'the response content. The response either does not',
-			'contain any attribute information blocks or contains',
-			'malformed attribute information blocks.'
+			'There was no leading "+" for the first block name at',
+			'the beginning of the response. The response either',
+			'does not contain any attribute information blocks or',
+			'contains malformed attribute information blocks.'
 		)
 	);
-
-	# remove the terminating period on a line by itself (if it's present):
-	$content =~ s/\n\.\n?$// if ($self->is_terminated);
 
 	# this will store the Net::Gopher::Response::InformationBlock objects
 	# for each item, one at a time. Each time we encounter the start of
@@ -1423,18 +1551,39 @@ sub _parse_blocks
 	my %seen;
 
 	# the start of block is denoted by a + at the beginning of a line:
-	foreach my $name_and_value (split(/\n\+/, $content))
+	foreach my $name_and_value (split(/$NEWLINE_PATTERN\+/, $raw_response))
 	{
 		# get the space separated name and value:
-		my ($name, $raw_value) = split(/\s/, $name_and_value, 2);
+		my ($name, $raw_value) =
+			split(/ |\015\012|\015|\012/, $name_and_value, 2);
 
 		# block names are usually postfixed with colons:
 		$name =~ s/:$//;
 
+		my $value = $raw_value;
+
+		# convert the newlines in the "pure" block value like we did
+		# for the response content, but leave the original endings
+		# intact for the "raw" value:
+		if (get_os_name() =~ /^MacOS/i)
+		{
+			# convert Windows CRLF and Unix LF line endings to
+			# MacOS CR:
+			$value =~ s/\015\012/\015/g;
+			$value =~ tr/\012/\015/;
+		}
+		else
+		{
+			# convert Windows CRLF and MacOS CR line endings to
+			# Unix LF:
+			$value =~ s/\015\012/\012/g;
+			$value =~ tr/\015/\012/;
+		}
+
 		# each line of a block value contains a leading space, so we
 		# strip the leading spaces for the "pure" value but leave
 		# them intact for the "raw" value:
-		(my $value = $raw_value) =~ s/^ //mg;
+		$value =~ s/^ //mg;
 
 		my $obj = new Net::Gopher::Response::InformationBlock (
 			Response => $self,
@@ -1469,6 +1618,92 @@ sub _parse_blocks
 
 
 
+sub _find_item_blocks
+{
+	my $self = shift;
+
+	my ($n, %template);
+	($n,
+	 $template{'item_type'}, $template{'display'}, $template{'selector'},
+	 $template{'host'}, $template{'port'}, $template{'gopher_plus'}) =
+	 	check_params(
+			[qw(N ItemType Display Selector Host Port GopherPlus)],
+			\@_
+		);
+
+
+
+	# If an item number was specified, then we'll only check that
+	# item against the template. Otherwise, we'll check each item
+	# against the template looking for one that matches:
+	my @items_to_search = (defined $n)
+				? $self->{'_blocks'}->[$n - 1]
+				: @{ $self->{'_blocks'} };
+
+	# now search the items looking for the first item that
+	# matches:
+	foreach my $item (@items_to_search)
+	{
+		my $info_block = $item->[0];
+
+		# skip it if there was no +INFO block:
+		next unless ($info_block and $info_block->name eq '+INFO');
+
+		# parse the item's +INFO block:
+		my @values = $info_block->extract_description or next;
+
+		# we'll use these keys to build a hash containing
+		# values from the +INFO block, then use them again to
+		# compare the values hash against the template hash:
+		my @keys = qw(item_type display selector host port gopher_plus);
+
+		my %values;
+		foreach my $key (@keys)
+		{
+			$values{$key} = shift @values;
+		}
+
+		# We assume the item matches. It's only when user
+		# specifies certain parameters in the template and
+		# those parameters don't match the corresponding fields
+		# in the +INFO block that the item doesn't match:
+		my $does_not_match;
+		foreach my $key (@keys)
+		{
+			next unless (defined $template{$key});
+
+			# check the value against the template:
+			if (ref $template{$key} eq 'Regexp')
+			{
+				unless ($values{$key} =~ $template{$key})
+				{
+					$does_not_match++;
+					last;
+				}
+			}
+			else
+			{
+				unless ($values{$key} eq $template{$key})
+				{
+					$does_not_match++;
+					last;
+				}
+			}
+		}
+
+		# check the next item if this one didn't match the
+		# template:
+		next if ($does_not_match);
+
+		# we found one that matches:
+		return @$item;
+	}
+}
+
+
+
+
+
 sub _parse_error
 {
 	my $self = shift;
@@ -1478,6 +1713,16 @@ sub _parse_error
 		$self->{'error_code'}    = $1;
 		$self->{'error_admin'}   = [$2, $3];
 		$self->{'error_message'} = $4;
+	}
+	else
+	{
+		return $self->call_die(
+			join(' ',
+				'The response either does not a contain a',
+				'Gopher+ error or it contains a malformed',
+				'Gopher+ error.'
+			)
+		)
 	}
 }
 

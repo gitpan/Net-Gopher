@@ -108,7 +108,10 @@ $ITEM_PATTERN = qr/$field\t$field\t$field\t$field(?:\t$field)?/;
 #
 #	Purpose
 #		This function is used to validate and retrieve the named
-#		parameters sent to a function. It takes a list containing
+#		parameters sent to a function. It takes a reference to a list
+#		containing the paramter names whose values you want as its
+#		first argument, a reference to a list (either a hash or array)
+#		containing named parameters as its second
 #
 #	Parameters
 #		$param_names - A reference to an array containing the names of
@@ -116,12 +119,11 @@ $ITEM_PATTERN = qr/$field\t$field\t$field\t$field(?:\t$field)?/;
 #		$arg_list    - Either a reference to a hash or array containing
 #		               "ParamName => 'value'" pairs. This can just be
 #		               a reference to @_.
-#		$strict      - (Optional.) Should this function croak if 
 #
 
 sub check_params
 {
-	my ($names_ref, $params_ref, $remove, $strict) = @_;
+	my ($names_ref, $params_ref, $strict) = @_;
 
 	my @args = (ref $params_ref eq 'ARRAY')
 			? @$params_ref
@@ -154,18 +156,31 @@ sub check_params
 
 
 
-	my @good_names;
-	push(@good_names, lc $_) foreach (@$names_ref);
-
+	my @params_wanted;
 	my %values;
-	   $values{$_} = undef foreach (@good_names);
+	foreach my $name (@$names_ref)
+	{
+		my $real_name = lc $name;
+		   $real_name =~ s/^-//;
+		   $real_name =~ tr/_//;
+
+		push(@params_wanted, $real_name);
+
+		$values{$real_name} = undef;
+	}
+
+
 
 	my @bad_names;
 	foreach my $name (keys %params)
 	{
-		if (exists $values{lc $name})
+		my $real_name = lc $name;
+		   $real_name =~ s/^-//;
+		   $real_name =~ tr/_//;
+
+		if (exists $values{$real_name})
 		{
-			$values{lc $name} = $params{$name};
+			$values{$real_name} = $params{$name};
 		}
 		else
 		{
@@ -185,7 +200,7 @@ sub check_params
 		);
 	}
 
-	return @values{@good_names};
+	return @values{@params_wanted};
 }
 
 

@@ -2,10 +2,7 @@ use strict;
 use warnings;
 use Test;
 
-BEGIN
-{
-	plan(tests => 432);
-}
+BEGIN { plan(tests => 432) }
 
 use Net::Gopher;
 use Net::Gopher::Request qw(:all);
