@@ -8,7 +8,7 @@ use constant TIMEOUT => 120;
 # make sure that we are connected to the net:
 {
 	# XXX: Maybe connecting in the begin block was causing problems?
-	my $socket = new IO::Socket::INET (
+	my $floodgap = new IO::Socket::INET (
 		Type     => SOCK_STREAM,
 		Proto    => 'tcp',
 		PeerAddr => 'gopher.floodgap.com',
@@ -16,9 +16,18 @@ use constant TIMEOUT => 120;
 		Timeout  => TIMEOUT
 	);
 
-	if ($socket)
+	my $quux = new IO::Socket::INET (
+		Type     => SOCK_STREAM,
+		Proto    => 'tcp',
+		PeerAddr => 'gopher.quux.org',
+		PeerPort => 70,
+		Timeout  => TIMEOUT
+	);
+
+	if ($floodgap and $quux)
 	{
-		close $socket;
+		close $floodgap;
+		close $quux;
 
 		plan(tests => 24);
 	}

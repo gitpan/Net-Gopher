@@ -385,7 +385,7 @@ sub ceil
 	my $num = shift;
 
 	# thanks to Jarkko Hietaniemi:
-	my $ceil_of_num = int($num + 1) unless ($num == int $num);
+	my $ceil_of_num = ($num > int $num) ? int($num + 1) : $num;
 
 	return $ceil_of_num;
 }

@@ -868,8 +868,8 @@ require './t/serverfunctions.pl';
 			join(' ',
 				"You never specified a host; it's impossible",
 				"to send your request. Specify one during",
-				"object creation or later on with the host()",
-				"method."
+				"request object creation or later on with the",
+				"host() method."
 			));           # 106
 	}
 

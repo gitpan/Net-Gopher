@@ -194,7 +194,7 @@ use constant MAX_STATUS_LINE_SIZE => 64;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '1.11';
+$VERSION = '1.12';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -445,8 +445,8 @@ sub request
 	# very least, we need a hostname or IP address:
 	return $self->call_die(
 		"You never specified a host; it's impossible to send your " .
-		"request. Specify one during object creation or later on " .
-		"with the host() method."
+		"request. Specify one during request object creation or " .
+		"later on with the host() method."
 	) unless (defined $request->host and length $request->host);
 
 	# we also need a port number, but we can use the default IANA
@@ -465,10 +465,12 @@ sub request
 	# additional tab delimited fields in the request string we're going to
 	# send and a status line prefixing the response we're going to receive?)
 	my $is_gopher_plus;
-	$is_gopher_plus = 1
-		if ($request->request_type == GOPHER_PLUS_REQUEST
-			or $request->request_type == ITEM_ATTRIBUTE_REQUEST
-			or $request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
+	if ($request->request_type == GOPHER_PLUS_REQUEST
+		or $request->request_type == ITEM_ATTRIBUTE_REQUEST
+		or $request->request_type == DIRECTORY_ATTRIBUTE_REQUEST)
+	{
+		$is_gopher_plus = 1;
+	}
 
 	# make sure we don't inherit errors from previous failled request()
 	# calls:
@@ -639,17 +641,19 @@ sub request
 
 		# If the transfer type was not -1 or -2 and instead contained
 		# the length of the response content, then we'll make sure we
-		# received a response containing at least that many bytes,
-		# but--since we live in a world structured by things such as
-		# NULL terminators--it makes sense to allow for at least a one
-		# byte discrepancy between the size in the transfer type and
-		# the actual size of the response content:
+		# received a response containing at least that many bytes:
 		if ($transfer_type != PERIOD_TERMINATED
 			and $transfer_type != NOT_TERMINATED)
 		{
 			my $supposed_size = $transfer_type;
 			my $actual_size   = size_in_bytes($response->content);
 
+			# since we live in a world structured by things such as
+			# NULL terminators, it makes sense to allow for at
+			# least a one byte discrepancy between the size in the
+			# transfer type and the actual size of the response
+			# content, so we decrement the size in the transfer
+			# type:
 			return $response->error(
 				sprintf('Incomplete response received: only ' .
 				        '%d %s of a suppossedly %d byte ' .
@@ -775,6 +779,7 @@ sub request
 
 	# disconnect from the server:
 	$self->_socket->close;
+
 	$self->debug_print('Disconnected from server.');
 
 
