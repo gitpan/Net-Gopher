@@ -41,8 +41,6 @@ as Gopher+ responses.
 
 The following methods are available:
 
-=over 4
-
 =cut
 
 use 5.005;
@@ -53,7 +51,7 @@ use Carp;
 use Time::Local;
 use Net::Gopher::Utility qw($CRLF $NEWLINE);
 
-$VERSION = '0.25';
+$VERSION = '0.27';
 
 
 
@@ -63,28 +61,29 @@ sub new
 {
 	my $invo  = shift;
 	my $class = ref $invo || $invo;
+	my %args  = @_;
 
 	my $self = {
 		# any error that occurred while sending the request or while
 		# receiving the response:
-		error       => undef,
+		error       => $args{'Error'},
 
 		# the request that was sent to the server:
-		request     => undef,
+		request     => $args{'Request'},
 
 		# entire response, every single byte:
-		response    => undef,
+		response    => $args{'Response'},
 
 		# the first line of the response including the newline (only
 		# in Gopher+):
-		status_line => undef,
+		status_line => $args{'StatusLine'},
 
 		# the status code (+ or -) (only in Gopher+):
-		status      => undef,
+		status      => $args{'Status'},
 
 		# content of the response (same as response except in Gopher+,
 		# where it's everything after the status line):
-		content     => undef,
+		content     => $args{'Content'},
 
 		# if this was a Gopher+ item attribute information request
 		# then this will be used to store the parsed information
@@ -102,7 +101,7 @@ sub new
 
 #==============================================================================#
 
-=item status_line()
+=head2 status_line()
 
 For a Gopher+ request, if the request was successful, this method will return
 the status line (the first line) of the response, including the newline
@@ -123,7 +122,7 @@ sub status_line
 
 #==============================================================================#
 
-=item status()
+=head2 status()
 
 For a Gopher+ request, if the request was successful, this method will return
 the status (the first character of the status line) of the response, either a
@@ -145,7 +144,7 @@ sub status
 
 #==============================================================================#
 
-=item content()
+=head2 content()
 
 For a Gopher+ request, if the request was successful, this method will return
 the content of the response (everything after the status line). For a Gopher
@@ -166,7 +165,7 @@ sub content
 
 #==============================================================================#
 
-=item as_string()
+=head2 as_string()
 
 For both Gopher as well as Gopher+ requests, if the request was successful,
 then this method will return the entire response, every single byte, from the
@@ -187,7 +186,7 @@ sub as_string
 
 #==============================================================================#
 
-=item as_menu()
+=head2 as_menu()
 
 If you got a Gopher menu as your response from the server, then you can use
 this method to parse it and return its values. When called, this method will
@@ -246,7 +245,7 @@ sub as_menu
 
 #==============================================================================#
 
-=item as_block([@block_names])
+=head2 as_block([@block_names])
 
 If the request was a Gopher+ item attribute information request, then you can
 use method to parse the attribute information blocks in the server's response.
@@ -348,7 +347,7 @@ sub _parse_blocks
 
 	# remove all leading whitespace and the leading + for the first block
 	# name:
-	$content =~ s/\s*?\+//;
+	$content =~ s/^\s*\+//;
 
 	my %blocks;
 	foreach my $name_and_value (split(/$NEWLINE\+/, $content))
@@ -356,6 +355,7 @@ sub _parse_blocks
 		# get the space separated name and value:
 		my ($name, $value) = $name_and_value =~ /(\S+)\s(.*)/s;
 
+		#print "##$name\n";
 		# block names are always postfixed with colons:
 		$name =~ s/:$//;
 
@@ -534,7 +534,7 @@ sub _get_attribute_hashref
 
 #==============================================================================#
 
-=item is_success()
+=head2 is_success()
 
 This method will return true if the request was successful, false otherwise.
 First, weather it's a Gopher or Gopher+ request, it won't be "successful" if
@@ -543,10 +543,10 @@ any network errors occurred. Beyond that, in Gopher+, for a request to be a
 (a code of +). In plain old Gopher, success is rather loosely defined.
 Basically, since Gopher has no built-in uniform error-handling, as long as
 some response was received from the server (even "An error has occurred" or
-"The item you requested does not exist"), this will return true. For more
-accuracy with Gopher requests, you can use the is_terminated() method. If this
-method returns false, meaning an error has occurred, then you can obtain the
-error message by calling the error() method on the Net::Gopher::Response
+"The item you requested does not exist"), this method will return true. For
+more accuracy with Gopher requests you can use the is_terminated() method. If
+is_success() returns false, meaning an error has occurred, then you can obtain
+the error message by calling the error() method on the Net::Gopher::Response
 object.
 
 =cut
@@ -582,10 +582,10 @@ sub is_success
 
 #==============================================================================#
 
-=item is_error()
+=head2 is_error()
 
 This method will return true if the request was unsuccessful; false otherwise.
-Success and failure are the same as described above (L<is_success>).
+Success and failure are the same as described above (L<is_success()>).
 
 =cut
 
@@ -620,7 +620,7 @@ sub is_error
 
 #==============================================================================#
 
-=item is_terminated()
+=head2 is_terminated()
 
 This method checks if the response content was terminated by a period on a line
 by itself. It returns true if the content is terminated by a period on a line
@@ -649,7 +649,7 @@ sub is_terminated
 
 #==============================================================================#
 
-=item error()
+=head2 error()
 
 This method returns the error message of the last error to occur or undef if no
 error has occurred.
@@ -682,8 +682,6 @@ sub error
 1;
 
 __END__
-
-=back
 
 =head1 BUGS
 

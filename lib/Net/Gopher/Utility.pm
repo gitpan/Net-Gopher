@@ -20,8 +20,6 @@ both the Net::Gopher and Net::Gopher::Response classes.
 
 The following varaibles are exported on demand:
 
-=over 4
-
 =cut
 
 use 5.005;
@@ -44,7 +42,7 @@ use vars qw(
 
 
 
-=item $CRLF
+=head2 $CRLF
 
 This is the line ending used by Net::Gopher and Net::Gopher::response. You can
 change this to the line ending of your choosing, but I wouldn't recommend it
@@ -57,7 +55,7 @@ $CRLF = "\15\12";
 
 
 
-=item $NEWLINE
+=head2 $NEWLINE
 
 This is pattern used to match newlines.
 
@@ -67,7 +65,7 @@ $NEWLINE = qr/(?:\15\12|\15|\12)/;
 
 
 
-=item %GOPHER_ITEM_TYPES
+=head2 %GOPHER_ITEM_TYPES
 
 This hash contains all of the item types described in
 I<RFC 1436 : The Internet Gopher Protocol> as well as some other types in
@@ -99,7 +97,7 @@ description of that type.
 
 
 
-=item %GOPHER_PLUS_ITEM_TYPES
+=head2 %GOPHER_PLUS_ITEM_TYPES
 
 This hash contains all of the item types described in
 I<Gopher+: Upward Compatible Enhancements to the Internet Gopher Protocol> as
@@ -132,8 +130,6 @@ and each value is a description of that type.
 1;
 
 __END__
-
-=back
 
 =head1 BUGS
 

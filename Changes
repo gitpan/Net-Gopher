@@ -1,6 +1,4 @@
 Revision history for Perl extension Net::Gopher.
 
-0.01  Thu Jul 10 03:24:26 2003
-	- original version; created by h2xs 1.21 with options
-		-XA Net::Gopher
-
+0.27 - Refractored request() and removed the _get_gopher_response and
+       _get_gopher_plus_response() methods.
