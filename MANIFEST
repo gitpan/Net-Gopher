@@ -1,0 +1,9 @@
+Changes
+COPYING
+lib/Net/Gopher.pm
+lib/Net/Gopher/Response.pm
+lib/Net/Gopher/Utility.pm
+Makefile.PL
+MANIFEST
+README
+test.pl
