@@ -1,8 +1,12 @@
 # Copyright 2003-2004 by William G. Davis.
 #
-# This module is free software released under the GNU General Public License,
-# the full terms of which can be found in the "COPYING" file that comes with
-# the distribution.
+# This library is free software released under the terms of the GNU Lesser
+# General Public License (LGPL), the full terms of which can be found in the
+# "COPYING" file that comes with the distribution.
+#
+# This library is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.
 #
 # This class contains methods for generating and reporting diagnostic messages.
 # You really don't need to be looking in here unless you plan on hacking

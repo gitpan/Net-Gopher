@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test;
 
-BEGIN { plan(tests => 559) }
+BEGIN { plan(tests => 577) }
 
 use Net::Gopher;
 use Net::Gopher::Constants qw(:item_types :request :response);
@@ -64,6 +64,7 @@ ok($port); # 13
 	}
 	else
 	{
+		ok(0);
 		warn $response->error;
 	}
 
@@ -297,6 +298,10 @@ ok($port); # 13
 
 
 
+	########################################################################
+	#
+	# These tests test the OfTypes and ExceptTypes block filters:
+	#
 	{
 		my @of_types = $response->extract_items(
 			OfTypes => INLINE_TEXT_TYPE
@@ -481,6 +486,55 @@ ok($port); # 13
 
 		ok(scalar @except_types, 0); # 284
 	}
+
+
+
+
+
+	########################################################################
+	#
+	# These tests test block handlers:
+	#
+
+	{
+		my @items;
+		my $invocations;
+		my @rv = $response->extract_items(
+			Handler => sub {
+				push(@items, shift);
+
+				$invocations++;
+
+				# stop after two items:
+				return if ($invocations >= 2);
+
+				return 1;
+			}
+		);
+
+		ok($items[0]->item_type, INLINE_TEXT_TYPE);                # 285
+		ok($items[0]->display, 'This is a Gopher menu.');          # 286
+		ok($items[0]->selector, '');                               # 287
+		ok($items[0]->host, '');                                   # 288
+		ok($items[0]->port, '');                                   # 289
+		ok(!defined $items[0]->gopher_plus);                       # 290
+		ok($items[0]->as_string, "iThis is a Gopher menu.\t\t\t"); # 291
+		ok($items[0]->as_url, "gopher://:/i");                     # 292
+
+		ok($items[1]->item_type, GOPHER_MENU_TYPE);      # 293
+		ok($items[1]->display, 'Item one');              # 294
+		ok($items[1]->selector, '/directory');           # 295
+		ok($items[1]->host, 'localhost');                # 296
+		ok($items[1]->port, '70');                       # 297
+		ok(!defined $items[1]->gopher_plus);             # 298
+		ok($items[1]->as_string,
+			"1Item one\t/directory\tlocalhost\t70"); # 299
+		ok($items[1]->as_url,
+			"gopher://localhost:70/1/directory");    # 300
+
+		ok(scalar @rv, 0);   # 301
+		ok($invocations, 2); # 302
+	}
 }
 
 
@@ -503,10 +557,11 @@ ok($port); # 13
 
 	if ($response->is_success)
 	{
-		ok(1); # 285
+		ok(1); # 303
 	}
 	else
 	{
+		ok(0);
 		warn $response->error;
 	}
 
@@ -514,209 +569,209 @@ ok($port); # 13
 
 
 
-	ok($items[0]->item_type, INLINE_TEXT_TYPE); # 286
+	ok($items[0]->item_type, INLINE_TEXT_TYPE); # 304
 	ok($items[0]->display,
 		'This is a Gopher+ style Gopher menu, where all of the '. 
-		'items have a fifth field');        # 287
-	ok($items[0]->selector, '');                # 288
-	ok($items[0]->host, '');                    # 289
-	ok($items[0]->port, '');                    # 290
-	ok(!defined $items[0]->gopher_plus);        # 291
+		'items have a fifth field');        # 305
+	ok($items[0]->selector, '');                # 306
+	ok($items[0]->host, '');                    # 307
+	ok($items[0]->port, '');                    # 308
+	ok(!defined $items[0]->gopher_plus);        # 309
 	ok($items[0]->as_string,
 		"iThis is a Gopher+ style Gopher menu, where all of the " .
-		"items have a fifth field\t\t\t");  # 292
-	ok($items[0]->as_url, "gopher://:/i");      # 293
+		"items have a fifth field\t\t\t");  # 310
+	ok($items[0]->as_url, "gopher://:/i");      # 311
 
 	{
 		my $request = $items[0]->as_request;
 
-		ok($request->as_string, "$CRLF");           # 294
-		ok($request->as_url, 'gopher://:70/i');     # 295
-		ok($request->request_type, GOPHER_REQUEST); # 296
-		ok($request->host, '');                     # 297
-		ok($request->port, 70);                     # 298
-		ok($request->selector, '');                 # 299
-		ok(!defined $request->search_words);        # 300
-		ok(!defined $request->representation);      # 301
-		ok(!defined $request->data_block);          # 302
-		ok(!defined $request->attributes);          # 303
-		ok($request->item_type, INLINE_TEXT_TYPE);  # 304
+		ok($request->as_string, "$CRLF");           # 312
+		ok($request->as_url, 'gopher://:70/i');     # 313
+		ok($request->request_type, GOPHER_REQUEST); # 314
+		ok($request->host, '');                     # 315
+		ok($request->port, 70);                     # 316
+		ok($request->selector, '');                 # 317
+		ok(!defined $request->search_words);        # 318
+		ok(!defined $request->representation);      # 319
+		ok(!defined $request->data_block);          # 320
+		ok(!defined $request->attributes);          # 321
+		ok($request->item_type, INLINE_TEXT_TYPE);  # 322
 	}
 
 
 
-	ok($items[1]->item_type, INLINE_TEXT_TYPE);                        # 305
-	ok($items[1]->display, 'containing a + or ? character.');          # 306
-	ok($items[1]->selector, '');                                       # 307
-	ok($items[1]->host, '');                                           # 308
-	ok($items[1]->port, '');                                           # 309
-	ok(!defined $items[1]->gopher_plus);                               # 310
-	ok($items[1]->as_string, "icontaining a + or ? character.\t\t\t"); # 311
-	ok($items[1]->as_url, "gopher://:/i");                             # 312
+	ok($items[1]->item_type, INLINE_TEXT_TYPE);                        # 323
+	ok($items[1]->display, 'containing a + or ? character.');          # 324
+	ok($items[1]->selector, '');                                       # 325
+	ok($items[1]->host, '');                                           # 326
+	ok($items[1]->port, '');                                           # 327
+	ok(!defined $items[1]->gopher_plus);                               # 328
+	ok($items[1]->as_string, "icontaining a + or ? character.\t\t\t"); # 329
+	ok($items[1]->as_url, "gopher://:/i");                             # 330
 
 	{
 		my $request = $items[1]->as_request;
 
-		ok($request->as_string, "$CRLF");           # 313
-		ok($request->as_url, 'gopher://:70/i');     # 314
-		ok($request->request_type, GOPHER_REQUEST); # 315
-		ok($request->host, '');                     # 316
-		ok($request->port, 70);                     # 317
-		ok($request->selector, '');                 # 318
-		ok(!defined $request->search_words);        # 319
-		ok(!defined $request->representation);      # 320
-		ok(!defined $request->data_block);          # 321
-		ok(!defined $request->attributes);          # 322
-		ok($request->item_type, INLINE_TEXT_TYPE);  # 323
+		ok($request->as_string, "$CRLF");           # 331
+		ok($request->as_url, 'gopher://:70/i');     # 332
+		ok($request->request_type, GOPHER_REQUEST); # 333
+		ok($request->host, '');                     # 334
+		ok($request->port, 70);                     # 335
+		ok($request->selector, '');                 # 336
+		ok(!defined $request->search_words);        # 337
+		ok(!defined $request->representation);      # 338
+		ok(!defined $request->data_block);          # 339
+		ok(!defined $request->attributes);          # 340
+		ok($request->item_type, INLINE_TEXT_TYPE);  # 341
 	}
 
 
 
-	ok($items[2]->item_type, GOPHER_MENU_TYPE);                       # 324
-	ok($items[2]->display, 'Some directory');                         # 325
-	ok($items[2]->selector, '/some_dir');                             # 326
-	ok($items[2]->host, 'localhost');                                 # 327
-	ok($items[2]->port, '70');                                        # 328
-	ok($items[2]->gopher_plus, '+');                                  # 329
+	ok($items[2]->item_type, GOPHER_MENU_TYPE);                       # 342
+	ok($items[2]->display, 'Some directory');                         # 343
+	ok($items[2]->selector, '/some_dir');                             # 344
+	ok($items[2]->host, 'localhost');                                 # 345
+	ok($items[2]->port, '70');                                        # 346
+	ok($items[2]->gopher_plus, '+');                                  # 347
 	ok($items[2]->as_string,
-		"1Some directory\t/some_dir\tlocalhost\t70\t+");          # 330
-	ok($items[2]->as_url, 'gopher://localhost:70/1/some_dir%09%09+'); # 331
+		"1Some directory\t/some_dir\tlocalhost\t70\t+");          # 348
+	ok($items[2]->as_url, 'gopher://localhost:70/1/some_dir%09%09+'); # 349
 
 	{
 		my $request = $items[2]->as_request;
 
-		ok($request->as_string, "/some_dir	+$CRLF");   # 332
+		ok($request->as_string, "/some_dir	+$CRLF");   # 350
 		ok($request->as_url,
-			'gopher://localhost:70/1/some_dir%09%09+'); # 333
-		ok($request->request_type, GOPHER_PLUS_REQUEST);    # 334
-		ok($request->host, 'localhost');                    # 335
-		ok($request->port, 70);                             # 336
-		ok($request->selector, '/some_dir');                # 337
-		ok(!defined $request->search_words);                # 338
-		ok(!defined $request->representation);              # 339
-		ok(!defined $request->data_block);                  # 340
-		ok(!defined $request->attributes);                  # 341
-		ok($request->item_type, GOPHER_MENU_TYPE);          # 342
+			'gopher://localhost:70/1/some_dir%09%09+'); # 351
+		ok($request->request_type, GOPHER_PLUS_REQUEST);    # 352
+		ok($request->host, 'localhost');                    # 353
+		ok($request->port, 70);                             # 354
+		ok($request->selector, '/some_dir');                # 355
+		ok(!defined $request->search_words);                # 356
+		ok(!defined $request->representation);              # 357
+		ok(!defined $request->data_block);                  # 358
+		ok(!defined $request->attributes);                  # 359
+		ok($request->item_type, GOPHER_MENU_TYPE);          # 360
 	}
 
 
 
-	ok($items[3]->item_type, GOPHER_MENU_TYPE);                          # 343
-	ok($items[3]->display, 'Some other directory');                      # 344
-	ok($items[3]->selector, '/some_other_dir');                          # 345
-	ok($items[3]->host, 'localhost');                                    # 346
-	ok($items[3]->port, '70');                                           # 347
-	ok($items[3]->gopher_plus, '+');                                     # 348
+	ok($items[3]->item_type, GOPHER_MENU_TYPE);                          # 361
+	ok($items[3]->display, 'Some other directory');                      # 362
+	ok($items[3]->selector, '/some_other_dir');                          # 363
+	ok($items[3]->host, 'localhost');                                    # 364
+	ok($items[3]->port, '70');                                           # 365
+	ok($items[3]->gopher_plus, '+');                                     # 366
 	ok($items[3]->as_string,
-		"1Some other directory\t/some_other_dir\tlocalhost\t70\t+"); # 349
+		"1Some other directory\t/some_other_dir\tlocalhost\t70\t+"); # 367
 	ok($items[3]->as_url,
-		'gopher://localhost:70/1/some_other_dir%09%09+');            # 350
+		'gopher://localhost:70/1/some_other_dir%09%09+');            # 368
 
 	{
 		my $request = $items[3]->as_request;
 
-		ok($request->as_string, "/some_other_dir	+$CRLF"); # 351
+		ok($request->as_string, "/some_other_dir	+$CRLF"); # 369
 		ok($request->as_url,
-			'gopher://localhost:70/1/some_other_dir%09%09+'); # 352
-		ok($request->request_type, GOPHER_PLUS_REQUEST);          # 353
-		ok($request->host, 'localhost');                          # 354
-		ok($request->port, 70);                                   # 355
-		ok($request->selector, '/some_other_dir');                # 356
-		ok(!defined $request->search_words);                      # 357
-		ok(!defined $request->representation);                    # 358
-		ok(!defined $request->data_block);                        # 359
-		ok(!defined $request->attributes);                        # 360
-		ok($request->item_type, GOPHER_MENU_TYPE);                # 361
+			'gopher://localhost:70/1/some_other_dir%09%09+'); # 370
+		ok($request->request_type, GOPHER_PLUS_REQUEST);          # 371
+		ok($request->host, 'localhost');                          # 372
+		ok($request->port, 70);                                   # 373
+		ok($request->selector, '/some_other_dir');                # 374
+		ok(!defined $request->search_words);                      # 375
+		ok(!defined $request->representation);                    # 376
+		ok(!defined $request->data_block);                        # 377
+		ok(!defined $request->attributes);                        # 378
+		ok($request->item_type, GOPHER_MENU_TYPE);                # 379
 	}
 
 
 
-	ok($items[4]->item_type, GIF_IMAGE_TYPE);              # 362
-	ok($items[4]->display, 'A GIF image');                 # 363
-	ok($items[4]->selector, '/image.gif');                 # 364
-	ok($items[4]->host, 'localhost');                      # 365
-	ok($items[4]->port, '70');                             # 366
-	ok($items[4]->gopher_plus, '+');                       # 367
+	ok($items[4]->item_type, GIF_IMAGE_TYPE);              # 380
+	ok($items[4]->display, 'A GIF image');                 # 381
+	ok($items[4]->selector, '/image.gif');                 # 382
+	ok($items[4]->host, 'localhost');                      # 383
+	ok($items[4]->port, '70');                             # 384
+	ok($items[4]->gopher_plus, '+');                       # 385
 	ok($items[4]->as_string,
-		"gA GIF image\t/image.gif\tlocalhost\t70\t+"); # 368
+		"gA GIF image\t/image.gif\tlocalhost\t70\t+"); # 386
 	ok($items[4]->as_url,
-		'gopher://localhost:70/g/image.gif%09%09+');   # 369
+		'gopher://localhost:70/g/image.gif%09%09+');   # 387
 
 	{
 		my $request = $items[4]->as_request;
 
-		ok($request->as_string, "/image.gif	+$CRLF");    # 370
+		ok($request->as_string, "/image.gif	+$CRLF");    # 388
 		ok($request->as_url,
-			'gopher://localhost:70/g/image.gif%09%09+'); # 371
-		ok($request->request_type, GOPHER_PLUS_REQUEST);     # 372
-		ok($request->host, 'localhost');                     # 373
-		ok($request->port, 70);                              # 374
-		ok($request->selector, '/image.gif');                # 375
-		ok(!defined $request->search_words);                 # 376
-		ok(!defined $request->representation);               # 377
-		ok(!defined $request->data_block);                   # 378
-		ok(!defined $request->attributes);                   # 379
-		ok($request->item_type, GIF_IMAGE_TYPE);             # 380
+			'gopher://localhost:70/g/image.gif%09%09+'); # 389
+		ok($request->request_type, GOPHER_PLUS_REQUEST);     # 390
+		ok($request->host, 'localhost');                     # 391
+		ok($request->port, 70);                              # 392
+		ok($request->selector, '/image.gif');                # 393
+		ok(!defined $request->search_words);                 # 394
+		ok(!defined $request->representation);               # 395
+		ok(!defined $request->data_block);                   # 396
+		ok(!defined $request->attributes);                   # 397
+		ok($request->item_type, GIF_IMAGE_TYPE);             # 398
 	}
 
 
 
-	ok($items[5]->item_type, INLINE_TEXT_TYPE);             # 381
-	ok($items[5]->display, 'Fill out this form:');          # 382
-	ok($items[5]->selector, '');                            # 383
-	ok($items[5]->host, '');                                # 384
-	ok($items[5]->port, '');                                # 385
-	ok(!defined $items[5]->gopher_plus);                    # 386
-	ok($items[5]->as_string, "iFill out this form:\t\t\t"); # 387
-	ok($items[5]->as_url, "gopher://:/i");                  # 388
+	ok($items[5]->item_type, INLINE_TEXT_TYPE);             # 399
+	ok($items[5]->display, 'Fill out this form:');          # 400
+	ok($items[5]->selector, '');                            # 401
+	ok($items[5]->host, '');                                # 402
+	ok($items[5]->port, '');                                # 403
+	ok(!defined $items[5]->gopher_plus);                    # 404
+	ok($items[5]->as_string, "iFill out this form:\t\t\t"); # 405
+	ok($items[5]->as_url, "gopher://:/i");                  # 406
 
 	{
 		my $request = $items[5]->as_request;
 
-		ok($request->as_string, "$CRLF");           # 389
-		ok($request->as_url,'gopher://:70/i');      # 390
-		ok($request->request_type, GOPHER_REQUEST); # 391
-		ok($request->host, '');                     # 392
-		ok($request->port, 70);                     # 393
-		ok($request->selector, '');                 # 394
-		ok(!defined $request->search_words);        # 395
-		ok(!defined $request->representation);      # 396
-		ok(!defined $request->data_block);          # 397
-		ok(!defined $request->attributes);          # 398
-		ok($request->item_type, INLINE_TEXT_TYPE);  # 399
+		ok($request->as_string, "$CRLF");           # 407
+		ok($request->as_url,'gopher://:70/i');      # 408
+		ok($request->request_type, GOPHER_REQUEST); # 409
+		ok($request->host, '');                     # 410
+		ok($request->port, 70);                     # 411
+		ok($request->selector, '');                 # 412
+		ok(!defined $request->search_words);        # 413
+		ok(!defined $request->representation);      # 414
+		ok(!defined $request->data_block);          # 415
+		ok(!defined $request->attributes);          # 416
+		ok($request->item_type, INLINE_TEXT_TYPE);  # 417
 	}
 
 
 
-	ok($items[6]->item_type, GOPHER_MENU_TYPE);             # 400
-	ok($items[6]->display, 'Application');                  # 401
-	ok($items[6]->selector, '/ask_script');                 # 402
-	ok($items[6]->host, 'localhost');                       # 403
-	ok($items[6]->port, '70');                              # 404
-	ok($items[6]->gopher_plus, '?');                        # 405
+	ok($items[6]->item_type, GOPHER_MENU_TYPE);             # 418
+	ok($items[6]->display, 'Application');                  # 419
+	ok($items[6]->selector, '/ask_script');                 # 420
+	ok($items[6]->host, 'localhost');                       # 421
+	ok($items[6]->port, '70');                              # 422
+	ok($items[6]->gopher_plus, '?');                        # 423
 	ok($items[6]->as_string,
-		"1Application\t/ask_script\tlocalhost\t70\t?"); # 406
+		"1Application\t/ask_script\tlocalhost\t70\t?"); # 424
 	ok($items[6]->as_url,
-		'gopher://localhost:70/1/ask_script%09%09?');   # 407
+		'gopher://localhost:70/1/ask_script%09%09?');   # 425
 
 	{
 		my $request = $items[6]->as_request;
 
-		ok($request->as_string, "/ask_script	+$CRLF");     # 408
+		ok($request->as_string, "/ask_script	+$CRLF");     # 426
 		ok($request->as_url,
-			'gopher://localhost:70/1/ask_script%09%09+'); # 409
-		ok($request->request_type, GOPHER_PLUS_REQUEST);      # 410
-		ok($request->host, 'localhost');                      # 411
-		ok($request->port, 70);                               # 412
-		ok($request->selector, '/ask_script');                # 413
-		ok(!defined $request->search_words);                  # 414
-		ok(!defined $request->representation);                # 415
-		ok(!defined $request->data_block);                    # 416
-		ok(!defined $request->attributes);                    # 417
-		ok($request->item_type, GOPHER_MENU_TYPE);            # 418
+			'gopher://localhost:70/1/ask_script%09%09+'); # 427
+		ok($request->request_type, GOPHER_PLUS_REQUEST);      # 428
+		ok($request->host, 'localhost');                      # 429
+		ok($request->port, 70);                               # 430
+		ok($request->selector, '/ask_script');                # 431
+		ok(!defined $request->search_words);                  # 432
+		ok(!defined $request->representation);                # 433
+		ok(!defined $request->data_block);                    # 434
+		ok(!defined $request->attributes);                    # 435
+		ok($request->item_type, GOPHER_MENU_TYPE);            # 436
 	}
 
-	ok(scalar @items, 7); # 419
+	ok(scalar @items, 7); # 437
 
 
 
@@ -727,40 +782,40 @@ ok($port); # 13
 			OfTypes => [INLINE_TEXT_TYPE]
 		);
 
-		ok($of_types[0]->item_type, INLINE_TEXT_TYPE); # 420
+		ok($of_types[0]->item_type, INLINE_TEXT_TYPE); # 438
 		ok($of_types[0]->display,
 			'This is a Gopher+ style Gopher menu, where all of ' .
-			'the items have a fifth field');       # 421
-		ok($of_types[0]->selector, '');                # 422
-		ok($of_types[0]->host, '');                    # 423
-		ok($of_types[0]->port, '');                    # 424
-		ok(!defined $of_types[0]->gopher_plus);        # 425
+			'the items have a fifth field');       # 439
+		ok($of_types[0]->selector, '');                # 440
+		ok($of_types[0]->host, '');                    # 441
+		ok($of_types[0]->port, '');                    # 442
+		ok(!defined $of_types[0]->gopher_plus);        # 443
 		ok($of_types[0]->as_string,
 			"iThis is a Gopher+ style Gopher menu, where all of " .
-			"the items have a fifth field\t\t\t"); # 426
-		ok($of_types[0]->as_url, "gopher://:/i");      # 427
+			"the items have a fifth field\t\t\t"); # 444
+		ok($of_types[0]->as_url, "gopher://:/i");      # 445
 
-		ok($of_types[1]->item_type, INLINE_TEXT_TYPE);    # 428
+		ok($of_types[1]->item_type, INLINE_TEXT_TYPE);    # 446
 		ok($of_types[1]->display,
-			'containing a + or ? character.');        # 429
-		ok($of_types[1]->selector, '');                   # 430
-		ok($of_types[1]->host, '');                       # 431
-		ok($of_types[1]->port, '');                       # 432
-		ok(!defined $of_types[1]->gopher_plus);           # 433
+			'containing a + or ? character.');        # 447
+		ok($of_types[1]->selector, '');                   # 448
+		ok($of_types[1]->host, '');                       # 449
+		ok($of_types[1]->port, '');                       # 450
+		ok(!defined $of_types[1]->gopher_plus);           # 451
 		ok($of_types[1]->as_string,
-			"icontaining a + or ? character.\t\t\t"); # 434
-		ok($of_types[1]->as_url, "gopher://:/i");         # 435
+			"icontaining a + or ? character.\t\t\t"); # 452
+		ok($of_types[1]->as_url, "gopher://:/i");         # 453
 
-		ok($of_types[2]->item_type, INLINE_TEXT_TYPE);             # 436
-		ok($of_types[2]->display, 'Fill out this form:');          # 437
-		ok($of_types[2]->selector, '');                            # 438
-		ok($of_types[2]->host, '');                                # 439
-		ok($of_types[2]->port, '');                                # 440
-		ok(!defined $of_types[2]->gopher_plus);                    # 441
-		ok($of_types[2]->as_string, "iFill out this form:\t\t\t"); # 442
-		ok($of_types[2]->as_url, "gopher://:/i");                  # 443
+		ok($of_types[2]->item_type, INLINE_TEXT_TYPE);             # 454
+		ok($of_types[2]->display, 'Fill out this form:');          # 455
+		ok($of_types[2]->selector, '');                            # 456
+		ok($of_types[2]->host, '');                                # 457
+		ok($of_types[2]->port, '');                                # 458
+		ok(!defined $of_types[2]->gopher_plus);                    # 459
+		ok($of_types[2]->as_string, "iFill out this form:\t\t\t"); # 460
+		ok($of_types[2]->as_url, "gopher://:/i");                  # 461
 
-		ok(scalar @of_types, 3); # 444
+		ok(scalar @of_types, 3); # 462
 	}
 
 	{
@@ -768,74 +823,74 @@ ok($port); # 13
 			OfTypes => 'i1'
 		);
 
-		ok($of_types[0]->item_type, INLINE_TEXT_TYPE); # 445
+		ok($of_types[0]->item_type, INLINE_TEXT_TYPE); # 463
 		ok($of_types[0]->display,
 			'This is a Gopher+ style Gopher menu, where all of ' .
-			'the items have a fifth field');       # 446
-		ok($of_types[0]->selector, '');                # 447
-		ok($of_types[0]->host, '');                    # 448
-		ok($of_types[0]->port, '');                    # 449
-		ok(!defined $of_types[0]->gopher_plus);        # 450
+			'the items have a fifth field');       # 464
+		ok($of_types[0]->selector, '');                # 465
+		ok($of_types[0]->host, '');                    # 466
+		ok($of_types[0]->port, '');                    # 467
+		ok(!defined $of_types[0]->gopher_plus);        # 468
 		ok($of_types[0]->as_string,
 			"iThis is a Gopher+ style Gopher menu, where all of " .
-			"the items have a fifth field\t\t\t"); # 451
-		ok($of_types[0]->as_url, "gopher://:/i");      # 452
+			"the items have a fifth field\t\t\t"); # 469
+		ok($of_types[0]->as_url, "gopher://:/i");      # 470
 
-		ok($of_types[1]->item_type, INLINE_TEXT_TYPE);    # 453
+		ok($of_types[1]->item_type, INLINE_TEXT_TYPE);    # 471
 		ok($of_types[1]->display,
-			'containing a + or ? character.');        # 454
-		ok($of_types[1]->selector, '');                   # 455
-		ok($of_types[1]->host, '');                       # 456
-		ok($of_types[1]->port, '');                       # 457
-		ok(!defined $of_types[1]->gopher_plus);           # 458
+			'containing a + or ? character.');        # 472
+		ok($of_types[1]->selector, '');                   # 473
+		ok($of_types[1]->host, '');                       # 474
+		ok($of_types[1]->port, '');                       # 475
+		ok(!defined $of_types[1]->gopher_plus);           # 476
 		ok($of_types[1]->as_string,
-			"icontaining a + or ? character.\t\t\t"); # 459
-		ok($of_types[1]->as_url, "gopher://:/i");         # 460
+			"icontaining a + or ? character.\t\t\t"); # 477
+		ok($of_types[1]->as_url, "gopher://:/i");         # 478
 
-		ok($of_types[2]->item_type, GOPHER_MENU_TYPE);           # 461
-		ok($of_types[2]->display, 'Some directory');             # 462
-		ok($of_types[2]->selector, '/some_dir');                 # 463
-		ok($of_types[2]->host, 'localhost');                     # 464
-		ok($of_types[2]->port, '70');                            # 465
-		ok($of_types[2]->gopher_plus, '+');                      # 466
+		ok($of_types[2]->item_type, GOPHER_MENU_TYPE);           # 479
+		ok($of_types[2]->display, 'Some directory');             # 480
+		ok($of_types[2]->selector, '/some_dir');                 # 481
+		ok($of_types[2]->host, 'localhost');                     # 482
+		ok($of_types[2]->port, '70');                            # 483
+		ok($of_types[2]->gopher_plus, '+');                      # 484
 		ok($of_types[2]->as_string,
-			"1Some directory\t/some_dir\tlocalhost\t70\t+"); # 467
+			"1Some directory\t/some_dir\tlocalhost\t70\t+"); # 485
 		ok($of_types[2]->as_url,
-			'gopher://localhost:70/1/some_dir%09%09+');      # 468
+			'gopher://localhost:70/1/some_dir%09%09+');      # 486
 
-		ok($of_types[3]->item_type, GOPHER_MENU_TYPE);            # 469
-		ok($of_types[3]->display, 'Some other directory');        # 470
-		ok($of_types[3]->selector, '/some_other_dir');            # 471
-		ok($of_types[3]->host, 'localhost');                      # 472
-		ok($of_types[3]->port, '70');                             # 473
-		ok($of_types[3]->gopher_plus, '+');                       # 474
+		ok($of_types[3]->item_type, GOPHER_MENU_TYPE);            # 487
+		ok($of_types[3]->display, 'Some other directory');        # 488
+		ok($of_types[3]->selector, '/some_other_dir');            # 489
+		ok($of_types[3]->host, 'localhost');                      # 490
+		ok($of_types[3]->port, '70');                             # 491
+		ok($of_types[3]->gopher_plus, '+');                       # 492
 		ok($of_types[3]->as_string,
 			"1Some other directory\t/some_other_dir" .
-			"\tlocalhost\t70\t+");                            # 475
+			"\tlocalhost\t70\t+");                            # 493
 		ok($of_types[3]->as_url,
-			'gopher://localhost:70/1/some_other_dir%09%09+'); # 476
+			'gopher://localhost:70/1/some_other_dir%09%09+'); # 494
 
-		ok($of_types[4]->item_type, INLINE_TEXT_TYPE);             # 477
-		ok($of_types[4]->display, 'Fill out this form:');          # 478
-		ok($of_types[4]->selector, '');                            # 479
-		ok($of_types[4]->host, '');                                # 480
-		ok($of_types[4]->port, '');                                # 481
-		ok(!defined $of_types[4]->gopher_plus);                    # 482
-		ok($of_types[4]->as_string, "iFill out this form:\t\t\t"); # 483
-		ok($of_types[4]->as_url, "gopher://:/i");                  # 484
+		ok($of_types[4]->item_type, INLINE_TEXT_TYPE);             # 495
+		ok($of_types[4]->display, 'Fill out this form:');          # 496
+		ok($of_types[4]->selector, '');                            # 497
+		ok($of_types[4]->host, '');                                # 498
+		ok($of_types[4]->port, '');                                # 499
+		ok(!defined $of_types[4]->gopher_plus);                    # 500
+		ok($of_types[4]->as_string, "iFill out this form:\t\t\t"); # 501
+		ok($of_types[4]->as_url, "gopher://:/i");                  # 502
 
-		ok($of_types[5]->item_type, GOPHER_MENU_TYPE);          # 485
-		ok($of_types[5]->display, 'Application');               # 486
-		ok($of_types[5]->selector, '/ask_script');              # 487
-		ok($of_types[5]->host, 'localhost');                    # 488
-		ok($of_types[5]->port, '70');                           # 489
-		ok($of_types[5]->gopher_plus, '?');                     # 490
+		ok($of_types[5]->item_type, GOPHER_MENU_TYPE);          # 503
+		ok($of_types[5]->display, 'Application');               # 504
+		ok($of_types[5]->selector, '/ask_script');              # 505
+		ok($of_types[5]->host, 'localhost');                    # 506
+		ok($of_types[5]->port, '70');                           # 507
+		ok($of_types[5]->gopher_plus, '?');                     # 508
 		ok($of_types[5]->as_string,
-			"1Application\t/ask_script\tlocalhost\t70\t?"); # 491
+			"1Application\t/ask_script\tlocalhost\t70\t?"); # 509
 		ok($of_types[5]->as_url,
-			'gopher://localhost:70/1/ask_script%09%09?');   # 492
+			'gopher://localhost:70/1/ask_script%09%09?');   # 510
 
-		ok(scalar @of_types, 6); # 493
+		ok(scalar @of_types, 6); # 511
 	}
 
 	{
@@ -843,52 +898,52 @@ ok($port); # 13
 			ExceptTypes => [INLINE_TEXT_TYPE]
 		);
 
-		ok($except_types[0]->item_type, GOPHER_MENU_TYPE);       # 494
-		ok($except_types[0]->display, 'Some directory');         # 495
-		ok($except_types[0]->selector, '/some_dir');             # 496
-		ok($except_types[0]->host, 'localhost');                 # 497
-		ok($except_types[0]->port, '70');                        # 498
-		ok($except_types[0]->gopher_plus, '+');                  # 499
+		ok($except_types[0]->item_type, GOPHER_MENU_TYPE);       # 512
+		ok($except_types[0]->display, 'Some directory');         # 513
+		ok($except_types[0]->selector, '/some_dir');             # 514
+		ok($except_types[0]->host, 'localhost');                 # 515
+		ok($except_types[0]->port, '70');                        # 516
+		ok($except_types[0]->gopher_plus, '+');                  # 517
 		ok($except_types[0]->as_string,
-			"1Some directory\t/some_dir\tlocalhost\t70\t+"); # 500
+			"1Some directory\t/some_dir\tlocalhost\t70\t+"); # 518
 		ok($except_types[0]->as_url,
-			'gopher://localhost:70/1/some_dir%09%09+');      # 501
+			'gopher://localhost:70/1/some_dir%09%09+');      # 519
 
-		ok($except_types[1]->item_type, GOPHER_MENU_TYPE);        # 502
-		ok($except_types[1]->display, 'Some other directory');    # 503
-		ok($except_types[1]->selector, '/some_other_dir');        # 504
-		ok($except_types[1]->host, 'localhost');                  # 505
-		ok($except_types[1]->port, '70');                         # 506
-		ok($except_types[1]->gopher_plus, '+');                   # 507
+		ok($except_types[1]->item_type, GOPHER_MENU_TYPE);        # 520
+		ok($except_types[1]->display, 'Some other directory');    # 521
+		ok($except_types[1]->selector, '/some_other_dir');        # 522
+		ok($except_types[1]->host, 'localhost');                  # 523
+		ok($except_types[1]->port, '70');                         # 524
+		ok($except_types[1]->gopher_plus, '+');                   # 525
 		ok($except_types[1]->as_string,
 			"1Some other directory\t/some_other_dir" .
-			"\tlocalhost\t70\t+");                            # 508
+			"\tlocalhost\t70\t+");                            # 526
 		ok($except_types[1]->as_url,
-			'gopher://localhost:70/1/some_other_dir%09%09+'); # 509
+			'gopher://localhost:70/1/some_other_dir%09%09+'); # 527
 
-		ok($except_types[2]->item_type, GIF_IMAGE_TYPE);       # 510
-		ok($except_types[2]->display, 'A GIF image');          # 511
-		ok($except_types[2]->selector, '/image.gif');          # 512
-		ok($except_types[2]->host, 'localhost');               # 513
-		ok($except_types[2]->port, '70');                      # 514
-		ok($except_types[2]->gopher_plus, '+');                # 515
+		ok($except_types[2]->item_type, GIF_IMAGE_TYPE);       # 528
+		ok($except_types[2]->display, 'A GIF image');          # 529
+		ok($except_types[2]->selector, '/image.gif');          # 530
+		ok($except_types[2]->host, 'localhost');               # 531
+		ok($except_types[2]->port, '70');                      # 532
+		ok($except_types[2]->gopher_plus, '+');                # 533
 		ok($except_types[2]->as_string,
-			"gA GIF image\t/image.gif\tlocalhost\t70\t+"); # 516
+			"gA GIF image\t/image.gif\tlocalhost\t70\t+"); # 534
 		ok($except_types[2]->as_url,
-			'gopher://localhost:70/g/image.gif%09%09+');   # 517
+			'gopher://localhost:70/g/image.gif%09%09+');   # 535
 
-		ok($except_types[3]->item_type, GOPHER_MENU_TYPE);      # 518
-		ok($except_types[3]->display, 'Application');           # 519
-		ok($except_types[3]->selector, '/ask_script');          # 520
-		ok($except_types[3]->host, 'localhost');                # 521
-		ok($except_types[3]->port, '70');                       # 522
-		ok($except_types[3]->gopher_plus, '?');                 # 523
+		ok($except_types[3]->item_type, GOPHER_MENU_TYPE);      # 536
+		ok($except_types[3]->display, 'Application');           # 537
+		ok($except_types[3]->selector, '/ask_script');          # 538
+		ok($except_types[3]->host, 'localhost');                # 539
+		ok($except_types[3]->port, '70');                       # 540
+		ok($except_types[3]->gopher_plus, '?');                 # 541
 		ok($except_types[3]->as_string,
-			"1Application\t/ask_script\tlocalhost\t70\t?"); # 524
+			"1Application\t/ask_script\tlocalhost\t70\t?"); # 542
 		ok($except_types[3]->as_url,
-			'gopher://localhost:70/1/ask_script%09%09?');   # 525
+			'gopher://localhost:70/1/ask_script%09%09?');   # 543
 
-		ok(scalar @except_types, 4); # 526
+		ok(scalar @except_types, 4); # 544
 	}
 
 	{
@@ -896,41 +951,41 @@ ok($port); # 13
 			ExceptTypes => ['gi']
 		);
 
-		ok($except_types[0]->item_type, GOPHER_MENU_TYPE);       # 527
-		ok($except_types[0]->display, 'Some directory');         # 528
-		ok($except_types[0]->selector, '/some_dir');             # 529
-		ok($except_types[0]->host, 'localhost');                 # 530
-		ok($except_types[0]->port, '70');                        # 531
-		ok($except_types[0]->gopher_plus, '+');                  # 532
+		ok($except_types[0]->item_type, GOPHER_MENU_TYPE);       # 545
+		ok($except_types[0]->display, 'Some directory');         # 546
+		ok($except_types[0]->selector, '/some_dir');             # 547
+		ok($except_types[0]->host, 'localhost');                 # 548
+		ok($except_types[0]->port, '70');                        # 549
+		ok($except_types[0]->gopher_plus, '+');                  # 550
 		ok($except_types[0]->as_string,
-			"1Some directory\t/some_dir\tlocalhost\t70\t+"); # 533
+			"1Some directory\t/some_dir\tlocalhost\t70\t+"); # 551
 		ok($except_types[0]->as_url,
-			'gopher://localhost:70/1/some_dir%09%09+');      # 534
+			'gopher://localhost:70/1/some_dir%09%09+');      # 552
 
-		ok($except_types[1]->item_type, GOPHER_MENU_TYPE);        # 535
-		ok($except_types[1]->display, 'Some other directory');    # 536
-		ok($except_types[1]->selector, '/some_other_dir');        # 537
-		ok($except_types[1]->host, 'localhost');                  # 538
-		ok($except_types[1]->port, '70');                         # 539
-		ok($except_types[1]->gopher_plus, '+');                   # 540
+		ok($except_types[1]->item_type, GOPHER_MENU_TYPE);        # 553
+		ok($except_types[1]->display, 'Some other directory');    # 554
+		ok($except_types[1]->selector, '/some_other_dir');        # 555
+		ok($except_types[1]->host, 'localhost');                  # 556
+		ok($except_types[1]->port, '70');                         # 557
+		ok($except_types[1]->gopher_plus, '+');                   # 558
 		ok($except_types[1]->as_string,
 			"1Some other directory\t/some_other_dir" .
-			"\tlocalhost\t70\t+");                            # 541
+			"\tlocalhost\t70\t+");                            # 559
 		ok($except_types[1]->as_url,
-			'gopher://localhost:70/1/some_other_dir%09%09+'); # 542
+			'gopher://localhost:70/1/some_other_dir%09%09+'); # 560
 
-		ok($except_types[2]->item_type, GOPHER_MENU_TYPE);      # 543
-		ok($except_types[2]->display, 'Application');           # 544
-		ok($except_types[2]->selector, '/ask_script');          # 545
-		ok($except_types[2]->host, 'localhost');                # 546
-		ok($except_types[2]->port, '70');                       # 547
-		ok($except_types[2]->gopher_plus, '?');                 # 548
+		ok($except_types[2]->item_type, GOPHER_MENU_TYPE);      # 561
+		ok($except_types[2]->display, 'Application');           # 562
+		ok($except_types[2]->selector, '/ask_script');          # 563
+		ok($except_types[2]->host, 'localhost');                # 564
+		ok($except_types[2]->port, '70');                       # 565
+		ok($except_types[2]->gopher_plus, '?');                 # 566
 		ok($except_types[2]->as_string,
-			"1Application\t/ask_script\tlocalhost\t70\t?"); # 549
+			"1Application\t/ask_script\tlocalhost\t70\t?"); # 567
 		ok($except_types[2]->as_url,
-			'gopher://localhost:70/1/ask_script%09%09?');   # 550
+			'gopher://localhost:70/1/ask_script%09%09?');   # 568
 
-		ok(scalar @except_types, 3); # 551
+		ok(scalar @except_types, 3); # 569
 	}
 
 	{
@@ -938,7 +993,7 @@ ok($port); # 13
 			ExceptTypes => 'i1g'
 		);
 
-		ok(scalar @except_types, 0); # 552
+		ok(scalar @except_types, 0); # 570
 	}
 
 
@@ -959,8 +1014,8 @@ ok($port); # 13
 			Selector => '/malformed_menu'
 		)->extract_items;
 
-		ok(scalar @warnings, 0);     # 553
-		ok(scalar @fatal_errors, 1); # 554
+		ok(scalar @warnings, 0);     # 571
+		ok(scalar @fatal_errors, 1); # 572
 		ok($fatal_errors[0],
 			join(' ',
 				'Menu item 2 lacks the following required',
@@ -969,7 +1024,7 @@ ok($port); # 13
 				'does not contain a Gopher menu or contains',
 				'a malformed Gopher menu.'
 			)
-		);                           # 555
+		);                           # 573
 	}
 
 	{
@@ -986,8 +1041,8 @@ ok($port); # 13
 			Selector => '/gp_s_no_term'
 		)->extract_items;
 
-		ok(scalar @warnings, 0);     # 556
-		ok(scalar @fatal_errors, 1); # 557
+		ok(scalar @warnings, 0);     # 574
+		ok(scalar @fatal_errors, 1); # 575
 		ok($fatal_errors[0],
 			join(' ',
 				'Menu item 1 lacks the following required',
@@ -996,7 +1051,7 @@ ok($port); # 13
 				'does not contain a Gopher menu or contains',
 				'a malformed Gopher menu.'
 			)
-		);                           # 558
+		);                           # 576
 	}
 }
 
@@ -1004,4 +1059,4 @@ ok($port); # 13
 
 
 
-ok(kill_servers()); # 559
+ok(kill_servers()); # 577

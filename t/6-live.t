@@ -1,5 +1,5 @@
-use warnings;
 use strict;
+use warnings;
 use IO::Socket 'SOCK_STREAM';
 use Test;
 
@@ -7,7 +7,6 @@ use constant TIMEOUT => 120;
 
 # make sure that we are connected to the net:
 {
-	# XXX: Maybe connecting in the begin block was causing problems?
 	my $floodgap = new IO::Socket::INET (
 		Type     => SOCK_STREAM,
 		Proto    => 'tcp',
@@ -55,6 +54,7 @@ use Net::Gopher;
 	}
 	else
 	{
+		ok(0);
 		warn $response->error;
 	}
 	ok(!$response->is_error);       # 2
@@ -75,6 +75,7 @@ use Net::Gopher;
 	}
 	else
 	{
+		ok(0);
 		warn $response->error;
 	}
 	ok(!$response->is_error);      # 8
@@ -95,6 +96,7 @@ use Net::Gopher;
 	}
 	else
 	{
+		ok(0);
 		warn $response->error;
 	}
 	ok(!$response->is_error);      # 14
@@ -115,6 +117,7 @@ use Net::Gopher;
 	}
 	else
 	{
+		ok(0);
 		warn $response->error;
 	}
 	ok(!$response->is_error);      # 20

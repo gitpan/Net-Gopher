@@ -58,7 +58,7 @@ END_OF_MESSAGE
 
 my $mb = new Module::Build (
 	module_name => 'Net::Gopher',
-	license     => 'GPL',
+	license     => 'LGPL',
 	requires    => {
 		IO  => 1.20,
 		URI => 1.27

@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test;
 
-BEGIN { plan(tests => 107) }
+BEGIN { plan(tests => 120) }
 
 use Net::Gopher;
 use Net::Gopher::Request;
@@ -131,6 +131,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $request->as_string); # 31
@@ -153,6 +154,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $request->as_string); # 33
@@ -177,6 +179,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $request->as_string); # 35
@@ -201,6 +204,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $request->as_string); # 37
@@ -226,6 +230,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $request->as_string); # 39
@@ -251,6 +256,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $request->as_string); # 41
@@ -274,6 +280,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $request->as_string); # 43
@@ -297,6 +304,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $request->as_string); # 45
@@ -337,6 +345,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->request->request_type,
@@ -368,6 +377,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->request->request_type,
@@ -399,6 +409,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->request->request_type,
@@ -430,6 +441,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->request->request_type,
@@ -462,7 +474,6 @@ require './t/serverfunctions.pl';
 	#
 
 	{
-		# see the "index" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			Gopher => {
 				Host     => 'localhost',
@@ -472,17 +483,23 @@ require './t/serverfunctions.pl';
 		);
 
 		my $content;
-		my $content_matches;
 		my $last_request_obj;
 		my $last_response_obj;
+		my $content_matches = 1;
+		my $invocations     = 0;
 		my $response = $ng->request($request,
 			Handler => sub {
 				my $buffer = shift;
 				($last_request_obj, $last_response_obj) = @_;
 
 				$content .= $buffer;
-				$content_matches++
-					if ($content eq $last_response_obj->content);
+
+				$content_matches = 0
+					if ($content ne $last_response_obj->content);
+
+				$invocations++;
+
+				return 1;
 			}
 		);
 
@@ -492,15 +509,16 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
-		ok($request  == $last_request_obj);  # 60
-		ok($response == $last_response_obj); # 61
-		ok($content_matches);                # 62
+		ok($invocations);                    # 60
+		ok($request  == $last_request_obj);  # 61
+		ok($response == $last_response_obj); # 62
+		ok($content_matches);                # 63
 	}
 
 	{
-		# see the "gp_period_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
@@ -510,35 +528,42 @@ require './t/serverfunctions.pl';
 		);
 
 		my $content;
-		my $content_matches;
 		my $last_request_obj;
 		my $last_response_obj;
+		my $content_matches = 1;
+		my $invocations     = 0;
 		my $response = $ng->request($request,
 			Handler => sub {
 				my $buffer = shift;
 				($last_request_obj, $last_response_obj) = @_;
 
 				$content .= $buffer;
-				$content_matches++
-					if ($content eq $last_response_obj->content);
+
+				$content_matches = 0
+					if ($content ne $last_response_obj->content);
+
+				$invocations++;
+
+				return 1;
 			}
 		);
 
 		if ($response->is_success)
 		{
-			ok(1);                       # 63
+			ok(1);                       # 64
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
-		ok($request  == $last_request_obj);  # 64
-		ok($response == $last_response_obj); # 65
-		ok($content_matches);                # 66
+		ok($invocations);                    # 65
+		ok($request  == $last_request_obj);  # 66
+		ok($response == $last_response_obj); # 67
+		ok($content_matches);                # 68
 	}
 
 	{
-		# see the "gp_no_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
@@ -548,35 +573,42 @@ require './t/serverfunctions.pl';
 		);
 
 		my $content;
-		my $content_matches;
 		my $last_request_obj;
 		my $last_response_obj;
+		my $content_matches = 1;
+		my $invocations     = 0;
 		my $response = $ng->request($request,
 			Handler => sub {
 				my $buffer = shift;
 				($last_request_obj, $last_response_obj) = @_;
 
 				$content .= $buffer;
-				$content_matches++
-					if ($content eq $last_response_obj->content);
+
+				$content_matches = 0
+					if ($content ne $last_response_obj->content);
+
+				$invocations++;
+
+				return 1;
 			}
 		);
 
 		if ($response->is_success)
 		{
-			ok(1);                       # 67
+			ok(1);                       # 69
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
-		ok($request  == $last_request_obj);  # 68
-		ok($response == $last_response_obj); # 69
-		ok($content_matches);                # 70
+		ok($invocations);                    # 70
+		ok($request  == $last_request_obj);  # 71
+		ok($response == $last_response_obj); # 72
+		ok($content_matches);                # 73
 	}
 
 	{
-		# see the "gp_byte_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
@@ -586,35 +618,42 @@ require './t/serverfunctions.pl';
 		);
 
 		my $content;
-		my $content_matches;
 		my $last_request_obj;
 		my $last_response_obj;
+		my $content_matches = 1;
+		my $invocations     = 0;
 		my $response = $ng->request($request,
 			Handler => sub {
 				my $buffer = shift;
 				($last_request_obj, $last_response_obj) = @_;
 
 				$content .= $buffer;
-				$content_matches++
-					if ($content eq $last_response_obj->content);
+
+				$content_matches = 0
+					if ($content ne $last_response_obj->content);
+
+				$invocations++;
+
+				return 1;
 			}
 		);
 
 		if ($response->is_success)
 		{
-			ok(1);                       # 71
+			ok(1);                       # 74
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
-		ok($request  == $last_request_obj);  # 72
-		ok($response == $last_response_obj); # 73
-		ok($content_matches);                # 74
+		ok($invocations);                    # 75
+		ok($request  == $last_request_obj);  # 76
+		ok($response == $last_response_obj); # 77
+		ok($content_matches);                # 78
 	}
 
 	{
-		# see the "gp_s_period_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
@@ -624,55 +663,23 @@ require './t/serverfunctions.pl';
 		);
 
 		my $content;
-		my $content_matches;
 		my $last_request_obj;
 		my $last_response_obj;
+		my $content_matches = 1;
+		my $invocations     = 0;
 		my $response = $ng->request($request,
 			Handler => sub {
 				my $buffer = shift;
 				($last_request_obj, $last_response_obj) = @_;
 
 				$content .= $buffer;
-				$content_matches++
-					if ($content eq $last_response_obj->content);
-			}
-		);
 
-		if ($response->is_success)
-		{
-			ok(1);                       # 75
-		}
-		else
-		{
-			warn $response->error;
-		}
-		ok($request  == $last_request_obj);  # 76
-		ok($response == $last_response_obj); # 77
-		ok($content_matches);                # 78
-	}
+				$content_matches = 0
+					if ($content ne $last_response_obj->content);
 
-	{
-		# see the "gp_s_no_term" file in the ./t/items directory:
-		my $request = new Net::Gopher::Request (
-			GopherPlus => {
-				Host     => 'localhost',
-				Port     => $port,
-				Selector => '/gp_s_no_term'
-			}
-		);
+				$invocations++;
 
-		my $content;
-		my $content_matches;
-		my $last_request_obj;
-		my $last_response_obj;
-		my $response = $ng->request($request,
-			Handler => sub {
-				my $buffer = shift;
-				($last_request_obj, $last_response_obj) = @_;
-
-				$content .= $buffer;
-				$content_matches++
-					if ($content eq $last_response_obj->content);
+				return 1;
 			}
 		);
 
@@ -682,15 +689,61 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
-		ok($request  == $last_request_obj);  # 80
-		ok($response == $last_response_obj); # 81
-		ok($content_matches);                # 82
+		ok($invocations);                    # 80
+		ok($request  == $last_request_obj);  # 81
+		ok($response == $last_response_obj); # 82
+		ok($content_matches);                # 83
 	}
 
 	{
-		# see the "gp_s_byte_term" file in the ./t/items directory:
+		my $request = new Net::Gopher::Request (
+			GopherPlus => {
+				Host     => 'localhost',
+				Port     => $port,
+				Selector => '/gp_s_no_term'
+			}
+		);
+
+		my $content;
+		my $last_request_obj;
+		my $last_response_obj;
+		my $content_matches = 1;
+		my $invocations     = 0;
+		my $response = $ng->request($request,
+			Handler => sub {
+				my $buffer = shift;
+				($last_request_obj, $last_response_obj) = @_;
+
+				$content .= $buffer;
+
+				$content_matches = 0
+					if ($content ne $last_response_obj->content);
+
+				$invocations++;
+
+				return 1;
+			}
+		);
+
+		if ($response->is_success)
+		{
+			ok(1);                       # 84
+		}
+		else
+		{
+			ok(0);
+			warn $response->error;
+		}
+		ok($invocations);                    # 85
+		ok($request  == $last_request_obj);  # 86
+		ok($response == $last_response_obj); # 87
+		ok($content_matches);                # 88
+	}
+
+	{
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
@@ -700,35 +753,42 @@ require './t/serverfunctions.pl';
 		);
 
 		my $content;
-		my $content_matches;
 		my $last_request_obj;
 		my $last_response_obj;
+		my $content_matches = 1;
+		my $invocations     = 0;
 		my $response = $ng->request($request,
 			Handler => sub {
 				my $buffer = shift;
 				($last_request_obj, $last_response_obj) = @_;
 
 				$content .= $buffer;
-				$content_matches++
-					if ($content eq $last_response_obj->content);
+
+				$content_matches = 0
+					if ($content ne $last_response_obj->content);
+
+				$invocations++;
+
+				return 1;
 			}
 		);
 
 		if ($response->is_success)
 		{
-			ok(1);                       # 83
+			ok(1);                       # 89
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
-		ok($request  == $last_request_obj);  # 84
-		ok($response == $last_response_obj); # 85
-		ok($content_matches);                # 86
+		ok($invocations);                    # 90
+		ok($request  == $last_request_obj);  # 91
+		ok($response == $last_response_obj); # 92
+		ok($content_matches);                # 93
 	}
 
 	{
-		# see the "index" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
@@ -738,31 +798,88 @@ require './t/serverfunctions.pl';
 		);
 
 		my $content;
-		my $content_matches;
 		my $last_request_obj;
 		my $last_response_obj;
+		my $content_matches = 1;
+		my $invocations     = 0;
 		my $response = $ng->request($request,
 			Handler => sub {
 				my $buffer = shift;
 				($last_request_obj, $last_response_obj) = @_;
 
 				$content .= $buffer;
-				$content_matches++
-					if ($content eq $last_response_obj->content);
+
+				$content_matches = 0
+					if ($content ne $last_response_obj->content);
+
+				$invocations++;
+
+				return 1;
 			}
 		);
 
 		if ($response->is_success)
 		{
-			ok(1);                       # 87
+			ok(1);                       # 94
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
-		ok($request  == $last_request_obj);  # 88
-		ok($response == $last_response_obj); # 89
-		ok($content_matches);                # 90
+		ok($invocations);                    # 95
+		ok($request  == $last_request_obj);  # 96
+		ok($response == $last_response_obj); # 97
+		ok($content_matches);                # 98
+	}
+
+	# these tests test handlers with negative return values:
+	{
+		my $request = new Net::Gopher::Request (
+			GopherPlus => {
+				Host     => 'localhost',
+				Port     => $port,
+				Selector => '/gp_period_term'
+			}
+		);
+
+		my $content;
+		my $last_request_obj;
+		my $last_response_obj;
+		my $content_matches = 1;
+		my $invocations     = 0;
+		my $response = $ng->request($request,
+			Handler => sub {
+				my $buffer = shift;
+				($last_request_obj, $last_response_obj) = @_;
+
+				$content .= $buffer;
+
+				# only execute once:
+				return 0 if ($invocations);
+
+				$content_matches = 0
+					if ($content ne $last_response_obj->content);
+
+				$invocations++;
+
+				return 1;
+			}
+		);
+
+		if ($response->is_success)
+		{
+			ok(1);                       # 99
+		}
+		else
+		{
+			ok(0);
+			warn $response->error;
+		}
+		ok($invocations);                    # 100
+		ok($request  == $last_request_obj);  # 101
+		ok($response == $last_response_obj); # 102
+		ok($content_matches);                # 103
 	}
 
 
@@ -783,17 +900,18 @@ require './t/serverfunctions.pl';
 
 		if ($response->is_success)
 		{
-			ok(1);                            # 91
+			ok(1);                            # 104
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
-		ok(open(TEST, 'test.txt'));               # 92
-		ok(join('', <TEST>), $response->content); # 93
+		ok(open(TEST, 'test.txt'));               # 105
+		ok(join('', <TEST>), $response->content); # 106
 		close TEST;
-		ok(unlink('test.txt'));                   # 94
-		ok(!-e 'test.txt');                       # 95
+		ok(unlink('test.txt'));                   # 107
+		ok(!-e 'test.txt');                       # 108
 	}
 
 	{
@@ -810,17 +928,18 @@ require './t/serverfunctions.pl';
 
 		if ($response->is_success)
 		{
-			ok(1);                             # 96
+			ok(1);                             # 109
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
-		ok(open(TEST2, 'test2.txt'));              # 97
-		ok(join('', <TEST2>), $response->content); # 98
+		ok(open(TEST2, 'test2.txt'));              # 110
+		ok(join('', <TEST2>), $response->content); # 111
 		close TEST2;
-		ok(unlink('test2.txt'));                   # 99
-		ok(!-e 'test2.txt');                       # 100
+		ok(unlink('test2.txt'));                   # 112
+		ok(!-e 'test2.txt');                       # 113
 	}
 
 
@@ -845,11 +964,11 @@ require './t/serverfunctions.pl';
 
 		$ng->request();
 
-		ok(scalar @warnings, 0);        # 101
-		ok(scalar @fatal_errors, 1);    # 102
+		ok(scalar @warnings, 0);        # 114
+		ok(scalar @fatal_errors, 1);    # 115
 		ok($fatal_errors[0],
 			'A Net::Gopher::Request object was not supplied as ' .
-			'the first argument.'); # 103
+			'the first argument.'); # 116
 	}
 
 	{
@@ -862,18 +981,18 @@ require './t/serverfunctions.pl';
 
 		$ng->request(new Net::Gopher::Request('Gopher') );
 
-		ok(@warnings, 0);     # 104
-		ok(@fatal_errors, 1); # 105
+		ok(@warnings, 0);     # 117
+		ok(@fatal_errors, 1); # 118
 		ok($fatal_errors[0],
 			join(' ',
 				"You never specified a host; it's impossible",
 				"to send your request. Specify one during",
 				"request object creation or later on with the",
 				"host() method."
-			));           # 106
+			));           # 119
 	}
 
 
 
-	ok(kill_servers()); # 107
+	ok(kill_servers()); # 120
 }

@@ -1,5 +1,11 @@
 Revision history for Perl extension Net::Gopher.
 
+1.15 - New license: the GNU LGPL instead of the GNU GPL. Added  a  new  option,
+       Handler, to extract_items() to allow a user to process items as  they're
+       parsed. Also, the return value of  both  request()  and  extract_items()
+       handlers are used as flags to tell those functions  whether  or  not  to
+       keep on going or return abruptly. Also added dozens more tests.
+
 1.11 - Simplified the requirements in Makefile.PL and Build.PL.
 
 1.10 - Rewrote get_named_params()  so  it's  significantly  faster,  especially

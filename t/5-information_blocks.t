@@ -32,6 +32,7 @@ ok($port); # 1
 	}
 	else
 	{
+		ok(0);
 		warn $response->error;
 	}
 
@@ -475,6 +476,7 @@ ok($port); # 1
 	}
 	else
 	{
+		ok(0);
 		warn $response->error;
 	}
 
@@ -752,25 +754,31 @@ ok($port); # 1
 		Selector => '/gp_index'
 	);
 
-	ok($response->is_success); # 281
+	if ($response->is_success)
+	{
+		ok(1);                          # 281
+	}
+	else
+	{
+		ok(0);
+	}
 
 	# there are no blocks, so we should get errors when we try to parse
 	# them:
 	ok(!$response->has_block('Something')); # 282
-
-	ok(scalar @warnings, 1);     # 283
+	ok(scalar @warnings, 1);                # 283
 	ok($warnings[0], join(' ',
 		"You didn't send an item attribute or directory",
 		"attribute information request, so why would the",
 		"response contain attribute information blocks?"
-	));                          # 284
-	ok(scalar @fatal_errors, 1); # 285
+	));                                     # 284
+	ok(scalar @fatal_errors, 1);            # 285
 	ok($fatal_errors[0], join(' ',
 		'There was no leading "+" for the first block name at',
 		'the beginning of the response. The response either',
 		'does not contain any attribute information blocks or',
 		'contains malformed attribute information blocks.'
-	));                          # 286
+	));                                     # 286
 }
 
 {
@@ -786,17 +794,23 @@ ok($port); # 1
 		Selector => '/item_blocks'
 	);
 
-	ok($response->is_success); # 287
+	if ($response->is_success)
+	{
+		ok(1);             # 287
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $info = $response->get_block('+INFO');
 	ok($info);                 # 288
 	ok(!$info->get_attribute); # 289
-
-	ok(@warnings, 0);     # 290
-	ok(@fatal_errors, 1); # 291
+	ok(@warnings, 0);          # 290
+	ok(@fatal_errors, 1);      # 291
 	ok($fatal_errors[0],
 		'The name of the attribute to retrieve was not supplied.'
-	);                    # 292
+	);                         # 292
 }
 
 {
@@ -812,18 +826,24 @@ ok($port); # 1
 		Selector => '/item_blocks'
 	);
 
-	ok($response->is_success); # 293
+	if ($response->is_success)
+	{
+		ok(1);              # 293
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $info = $response->get_block('+INFO');
 	ok($info);                  # 294
 	ok(!$info->get_attributes); # 295
-
-	ok(@warnings, 0);     # 296
-	ok(@fatal_errors, 1); # 297
+	ok(@warnings, 0);           # 296
+	ok(@fatal_errors, 1);       # 297
 	ok($fatal_errors[0],
 		'This +INFO block either does not contain ' .
 		'attributes or contains malformed attributes.'
-	);                    # 298
+	);                          # 298
 }
 
 {
@@ -839,7 +859,14 @@ ok($port); # 1
 		Selector => '/directory_blocks'
 	);
 
-	ok($response->is_success); # 299
+	if ($response->is_success)
+	{
+		ok(1);        # 299
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $info = $response->get_block('+INFO', Item => 7);
 	ok(!$info);           # 300
@@ -871,11 +898,17 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 304
+	if ($response->is_success)
+	{
+		ok(1);             # 304
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $info = $response->get_block('INFO');
-	ok($info); # 305
-
+	ok($info);                 # 305
 	ok(!$info->extract_admin); # 306
 	ok(@warnings, 1);          # 307
 	ok(@fatal_errors, 1);      # 308
@@ -903,11 +936,17 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 311
+	if ($response->is_success)
+	{
+		ok(1);              # 311
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $admin = $response->get_block('+BAD-ADMIN1');
-	ok($admin); # 312
-
+	ok($admin);                 # 312
 	ok(!$admin->extract_admin); # 313
 	ok(@warnings, 1);           # 314
 	ok(@fatal_errors, 1);       # 315
@@ -935,11 +974,17 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 318
+	if ($response->is_success)
+	{
+		ok(1);              # 318
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $admin = $response->get_block('+BAD-ADMIN2');
-	ok($admin); # 319
-
+	ok($admin);                 # 319
 	ok(!$admin->extract_admin); # 320
 	ok(@warnings, 1);           # 321
 	ok(@fatal_errors, 1);       # 322
@@ -966,11 +1011,17 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 325
+	if ($response->is_success)
+	{
+		ok(1);                      # 325
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $admin = $response->get_block('+BAD-ADMIN1');
-	ok($admin); # 326
-
+	ok($admin);                         # 326
 	ok(!$admin->extract_date_modified); # 327
 	ok(@warnings, 1);                   # 328
 	ok(@fatal_errors, 1);               # 329
@@ -998,11 +1049,17 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 332
+	if ($response->is_success)
+	{
+		ok(1);                      # 332
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $admin = $response->get_block('+BAD-ADMIN2');
-	ok($admin); # 333
-
+	ok($admin);                         # 333
 	ok(!$admin->extract_date_modified); # 334
 	ok(@warnings, 1);                   # 335
 	ok(@fatal_errors, 1);               # 336
@@ -1030,11 +1087,17 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 339
+	if ($response->is_success)
+	{
+		ok(1);                     # 339
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $admin = $response->get_block('+BAD-ADMIN1');
-	ok($admin); # 340
-
+	ok($admin);                        # 340
 	ok(!$admin->extract_date_created); # 341
 	ok(@warnings, 1);                  # 342
 	ok(@fatal_errors, 1);              # 343
@@ -1062,11 +1125,17 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 346
+	if ($response->is_success)
+	{
+		ok(1);                     # 346
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $admin = $response->get_block('+BAD-ADMIN2');
-	ok($admin); # 347
-
+	ok($admin);                        # 347
 	ok(!$admin->extract_date_created); # 348
 	ok(@warnings, 1);                  # 349
 	ok(@fatal_errors, 1);              # 350
@@ -1094,11 +1163,17 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 353
+	if ($response->is_success)
+	{
+		ok(1);                     # 353
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $admin = $response->get_block('+BAD-ADMIN1');
-	ok($admin); # 354
-
+	ok($admin);                        # 354
 	ok(!$admin->extract_date_expires); # 355
 	ok(@warnings, 1);                  # 356
 	ok(@fatal_errors, 1);              # 357
@@ -1126,11 +1201,17 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 360
+	if ($response->is_success)
+	{
+		ok(1);                     # 360
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $admin = $response->get_block('+BAD-ADMIN2');
-	ok($admin); # 361
-
+	ok($admin);                        # 361
 	ok(!$admin->extract_date_expires); # 362
 	ok(@warnings, 1);                  # 363
 	ok(@fatal_errors, 1);              # 364
@@ -1165,11 +1246,17 @@ ok($port); # 1
 		Selector => '/bad_blocks'
 	);
 
-	ok($response->is_success); # 367
+	if ($response->is_success)
+	{
+		ok(1);               # 367
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $info = $response->get_block('INFO');
 	ok($info); # 368
-
 	ok(!$info->extract_queries); # 369
 	ok(@warnings, 1);            # 370
 	ok(@fatal_errors, 1);        # 371
@@ -1203,11 +1290,17 @@ ok($port); # 1
 		Selector => '/item_blocks'
 	);
 
-	ok($response->is_success); # 374
+	if ($response->is_success)
+	{
+		ok(1);                   # 374
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $admin = $response->get_block('ADMIN');
-	ok($admin); # 375
-
+	ok($admin);                      # 375
 	ok(!$admin->extract_descriptor); # 376
 	ok(@warnings, 0);                # 377
 	ok(@fatal_errors, 1);            # 378
@@ -1237,11 +1330,17 @@ ok($port); # 1
 		Selector => '/item_blocks'
 	);
 
-	ok($response->is_success); # 380
+	if ($response->is_success)
+	{
+		ok(1);             # 380
+	}
+	else
+	{
+		ok(0);
+	}
 
 	my $info = $response->get_block('INFO');
-	ok($info); # 381
-
+	ok($info);                 # 381
 	ok(!$info->extract_views); # 382
 	ok(@warnings, 1);          # 383
 	ok(@fatal_errors, 1);      # 384

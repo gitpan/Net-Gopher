@@ -45,6 +45,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $ITEMS_RAW{'index'}); # 3
@@ -73,6 +74,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $ITEMS_RAW{'gp_index'}); # 13
@@ -101,6 +103,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $ITEMS_RAW{'gp_s_byte_term'}); # 23
@@ -129,6 +132,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response,
@@ -159,6 +163,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $ITEMS_RAW{'gp_s_no_term'}); # 43
@@ -187,6 +192,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $ITEMS_RAW{'gp_byte_term'}); # 53
@@ -215,6 +221,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $ITEMS_RAW{'gp_period_term'}); # 63
@@ -243,6 +250,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $ITEMS_RAW{'gp_no_term'}); # 73
@@ -271,6 +279,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response, $ITEMS_RAW{'item_blocks'}); # 83
@@ -299,6 +308,7 @@ require './t/serverfunctions.pl';
 		}
 		else
 		{
+			ok(0);
 			warn $response->error;
 		}
 		ok($response->raw_response,

@@ -37,6 +37,8 @@ sub launch_item_server
 	return $port;
 }
 
+
+
 sub launch_echo_server
 {
 	my $pid = open(ECHO_SERVER, "$PERL $PATH -e |")
@@ -53,6 +55,8 @@ sub launch_echo_server
 
 	return $port;
 }
+
+
 
 sub kill_servers
 {
@@ -79,6 +83,14 @@ sub kill_servers
 	}
 
 	return 1;
+}
+
+
+
+
+
+BEGIN {
+	$SIG{'__DIE__'} = sub { kill_servers() };
 }
 
 1;

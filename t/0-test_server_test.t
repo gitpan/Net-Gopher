@@ -22,6 +22,7 @@ else
 {
 	die "Bad CWD: " . getcwd();
 }
+
 my $pid = open(PIPE, "perl ./t/testserver.pl -e |");
 if ($pid)
 {

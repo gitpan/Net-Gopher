@@ -18,8 +18,7 @@ Net::Gopher::Response - Class encapsulating Gopher/Gopher+ responses
  	# its items as Net::Gopher::Response::MenuItem objects:
  	my @items = $response->extract_items(ExceptTypes => 'i');
  
- 	foreach my $item_obj (@items)
- 	{
+ 	foreach my $item_obj (@items) {
  		printf("Requesting %s from %s at port %d\n",
  			$item_obj->selector,
  			$item_obj->host,
@@ -114,7 +113,7 @@ The following methods are available:
 use 5.005;
 use strict;
 use warnings;
-use vars qw(@ISA);
+use vars '@ISA';
 use Carp;
 use Net::Gopher::Constants ':all';
 use Net::Gopher::Debugging;
@@ -547,6 +546,17 @@ parameter in the same format as described above for I<OfTypes>:
  # inline text:
  @items = $response->extract_items(ExceptTypes => ['5', '+', 'i']);
 
+=item Handler
+
+This takes a reference to a subroutine to be called as the items are extracted
+and formed into B<Net::Gopher::Response::MenuItem> objects.
+
+If specified, the handler will be called once for each encountered item with a
+reference to the menu item object as its only argument, and the return value of
+the handler will be used to decide whether or not C<extract_items()> should go
+on and try to extract more items. A return value of true means it should, a
+return value of false means it shouldn't.
+
 =back
 
 Note that B<Net::Gopher::Constants> contains constants you can use to specify
@@ -572,10 +582,11 @@ sub extract_items
 
 	return unless (defined $self->content);
 
-	my ($of_types, $except_types);
+	my ($of_types, $except_types, $handler);
 	get_named_params({
 		OfTypes     => \$of_types,
-		ExceptTypes => \$except_types
+		ExceptTypes => \$except_types,
+		Handler     => \$handler
 		}, \@_
 	);
 
@@ -590,8 +601,7 @@ sub extract_items
 	# the ones we were told to get, or, alternately, the ones we were told
 	# to ignore, we'll use a regex character class comprised of all of the
 	# specified item type characters.
-	my $retrieval_class;
-	my $skip_class;
+	my $get_class;
 	if (defined $of_types)
 	{
 		# grab all of the item types to retrieve:
@@ -604,9 +614,11 @@ sub extract_items
 		my $escaped_types = quotemeta join('', @types_to_retrieve);
 
 		# compile the character class:
-		$retrieval_class = qr/^[$escaped_types]$/;
+		$get_class = qr/^[$escaped_types]$/;
 	}
-	elsif (defined $except_types)
+
+	my $skip_class;
+	if (defined $except_types)
 	{
 		# grab all of the item types to ignore:
 		my @types_to_skip =
@@ -663,27 +675,30 @@ sub extract_items
 		my $type    = substr($type_and_display, 0, 1);
 		my $display = substr($type_and_display, 1);
 
-		if (defined $retrieval_class)
-		{
-			# skip unless it's an item we were told to retrieve:
-			next unless ($type =~ $retrieval_class);
-		}
-		elsif (defined $skip_class)
-		{
-			# skip it if it's an item we were told to ignore:
-			next if ($type =~ $skip_class);
-		}
+		# skip unless it's an item we were told to retrieve, or,
+		# alternately, an item we were told to ignore:
+		next if (defined $get_class and $type !~ $get_class);
+		next if (defined $skip_class and $type =~ $skip_class);
 
-		push(@menu_items,
-			new Net::Gopher::Response::MenuItem (
-				ItemType   => $type,
-				Display    => $display,
-				Selector   => $selector,
-				Host       => $host,
-				Port       => $port,
-				GopherPlus => $gopher_plus
-			)
+		my $obj = new Net::Gopher::Response::MenuItem (
+			ItemType   => $type,
+			Display    => $display,
+			Selector   => $selector,
+			Host       => $host,
+			Port       => $port,
+			GopherPlus => $gopher_plus
 		);
+
+		# now, invoke their handler to handle th object, or just store
+		# it way:
+		if ($handler)
+		{
+			$handler->($obj) or last;
+		}
+		else
+		{
+			push(@menu_items, $obj);
+		}
 	}
 
 	return @menu_items;
@@ -1816,8 +1831,12 @@ L<Net::Gopher::Response::InformationBlock|Net::Gopher::Response::InformationBloc
 
 Copyright 2003-2004 by William G. Davis.
 
-This module is free software released under the GNU General Public License,
-the full terms of which can be found in the "COPYING" file that comes with
-the distribution.
+This library is free software released under the terms of the GNU Lesser
+General Public License (LGPL), the full terms of which can be found in the
+"COPYING" file that comes with the distribution.
+
+This library is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+PARTICULAR PURPOSE.
 
 =cut

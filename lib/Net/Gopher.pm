@@ -194,7 +194,7 @@ use constant MAX_STATUS_LINE_SIZE => 64;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '1.12';
+$VERSION = '1.15';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -411,6 +411,11 @@ response is collected, with the buffer sent as the first argument to the
 callback routine, the request object as the second, and the response object as
 the third.
 
+If you supply a response handler, then its return value will be used to
+indicate whether or not C<request()> should keep receiving the response from
+the server. A true return value means it should, a false return value means it
+should stop abruptly.
+
 =back
 
 See L<Net::Gopher::Response|Net::Gopher::Response> for methods you can call on
@@ -545,9 +550,13 @@ sub request
 		$response->_add_raw($buffer);
 		$response->_add_content($buffer);
 
-		$handler->($buffer, $request, $response)
-			if (ref $handler eq 'CODE');
-
+		# if the user supplied a handler, we'll invoke it, and use its
+		# return value to tell us whether or not to keep going:
+		if (ref $handler eq 'CODE')
+		{
+			$handler->($buffer, $request, $response)
+				or return $response;
+		}
 
 		# show how many bytes we stored for debugging:
 		my $bytes_stored =
@@ -639,7 +648,7 @@ sub request
 		) unless (defined $response->raw_response
 			and size_in_bytes($response->raw_response));
 
-		# If the transfer type was not -1 or -2 and instead contained
+		# if the transfer type was not -1 or -2 and instead contained
 		# the length of the response content, then we'll make sure we
 		# received a response containing at least that many bytes:
 		if ($transfer_type != PERIOD_TERMINATED
@@ -652,8 +661,8 @@ sub request
 			# NULL terminators, it makes sense to allow for at
 			# least a one byte discrepancy between the size in the
 			# transfer type and the actual size of the response
-			# content, so we decrement the size in the transfer
-			# type:
+			# content, so we decrement the supposed size before
+			# comparing it with the actual size:
 			return $response->error(
 				sprintf('Incomplete response received: only ' .
 				        '%d %s of a suppossedly %d byte ' .
@@ -1565,8 +1574,12 @@ L<Net::Gopher::Constants|Net::Gopher::Constants>.
 
 Copyright 2003-2004 by William G. Davis.
 
-This module is free software released under the GNU General Public License,
-the full terms of which can be found in the "COPYING" file that comes with
-the distribution.
+This library is free software released under the terms of the GNU Lesser
+General Public License (LGPL), the full terms of which can be found in the
+"COPYING" file that comes with the distribution.
+
+This library is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
+PARTICULAR PURPOSE.
 
 =cut
