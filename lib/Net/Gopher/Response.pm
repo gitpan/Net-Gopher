@@ -16,8 +16,8 @@ Net::Gopher::Reponse - Class encapsulating Gopher responses
  {
  	# get each item on the menu:
  	my @items = $response->as_menu;
- 	print "type: $item[0]->{'type'}\n",
- 	      "description: $item[0]->{'text'}\n";
+ 	print "type: $item[0]{'type'}\n",
+ 	      "description: $item[0]{'text'}\n";
  }
  else
  {
@@ -53,7 +53,7 @@ use Carp;
 use Time::Local;
 use Net::Gopher::Utility qw($CRLF $NEWLINE);
 
-$VERSION = '0.22';
+$VERSION = '0.25';
 
 
 
@@ -65,22 +65,31 @@ sub new
 	my $class = ref $invo || $invo;
 
 	my $self = {
-		error          => undef,
-		is_gopher_plus => 1,
+		# any error that occurred while sending the request or while
+		# receiving the response:
+		error       => undef,
+
+		# the request that was sent to the server:
+		request     => undef,
 
 		# entire response, every single byte:
-		response       => undef,
+		response    => undef,
 
 		# the first line of the response including the newline (only
 		# in Gopher+):
-		status_line    => undef,
+		status_line => undef,
 
 		# the status code (+ or -) (only in Gopher+):
-		status         => undef,
+		status      => undef,
 
 		# content of the response (same as response except in Gopher+,
 		# where it's everything after the status line):
-		content        => undef,
+		content     => undef,
+
+		# if this was a Gopher+ item attribute information request
+		# then this will be used to store the parsed information
+		# blocks:
+		blocks      => undef
 	};
 
 	bless($self, $class);
@@ -192,7 +201,7 @@ following keys:
  selector = The selector string (e.g., /foo/bar);
  host     = The hostname (e.g., gopher.host.com);
  port     = The port number (e.g., 70);
- gopher+  = The Gopher+ string if this item is on a Gopher+ server;
+ gopher+  = The Gopher+ character (e.g., +, !, ?, etc.);
 
 The array will only contain hashrefs of items that list some type of resource
 that can be downloaded; meaning that inline text ('i' item type) is skipped.
@@ -237,186 +246,228 @@ sub as_menu
 
 #==============================================================================#
 
-=item as_blocks()
+=item as_block([@block_names])
 
-If the request was a Gopher+ attribute information request then you can use
-method to parse the attribute information blocks in the server's response. This
-method will return a hash (in list context) or a reference to a hash (in scalar
-context) with information block names as its keys and block values as its
-values. Please note that this method strips trailing colons from block names
-(e.g., ADMIN: becomes ADMIN). Also, it should be pointed out that since the
-structure of block values often differ from server to server, this method won't
-attempt to parse any blocks except for INFO, ADMIN, and VIEWS blocks, which
-each Gopher+ server is mandated to return (and in the same format) by the
-Gopher+ protocol. Since INFO blocks contain tab separated item information just
-like you'd find in a menu, the value for 'INFO' will be a reference to another
-hash, one in the format described above (L<as_menu()>):
+If the request was a Gopher+ item attribute information request, then you can
+use method to parse the attribute information blocks in the server's response.
+This method can be used to retrieve the content if a block by specifying the
+block name or block names as arguments. If you don't supply any block names
+then this method will return a list containing every block name. This method
+strips leading '+' and trailing ':' from block names, so rather than asking for
+'+INFO:' you should ask for just plain 'INFO'. This method will also strip
+leading spaces from each line of a block value. For most blocks, this method
+will just return the text of the block value. This is because the only block
+values who's formats have been officially defined are INFO, ADMIN, and VIEWS,
+and it would therefor be presumptuous for this method to attempt to parse them.
+However, since the format of INFO, ADMIN, and VIEWS block values have been
+officially defined, this method will parse those. What does it do to INFO,
+ADMIN and VIEWS blocks? Well, since INFO blocks contain tab separated item
+information just like you find in a menu, this method will parse the INFO block
+value and create hash in the same format as the one described above
+(L<as_menu()>), so you can use it like this:
 
- my %blocks = $response->as_blocks;
+ my $info = $response->as_block('INFO');
  
- print "Type: $blocks{'INFO'}{'type'}\n",
-       "Description: $blocks{'INFO'}{'text'}\n",
-       "On: $blocks{'INFO'}{'host'}\n",
-       "At: $blocks{'INFO'}{'port'}\n";
-
-VIEWS blocks contain information about what type of applications can be used
-to view the item as well as the total size of the item in bytes
-(e.g., Text/plain: <77K>). This method will turn a VIEWS block into a hashref
-where the MIME type is the key and the value is the size in bytes. Note, this
-method converts the <\d+K?> format used in Gopher+ to an integer you can
-perform arithmetic on (e.g., <80> becomes 80, <40K> becomes 40000, etc.):
-
- print "Size: ", $blocks{'VIEWS'}{'Text/plain'};
+ print "Type: $info->{'type'}\n",
+       "Description: $info->{'text'}\n",
+       "On: $info->{'host'}\n",
+       "At: $info->{'port'}\n";
 
 ADMIN blocks contain information about the person running the Gopher+ server
 and what the admin has done with the item in question. This method will
-parse ADMIN blocks and create a hashref with two key=value pairs: Admin and
-Mod-Date. Admin contains a string in the form of "John Doe <jdoe@fake.email>"
-about who the adminstrator of this Gopher+ server is. Mod-Date is a timestamp
-of when the item was last modified, usually like the ones returned by C's
-ctime(). This method will convert the timestamp into an array contaiing values
-returned by Perl's localtime() function corresponding with the Mod-Date (see
-perldoc -f localtime):
+parse ADMIN blocks and create a hashref with (at least) two key=value pairs:
+Admin and Mod-Date. Admin attributes contain strings in the form of
+"John Doe <jdoe@fake.email>" about who the administrator of this Gopher+ server
+is. This method will parse Admin attributes and turn them into a reference to
+a two-pair hash with the keys 'name' and 'email', where 'name' contains the
+name of the administrator and 'email' contains the email address. Mod-Date is a
+timestamp of when the item was last modified. This method will convert the
+timestamp into an array containing values in the same format as those returned by
+Perl's localtime() function corresponding with the Mod-Date timestamp (to find
+out exactly what the array will contain, see perldoc -f localtime):
 
- print "This box is maintained by ", $blocks{'ADMIN'}{'Admin'};
+ my $admin = $response->as_block('ADMIN');
+ 
+ print "This box is maintained by $admin->{'Admin'}{'name'}",
+       " who can be emailed at $admin->{'Admin'}{'email'}";
  
  my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
- @{ $blocks{'ADMIN'}{'Mod-Date'} };
+ @{ $admin->{'Mod-Date'} };
+
+VIEWS blocks contain information about what type of applications can be used
+to view the item as well as the total size of the item in bytes and sometimes a
+language as well (e.g., text/plain En_US: <77K>). This method will parse VIEWS
+block values and create an array containing each view in the form of a hashref
+with the keys 'type', 'language', and 'size' and with the MIME type,
+language, and size in bytes as the values respectively. Note, this
+method converts the <\d+K?> format used in Gopher+ to an integer you can
+perform arithmetic on (e.g., <80> becomes 80, <40K> becomes 40000, etc.):
+
+ my $views = $response->as_block('VIEWS');
+ 
+ foreach my $view (@$views)
+ {
+ 	print "$view->{'type'} ($view->{'size'} bytes) ($type->{'language'})\n";
+ }
 
 =cut
 
-sub as_blocks
+sub as_block
 {
-	my $self = shift;
+	my $self        = shift;
+	my @block_names = @_;
 
-	# remove the leading +:
-	(my $blocks = $self->{'content'}) =~ s/[^+]*? \+//x;
+	$self->_parse_blocks() unless (defined $self->{'blocks'});
 
-	# get each block name and value:
-	my @block_name_and_values = split(/\n\+/, $blocks);
-
-	my %blocks;
-	foreach my $block (@block_name_and_values)
+	if (@block_names)
 	{
-		# get the block name and block value (separated by the first
-		# space):
-		my ($name, $value) = $block =~ /(\S+)\s(.*)/s;
-
-		# remove the colon that most block names contain:
-		$name =~ s/:$//;
-
-		if ($name =~ /^INFO$/)
-		{
-			# info blocks get turned into hashrefs like the items
-			# in the array returned by as_menu():
-			$value = $self->_get_item_hashref($value);
-		}
-		elsif ($name =~ /^VIEWS$/)
-		{
-			# Views blocks contain attributes in the form
-			# of "MIMEtype: <size>" (e.g., "Text/plain: <10K>.").
-			# So we need to get all of the MIME types and sizes in
-			# the form of a hashref:
-			$value = $self->_get_infoblock_hashref($value);
-
-			# A size in the form of <55K> is of little use to the
-			# user. Let's change that to an integer:
-			foreach my $mime_type (keys %$value)
-			{
-				if ($value->{$mime_type} =~ /<(\d+)(k)?>/i)
-				{
-					# turn <55> into 55 and <55K> into
-					# 55000:
-					$value->{$mime_type}  = $1;
-					$value->{$mime_type} *= 1000 if ($2);
-				}
-			}
-		}
-		elsif ($name =~ /^ADMIN$/)
-		{
-			# ADMIN blocks contain two attributes, Admin and
-			# Mod-Date, in the form of:
-			# 
-			# Admin: Foo Bar <foobar@foo.com>
-			# Mod-Date: Wed Jul 28 17:02:01 1993
-			# 
-			# first, get both of them in a hashref:
-			$value = $self->_get_infoblock_hashref($value);
-
-			# get the values from the Mod-Date timestamp: 
-			my ($day, $month, $month_day,
-			    $hour, $minute, $second, $year) = 
-					$value->{'Mod-Date'} =~
-						/(\w+)\s+(\w+)\s+(\d+)\s+
-						 (\d+):(\d+):(\d+)\s+(\d+)/x;
-
-			foreach ($day, $month, $month_day, $hour, $minute,
-				$second, $year)
-			{
-				croak "Couldn't parse timestamp"
-					unless (defined);
-			}
-
-			# if the server's date format contains a full
-			# month name then we need to shorten it to just the
-			# first three letters so we can easily convert it to
-			# its respective localtime() number:
-			$month =~ s/^(\w{3})\w+/$1/;
-
-			# it's easier to convert it if it's in all lowercase:
-			$month = lc $month;
-	
-			# now, replace the month name with a number like the
-			# one returned localtime():
-			$month = {
-				jan   => 0,
-				feb   => 1,
-				mar   => 2,
-				apr   => 3,
-				may   => 4,
-				jun   => 5,
-				jul   => 6,
-				aug   => 7,
-				sep   => 8,
-				'oct' => 9,
-				nov   => 10,
-				dec   => 11,
-			}->{$month};
-
-			# turn 2 diget years into 4 diget years:
-			$year = 20 . $year if (length $year < 4);
-
-			# convert the year to the number of years since 1900
-			# (e.g., 2003 -> 103) since that's the format returned
-			# by localtime():
-			$year -= 1900;
-
-			# now that we have the second, minute, hour, day,
-			# month, and year, we use them to get a corresponding
-			# Perl time() value:
-			my $time = timelocal(
-				$second, $minute, $hour,
-				$month_day, $month, $year
-			);
-
-			# now use the time() value to get the values we still
-			# don't have (e.g., the day of the year, is it daylight
-			# savings time? Etc.) and store them in the Mod-Date
-			# attribute value:
-			$value->{'Mod-Date'} = [ localtime $time ];
-		}
-
-		$blocks{$name} = $value;
-	}
-
-	if (wantarray)
-	{
-		return %blocks;
+		return @{ $self->{'blocks'} }{@block_names};
 	}
 	else
 	{
-		return \%blocks;
+		return sort keys %{ $self->{'blocks'} };
 	}
+}
+
+
+
+
+
+sub _parse_blocks
+{
+	my $self    = shift;
+	my $content = $self->{'content'};
+
+	# Each block name is denoted by '+' as the first character on a line.
+	# Any characters after the plus and up to the first space is the block
+	# name, and everything after the space is the value.
+	if ($self->is_terminated)
+	{
+		$content =~ s/$NEWLINE\.$//;
+	}
+
+	# remove all leading whitespace and the leading + for the first block
+	# name:
+	$content =~ s/\s*?\+//;
+
+	my %blocks;
+	foreach my $name_and_value (split(/$NEWLINE\+/, $content))
+	{
+		# get the space separated name and value:
+		my ($name, $value) = $name_and_value =~ /(\S+)\s(.*)/s;
+
+		# block names are always postfixed with colons:
+		$name =~ s/:$//;
+
+		# now remove the leading spaces from each attribute:
+		$value =~ s/($NEWLINE)\s/$1/g;
+
+		# block values with multiple attributes often start with the
+		# first attribute on the next line with a leading space, so
+		# we remove the leading newline:
+		$value =~ s/^$NEWLINE//;
+
+		$blocks{$name} = $value;
+	}
+	
+	if (exists $blocks{'INFO'})
+	{
+		# info blocks get turned into hashrefs like the items
+		# in the array returned by as_menu():
+		$blocks{'INFO'} = $self->_get_item_hashref($blocks{'INFO'});
+	}
+
+	if (exists $blocks{'VIEWS'})
+	{
+		# Views blocks contain attributes in the form of "MIME-type
+		# lang: <size>" (e.g., "text/plain En_US: <10K>.").
+		my @views = split(/$NEWLINE/, $blocks{'VIEWS'});
+
+		# This block value is eventually going to contain an
+		# array of views, with each view represented as hashref
+		# containing the MIME type, language, and size:
+		foreach my $view (@views)
+		{
+			# separate the MIME type, language, and size:
+			my ($mime_type, $lang, $size) =
+				$view =~ /^([^:]*?) (?: \s ([^:]{5}) )?:(.*)$/x;
+
+			if ($size and $size =~ /<(\.?\d+)(k)?>/i)
+			{
+				# turn <55> into 55, <55K> into 55000,
+				# and <.5K> into 500:
+				$size  = $1;
+				$size *= 1000 if ($2);
+			}
+
+			$view = {
+				type     => $mime_type,
+				language => $lang,
+				size     => $size
+			}
+		}
+
+		$blocks{'VIEWS'} = \@views;
+	}
+
+	if (exists $blocks{'ADMIN'})
+	{
+		# ADMIN blocks contain two attributes, Admin and Mod-Date, in
+		# the form of:
+		# 
+		# 	Admin: Foo Bar <foobar@foo.com>
+		# 	Mod-Date: WWW MMM DD hh:mm:ss YYYY <YYYYMMDDhhmmss>
+
+		# first, get all of the attributes in the form of a hash ref:
+		my $attributes =
+			$self->_get_attribute_hashref($blocks{'ADMIN'});
+
+		# now for the Admin attribute, get the admin name and email:
+		my ($name, $email) =
+			$attributes->{'Admin'} =~ /(.+?)\s*<(.*?)>\s*/;
+
+		# save them:
+		$attributes->{'Admin'} = {
+			name  => $name,
+			email => $email
+		};
+
+		# now for the Mod-Date attribute, get the values from the
+		# timestamp:
+		my ($year, $month, $day, $hour, $minute, $second) =
+			$attributes->{'Mod-Date'} =~
+				/<(\d{4})(\d{2})(\d{2})
+				  (\d{2})(\d{2})(\d{2})>/x;
+
+		foreach ($year, $month, $day, $hour, $minute, $second)
+		{
+			carp "Couldn't parse timestamp" unless (defined $_);
+		}
+
+		# We need to convert the year value into the number years since
+		# 1900 (i.e., 2003 -> 103), since that's the format returned by
+		# localtime():
+		$year -= 1900;
+
+		# localtime() months are numbered from 0 to 11, not 1 to 12:
+		$month--;
+
+		# now that we have the second, minute, hour, day, month, and
+		# year, we use them to get a corresponding Perl time() value:
+		my $time = timelocal(
+			$second, $minute, $hour, $day, $month, $year
+		);
+
+		# now use the time() value to get the values we still don't
+		# have (e.g., the day of the year, is it daylight savings time?
+		# Etc.) and store them in the Mod-Date attribute value:
+		$attributes->{'Mod-Date'} = [ localtime $time ];
+
+		# save all of the ADMIN attributes:
+		$blocks{'ADMIN'} = $attributes;
+	}
+
+	$self->{'blocks'} = \%blocks;
 }
 
 
@@ -433,15 +484,14 @@ sub _get_item_hashref
 	my ($type_and_text, $selector, $host, $port, $gopher_plus) =
 		split(/\t/, $item);
 
-	# now we need to separate the type and the text:
+	# now we need to separate the item type and the item description:
 	my ($type, $text) = $type_and_text =~ /^(.)(.*)/;
 
 	foreach ($type, $text, $selector, $host, $port)
 	{
-		croak "Couldn't parse menu item" unless (defined $_);
+		carp "Couldn't parse menu item" unless (defined $_);
 	}
 
-	# create a hashref for this item:
 	my $item_hash = {
 		type      => $type,
 		text      => $text,
@@ -457,25 +507,20 @@ sub _get_item_hashref
 
 
 
-sub _get_infoblock_hashref
+
+sub _get_attribute_hashref
 {
 	my $self        = shift;
 	my $block_value = shift;
 
-	# strip leading white space from the value:
-	$block_value =~ s/^\s*//;
-
-	# now seaparate each attribute:
+	# get each "name: value" attribute:
 	my @attributes = split(/$NEWLINE/, $block_value);
 
 	my %block_attributes;
 	foreach my $attribute (@attributes)
 	{
-		# first, get rid of all leading whitespace:
-		$attribute =~ s/^\s*//;
-
 		# get the "Name: value" attribute:
-		my ($name, $value) = $attribute =~ /^(.+?):\s*(.*)/;
+		my ($name, $value) = $attribute =~ /^(.+?):\s?(.*)/;
 
 		$block_attributes{$name} = $value;
 	}

@@ -81,11 +81,13 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.22';
+$VERSION = '0.25';
 
 
 
 
+
+#==============================================================================#
 
 =item new()
 
@@ -116,7 +118,7 @@ sub new
 		buffer_size   => 1024,
 
 		# the number of seconds before a timeout occurs (when
-		# connecting, etc.):
+		# connecting, trying to read, trying to write, etc.):
 		timeout       => undef,
 
 		# support Gopher+?
@@ -143,12 +145,11 @@ sub new
 
 This method attempts to connect to a Gopher server. If connect() is able to
 connect it returns true; false otherwise (call error() to find out why). As
-its first argument it takes a mandatory hostname (e.g., gopher.host.com). As
-its second argument, 'Port', it takes an optional port number. If you don't
-supply 'Port' then the default of 70 will be used instead. As its final
-argument, 'Timeout', it takes the number of second at which a timeout will
-occur when attempting to connect to a Gopher server. If you don't supply
-'Timeout' then the default of 60 seconds will be used instead.
+its first argument it takes a mandatory hostname (e.g., gopher.host.com). In addition to the hostname it takes two optional named paramters. The first, Port,
+takes an optional port number. If you don't supply this then the default of
+70 will be used instead. The second, Timeout, takes the number of second at
+which a timeout will occur when attempting to connect to a Gopher server. If
+you don't supply this then the default of 60 seconds will be used instead.
 
 =cut
 
@@ -204,7 +205,7 @@ sub connect
 
 #==============================================================================#
 
-=item request($selector [, Representation => $rep, DataBlock => $data |, Attributes => $attributes] [, Type => $type]])
+=item request($selector [, Representation => $mime_type, DataBlock => $data |, Attributes => $attributes] [, Type => $type])
 
 This method sends a request to the Gopher/Gopher+ server you've connected to
 (L<connect()>) and returns a Net::Gopher::Response object for the server's
@@ -221,7 +222,7 @@ specified format (MIME type):
 The second named parameter, DataBlock, is for Gopher+ requests and enables you
 to send data from a Gopher+ Ask form to a Gopher+ server. The third named
 parameter, Attributes, is for Gopher+ item attribute information requests and
-enables you to only request certain info blocks (e.g., "+INFO+ADMIN" to only
+enables you to request only certain info blocks (e.g., "+INFO+ADMIN" to only
 retrieve the INFO and ADMIN blocks). You can either specify each block name
 for 'Attributes' in one big string:
 
@@ -313,17 +314,19 @@ sub request
 
 
 
-	# now we need to build our request:
+	# now we need to generate the request string to send to the server:
 	my $request = '';
 	if ($request_type == 2)
 	{
 		$request .= $selector;
+
+		# add the representation:
 		$request .= $args{'Representation'}
 			if (defined $args{'Representation'});
 
 		if (defined $args{'DataBlock'})
 		{
-			# add the data flag to indecate the presence of the
+			# add the data flag to indicate the presence of the
 			# data block:
 			$request .= "\t1";
 
@@ -333,7 +336,7 @@ sub request
 		}
 		else
 		{
-			# add a newline to terminat request:
+			# add a newline to terminate request:
 			$request .= $CRLF unless ($request =~ /$NEWLINE$/);
 		}
 	}
@@ -343,29 +346,33 @@ sub request
 
 		if (defined $args{'Attributes'})
 		{
+			# the block names can be sent as either one big string
+			# or as an array of strings:
 			if (ref $args{'Attributes'})
 			{
 				foreach my $name (@{$args{'Attributes'}})
 				{
 					# add the leading plus if isn't already
-					# there:
-					$name = "+$name"
-						unless ($name =~ /^\+/);
-
-					$selector .= $name;
+					# there then add this block name to
+					# the item attribute information
+					# request:
+					$name = "+$name" unless ($name=~/^\+/);
+					$request .= $name;
 				}
 			}
 			else
 			{
-				$selector .= $args{'Attributes'};
+				$request .= $args{'Attributes'};
 			}
 		}
+		
+		# add a newline to terminate the item attribute information
+		# request:
+		$request .= $CRLF unless ($request =~ /$NEWLINE$/);
 	}
 	else
 	{
 		$request .= $selector;
-
-		# add a newline to the selector string:
 		$request .= $CRLF unless ($request =~ /$NEWLINE$/);
 	}
 
@@ -376,8 +383,11 @@ sub request
 	# create our Net::Gopher::Response object for the response:
 	my $ngr = new Net::Gopher::Response;
 
+	# save the request string (some Net::Gopher::Response methods need it):
+	$ngr->{'request'} = $request;
+
 	# make sure we can write to the socket:
-	return $ngr->error("Can't send request: $@")
+	return $ngr->error("Can't send request")
 		unless ($self->{'io_select'}->can_write($self->{'timeout'}));
 
 	# now, send the request to the Gopher server:
@@ -410,16 +420,10 @@ sub request
 	{
 		# with types 5 and 9 we read until the server closes
 		# the connection, all others we read until we see the period:
-		my @item_types =
-		grep {$_ ne 9 and $_ ne 5} keys %GOPHER_ITEM_TYPES;
-
-		foreach (@item_types)
+		unless ($args{'Type'} eq 5 and $args{'Type'} eq 9)
 		{
-			if ($args{'Type'} eq $_)
-			{
-				$read_until_period = 1;
-				last;
-			}
+			$read_until_period = 1
+				if (exists $GOPHER_ITEM_TYPES{$args{'Type'}});
 		}
 	}
 
@@ -450,33 +454,20 @@ sub request
 		my $found_newline;  # did we find the newline?
 		my $response_error; # any errors while reading the buffer.
 
-		FIRSTLINE: while (1)
+		FIRSTLINE: while ($self->_get_buffer(\$response_error))
 		{
-			# fill the buffer:
-			$self->_get_buffer(\$response_error);
-
 			# exit if we ran into any errors:
 			return $ngr->error($response_error)
 				if ($response_error);
 
-			# if the buffer has nothing in it even after calling
-			# _get_buffer(), then we're read everything and the
-			# server has closed the connection:
-			unless (length $self->{'socket_buffer'})
-			{
-				# we read everything, break out:
-				last;
-			}
-
 			while (length $self->{'socket_buffer'})
 			{
-				# grab a character from the buffer and add
-				# it to the first line:
+				# grab a single character from the buffer:
 				$first_line .= substr(
 					$self->{'socket_buffer'}, 0, 1, ''
 				);
 
-				# ok, check (starting at the end) for the CRLF:
+				# ok, look (starting at the end) for the CRLF:
 				if (index($first_line, $CRLF, -1) > 0)
 				{
 					$found_newline = 1;
@@ -503,75 +494,9 @@ sub request
 			$ngr->{'status_line'} = $status_line;
 			$ngr->{'status'}      = $status;
 
-			# the request content is everything after the
-			# status line.
-			my $content;
-
-			# anything remaining in the buffer after the newline
-			# that we removed is content:
-			$content .= $self->{'socket_buffer'}
-				if (length $self->{'socket_buffer'});
-
-			if ($content_length == -1)
-			{
-				# a length of -1 means we should read until
-				# we see a period on a line by itself:
-				while ($self->_get_buffer(\$response_error))
-				{
-					# exit if we ran into any errors
-					# getting the last buffer:
-					return $ngr->error($response_error)
-						if $ngr->error($response_error);
-
-					$content .= $self->{'socket_buffer'};
-				}
-
-				# now, remove everything after the period on a
-				# line by itself:
-				$content =~
-				s/($NEWLINE[.]) (?: \z|$NEWLINE .*)/$1/xs;
-			}
-			elsif ($content_length == -2)
-			{
-				# a length or -2 means we read until the server
-				# closes the connection:
-				while ($self->_get_buffer(\$response_error))
-				{
-					# exit if we ran into any errors
-					# getting the last buffer:
-					return $ngr->error($response_error)
-						if $ngr->error($response_error);
-
-					# the buffer contains content:
-					$content .= $self->{'socket_buffer'};
-				}
-			}
-			else
-			{
-				# a length other than -1 or -2 is the total
-				# length of the response content:
-				while (1)
-				{
-					# refill the buffer:
-					$self->_get_buffer(\$response_error);
-
-					# exit if we ran into any errors while
-					# refilling the buffer:
-					return $ngr->error($response_error)
-						if ($response_error);
-
-					while (length $content < $content_length
-						and length $self->{'socket_buffer'})
-					{
-						$content .= substr($self->{'socket_buffer'}, 0, 1, '');
-					}
-				}
-			}
-
-			# now add the entire response and just the content of
-			# the response to the Net::Gopher::Response object:
-			$ngr->{'response'} = $self->{'socket_data'};
-			$ngr->{'content'}  = $content;
+			# get the Gopher+ response and store it in the
+			# Net::Gopher::Response object:
+			$self->_get_gopher_plus_response($ngr, $content_length);
 
 			# The Gopher+ response may have been an error. In which
 			# case the content contains an error code (number)
@@ -579,7 +504,7 @@ sub request
 			# is not available."):
 			if ($status eq '-')
 			{
-				$ngr->error($content);
+				$ngr->error($ngr->{'content'});
 			}
 		}
 		else
@@ -591,7 +516,7 @@ sub request
 			# So read the rest of the response and store everything
 			# in the Net::Gopher::Response object like we would for
 			# a normal Gopher response:
-			$self->_get_response($ngr, $read_until_period);
+			$self->_get_gopher_response($ngr, $read_until_period);
 		}
 	}
 	else
@@ -599,7 +524,7 @@ sub request
 		# If we got here then this is a plain old Gopher request, not a
 		# Gopher+ request. Get the response from the Gopher server and
 		# store it in the Net::Gopher::Response object:
-		$self->_get_response($ngr, $read_until_period);
+		$self->_get_gopher_response($ngr, $read_until_period);
 	}
 
 	return $ngr;
@@ -612,7 +537,7 @@ sub request
 ################################################################################
 #
 #	Method
-#		_get_response($response, $til_period)
+#		_get_gopher_response($response, $til_period)
 #
 #	Purpose
 #		This method receives the response from a Gopher server, either
@@ -628,13 +553,12 @@ sub request
 #		              until it sees a period on a line by itself?
 #
 
-sub _get_response
+sub _get_gopher_response
 {
 	my $self              = shift;
 	my $ngr               = shift;
 	my $read_until_period = shift;
 
-	# now, fill up $self->{'socket_data'}:
 	my $response_error;
 	while ($self->_get_buffer(\$response_error))
 	{
@@ -668,6 +592,74 @@ sub _get_response
 
 
 
+
+sub _get_gopher_plus_response
+{
+	my $self           = shift;
+	my $ngr            = shift;
+	my $content_length = shift;
+
+	# the request content is everything after the  status line.
+	my $content;
+
+	# any errors while reading the response:
+	my $response_error;
+
+	# anything remaining in the buffer after the newline that we removed is
+	# content:
+	$content .= $self->{'socket_buffer'}
+		if (length $self->{'socket_buffer'});
+
+	if ($content_length < 0)
+	{
+		while ($self->_get_buffer(\$response_error))
+		{
+			# exit if we ran into any errors
+			# getting the last buffer:
+			return $ngr->error($response_error)
+				if $ngr->error($response_error);
+
+			$content .= $self->{'socket_buffer'};
+		}
+
+		if ($content_length == -1)
+		{
+			# a length of -1 means we should read until we see a
+			# period on a line by itself, so remove everything
+			# after the period on a line by itself:
+			$content =~
+				s/($NEWLINE[.]) (?: \z|$NEWLINE .*)/$1/xs;
+		}
+	}
+	else
+	{
+		# a length other than -1 or -2 is the total length of the
+		# response content:
+		while (1)
+		{
+			# refill the buffer:
+			$self->_get_buffer(\$response_error);
+
+			# exit if we ran into any errors while refilling the
+			# buffer:
+			return $ngr->error($response_error)
+				if ($response_error);
+
+			while (length $content < $content_length
+				and length $self->{'socket_buffer'})
+			{
+				$content .= substr(
+					$self->{'socket_buffer'}, 0, 1, ''
+				);
+			}
+		}
+	}
+
+	# now add the entire response and just the content of
+	# the response to the Net::Gopher::Response object:
+	$ngr->{'response'} = $self->{'socket_data'};
+	$ngr->{'content'}  = $content;
+}
 
 ################################################################################
 #
