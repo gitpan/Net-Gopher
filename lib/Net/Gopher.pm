@@ -81,7 +81,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.21';
+$VERSION = '0.22';
 
 
 
@@ -204,20 +204,54 @@ sub connect
 
 #==============================================================================#
 
-=item request($selector [, Representation => $rep, DataBlock => $data [, Type => $type]])
+=item request($selector [, Representation => $rep, DataBlock => $data |, Attributes => $attributes] [, Type => $type]])
 
 This method sends a request to the Gopher/Gopher+ server you've connected to
 (L<connect()>) and returns a Net::Gopher::Response object for the server's
 response. The first argument is the selector string to send to the server. This
-method also takes three optional Name=value pair arguments. The first two,
-Representation and DataBlock, are for Gopher+ and enable you to send data to a
-Gopher+ server. The third, Type, isn't needed for communicating with either
-Gopher or Gopher+ servers, however, with Gopher servers it helps request()
-tell how exactly it should receive the response from the server. Also note that
-if you supply the Representation or DataBlock arguments, then you're selector
-doesn't have to contain a tab followed by a plus; Net::Gopher will see the the
-Representation and or DataBlock options and realize this is a Gopher+ request
-and will add the tab and plus for you. 
+method also takes four optional named parameters. The first, Representation,
+is used for Gopher+ requests to ask a Gopher+ server to return an item in a
+specified format (MIME type):
+
+ $gopher->request($selector,
+ 	Representation => 'text/plain'
+ 	Type           => $type
+ );
+
+The second named parameter, DataBlock, is for Gopher+ requests and enables you
+to send data from a Gopher+ Ask form to a Gopher+ server. The third named
+parameter, Attributes, is for Gopher+ item attribute information requests and
+enables you to only request certain info blocks (e.g., "+INFO+ADMIN" to only
+retrieve the INFO and ADMIN blocks). You can either specify each block name
+for 'Attributes' in one big string:
+
+ $gopher->request($selector,
+ 	Attributes => '+NAME+NAME2+NAME3',
+ 	Type       => $type
+ );
+ 
+or you can put them in an array ref:
+
+ $gopher->request($selector,
+ 	Attributes => ['+NAME', '+NAME2', '+NAME3'],
+ 	Type       => $type
+ );
+
+Also note that when using the array ref format, you don't have to prefix each
+block name with a plus; this method will do it for you if you don't. The fourth
+named parameter, Type, isn't needed for communicating with either Gopher or
+Gopher+ servers, however, with Gopher servers it helps request() tell how
+exactly it should receive the response from the server. For Gopher+ requests,
+while you'll usually need to add a trailing tab and plus to the selector
+string, it's not always necessary; if either the Representation or DataBlock
+parameters are defined, then this method will realize that this is a Gopher+
+request and will add the trailing tab and plus to your selector string for you
+if one if not already present. The same holds true for Gopher+ item attribute
+information requests; if the Attributes parameter is defined then this method
+will realize this is a Gopher+ item attribute information request and will add
+the trailing tab and exclamation point to your selector string for you if there
+isn't already either a tab and exclamation point or tab and dollar sign at the
+end of your selector.
 
 =cut
 
@@ -251,10 +285,20 @@ sub request
 		# Gopher+ selector:
 		$request_type = 2;
 	}
-	elsif ($selector =~ /\t\!$/)
+	elsif (defined $args{'Attributes'})
 	{
-		# if the selector has a tab and ! at the end of it, then it's a
-		# Gopher+ item attribute information request:
+		# if there are attributes then this is a Gopher+ item attribute
+		# information request, which means we need to add the trailing
+		# tab and ! to the selector if there isn't one or if there
+		# isn't a trailing tab and $:
+		$request_type = 3;
+		$selector    .= "\t!" unless ($selector =~ /\t(?:\!|\$)$/);
+	}
+	elsif ($selector =~ /\t(?:\!|\$)$/)
+	{
+		# if the selector has a tab and ! at the end of it or a tab and
+		# a $ at the end of it, then it's a Gopher+ item attribute
+		# information request:
 		$request_type = 3;
 	}
 	else
@@ -263,7 +307,7 @@ sub request
 		$request_type = 1;
 	}
 
-	# even if it's a Gopher+ request, we won't act like a Gopher+ client
+	# even if it's a Gopher+ request we won't act like a Gopher+ client
 	# if the user has told us not to:
 	$request_type = 1 unless ($self->{'gopher_plus'});
 
@@ -291,6 +335,30 @@ sub request
 		{
 			# add a newline to terminat request:
 			$request .= $CRLF unless ($request =~ /$NEWLINE$/);
+		}
+	}
+	elsif ($request_type == 3)
+	{
+		$request .= $selector;
+
+		if (defined $args{'Attributes'})
+		{
+			if (ref $args{'Attributes'})
+			{
+				foreach my $name (@{$args{'Attributes'}})
+				{
+					# add the leading plus if isn't already
+					# there:
+					$name = "+$name"
+						unless ($name =~ /^\+/);
+
+					$selector .= $name;
+				}
+			}
+			else
+			{
+				$selector .= $args{'Attributes'};
+			}
 		}
 	}
 	else
@@ -330,7 +398,7 @@ sub request
 
 	# Now we need to get the server's response. First, make sure we can
 	# read the socket:
-	return $ngr->error("Can't read response from socket: $@")
+	return $ngr->error("Can't read response from socket.")
 		unless ($self->{'io_select'}->can_read($self->{'timeout'}));
 
 	# Find out if we need to read until we see a period on a line
@@ -378,14 +446,9 @@ sub request
 		# means we read everything and the server has closed the
 		# connection and that the server is not a Gopher+ server.
 
-		my $first_line;      # the first line of the response.
-
-		my $found_newline;   # did we find the newline?
-
-		my $read_everything; # did we read everything and not find
-		                     # the newline?
-
-		my $response_error;  # any errors while reading the buffer.
+		my $first_line;     # the first line of the response.
+		my $found_newline;  # did we find the newline?
+		my $response_error; # any errors while reading the buffer.
 
 		FIRSTLINE: while (1)
 		{
@@ -402,19 +465,18 @@ sub request
 			unless (length $self->{'socket_buffer'})
 			{
 				# we read everything, break out:
-				$read_everything = 1;
 				last;
 			}
 
 			while (length $self->{'socket_buffer'})
 			{
-				# add another character to the first line
-				# from the buffer:
+				# grab a character from the buffer and add
+				# it to the first line:
 				$first_line .= substr(
 					$self->{'socket_buffer'}, 0, 1, ''
 				);
 
-				# ok, check for the CRLF:
+				# ok, check (starting at the end) for the CRLF:
 				if (index($first_line, $CRLF, -1) > 0)
 				{
 					$found_newline = 1;
@@ -426,7 +488,7 @@ sub request
 
 
 		# if we found the newline and the first character contains
-		# the status (+ or -) followed by a postive or negative number,
+		# the status (+ or -) followed by a positive or negative number,
 		# then the response is a Gopher+ response:
 		if ($found_newline
 			and $first_line =~ /^( (\+|\-) (\-\d|\d+) $CRLF)/x)
@@ -442,7 +504,7 @@ sub request
 			$ngr->{'status'}      = $status;
 
 			# the request content is everything after the
-			# status line:
+			# status line.
 			my $content;
 
 			# anything remaining in the buffer after the newline
@@ -538,8 +600,6 @@ sub request
 		# Gopher+ request. Get the response from the Gopher server and
 		# store it in the Net::Gopher::Response object:
 		$self->_get_response($ngr, $read_until_period);
-
-		
 	}
 
 	return $ngr;
@@ -602,7 +662,6 @@ sub _get_response
 	# this is a non-Gopher+ response:
 	$ngr->{'response'} = $response;
 	$ngr->{'content'}  = $response;
-
 	return $ngr;
 }
 
@@ -619,13 +678,13 @@ sub _get_response
 #		This method reads the socket stored in $self->{'io_socket'}
 #		for one $self->{'buffer_size'} length and stores the data in
 #		$self->{'socket_buffer'} and stores any error it encounters in
-#		the variable you specifiy. It also copies the buffer into
-#		$self->{'socket_data'}. This method returns either the number of
-#		bytes read into $self->{'socket_buffer'} or undef if an error
-#		occurred.
+#		the variable you specifiy. It also copies the buffer to the
+#		end of $self->{'socket_data'}. This method returns either the
+#		number of bytes read into $self->{'socket_buffer'} or undef if
+#		an error occurred.
 #
 #	Parameters
-#		$error - A reference to a scalar: _get_buffer() will store any
+#		$error - A reference to a scalar; _get_buffer() will store any
 #		         error encountered while receiving the response in this
 #		         variable.
 #
@@ -649,7 +708,8 @@ sub _get_buffer
 		return;
 	}
 
-	# copy the buffer to socket_data:
+	# add the buffer to socket_data, which will store every single byte
+	# read from the socket:
 	$self->{'socket_data'} .= $self->{'socket_buffer'};
 
 	return $num_bytes_read;
@@ -727,8 +787,8 @@ sub request_url
 
 	# now build the request string:
 	my $request_string  = $selector;
-	   $request_string .= "\t" . $search_words if (defined $search_words);
-	   $request_string .= "\t" . $gopher_plus  if (defined $gopher_plus);
+	   $request_string .= "\t$search_words" if (defined $search_words);
+	   $request_string .= $gopher_plus      if (defined $gopher_plus);
 
 	# connect to the Gopher server:
 	$self->connect($host, Port => $port);

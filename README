@@ -1,5 +1,5 @@
-Net::Gopher version 0.21
-=======================
+Net::Gopher version 0.22
+========================
 
 For usage, run:
  $ perldoc Net::Gopher

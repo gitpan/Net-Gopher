@@ -53,7 +53,7 @@ use Carp;
 use Time::Local;
 use Net::Gopher::Utility qw($CRLF $NEWLINE);
 
-$VERSION = '0.21';
+$VERSION = '0.22';
 
 
 
@@ -256,17 +256,17 @@ hash, one in the format described above (L<as_menu()>):
  
  print "Type: $blocks{'INFO'}{'type'}\n",
        "Description: $blocks{'INFO'}{'text'}\n",
-       "On $blocks{'INFO'}{'host'}\n",
-       "At $blocks{'INFO'}{'port'}\n";
+       "On: $blocks{'INFO'}{'host'}\n",
+       "At: $blocks{'INFO'}{'port'}\n";
 
 VIEWS blocks contain information about what type of applications can be used
 to view the item as well as the total size of the item in bytes
 (e.g., Text/plain: <77K>). This method will turn a VIEWS block into a hashref
 where the MIME type is the key and the value is the size in bytes. Note, this
 method converts the <\d+K?> format used in Gopher+ to an integer you can
-preform arathmatic on (e.g., <80> becomes 80, <40K> becomes 40000, etc.):
+perform arithmetic on (e.g., <80> becomes 80, <40K> becomes 40000, etc.):
 
-print "Size: ", $blocks{'VIEWS'}{'Text/plain'};
+ print "Size: ", $blocks{'VIEWS'}{'Text/plain'};
 
 ADMIN blocks contain information about the person running the Gopher+ server
 and what the admin has done with the item in question. This method will
@@ -276,9 +276,9 @@ about who the adminstrator of this Gopher+ server is. Mod-Date is a timestamp
 of when the item was last modified, usually like the ones returned by C's
 ctime(). This method will convert the timestamp into an array contaiing values
 returned by Perl's localtime() function corresponding with the Mod-Date (see
-L<perldoc -f localtime>):
+perldoc -f localtime):
 
- print "This box is maintained by ", $blocks{'ADMIN'}{'admin'};
+ print "This box is maintained by ", $blocks{'ADMIN'}{'Admin'};
  
  my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
  @{ $blocks{'ADMIN'}{'Mod-Date'} };
@@ -535,6 +535,15 @@ sub is_success
 
 
 
+#==============================================================================#
+
+=item is_error()
+
+This method will return true if the request was unsuccessful; false otherwise.
+Success and failure are the same as described above (L<is_success>).
+
+=cut
+
 sub is_error
 {
 	my $self = shift;
@@ -564,6 +573,16 @@ sub is_error
 
 
 
+#==============================================================================#
+
+=item is_terminated()
+
+This method checks if the response content was terminated by a period on a line
+by itself. It returns true if the content is terminated by a period on a line
+by itself; false otherwise,
+
+=cut
+
 sub is_terminated
 {
 	my $self  = shift;
@@ -582,6 +601,15 @@ sub is_terminated
 
 
 
+
+#==============================================================================#
+
+=item error()
+
+This method returns the error message of the last error to occur or undef if no
+error has occurred.
+
+=cut
 
 sub error
 {
