@@ -1,6 +1,6 @@
 # this file tests the Gopher+ support in Net::Gopher using gopher.quux.org
 
-print "1..15\n";
+print "1..18\n";
 use strict;
 use warnings;
 use Net::Gopher;
@@ -33,7 +33,6 @@ if ($response->is_menu)
 }
 else
 {
-	print $response->content;
 	print "not ok 3\n";
 }
 
@@ -162,4 +161,37 @@ if ($response->is_success)
 else
 {
 	print "not ok 15\n";
+}
+
+$response = $gopher->request_url("gopher://gopher.quux.org/0/		\$+INFO");
+
+if ($response->is_success and $response->is_blocks)
+{
+	print "ok 16\n";
+}
+else
+{
+	print "not ok 16\n";
+}
+
+$response = $gopher->request_url('gopher.quux.org/0/About This Server.txt		!');
+
+if ($response->is_success and $response->is_blocks)
+{
+	print "ok 17\n";
+}
+else
+{
+	print "not ok 17\n";
+}
+
+$response = $gopher->request_url("gopher.quux.org/0/		+text/plain");
+
+if ($response->is_success)
+{
+	print "ok 18\n";
+}
+else
+{
+	print "not ok 18\n";
 }

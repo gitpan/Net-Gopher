@@ -1,5 +1,10 @@
 Revision history for Perl extension Net::Gopher.
 
+0.43 - You can now specify a which item  you  want  for  directory_blocks()  by
+       its selector, hostname, port, etc., in addition to its number. Fixed the
+       typo in request_url() for the default scheme, and changed  request_url()
+       to die when you specify an invalid scheme.
+
 0.40 - The Net::Gopher::Response attribute information methods now  also  parse
        Gopher+ +ASK blocks. The is_menu() method  is  now  far  more  accurate.
        Also, request() now defaults to item type 1 (menu) if you don't  specify

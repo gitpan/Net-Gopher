@@ -111,9 +111,9 @@ sub new
 		# content of the response:
 		content     => $args{'Content'},
 
-		# if this was a Gopher+ item attribute information request,
-		# then this will be used to store the parsed information
-		# blocks:
+		# if this was a Gopher+ item/directory attribute information
+		# request, then this will be used to store the parsed
+		# information blocks:
 		info_blocks => undef
 	};
 
@@ -330,7 +330,7 @@ C<perldoc -f localtime>):
  my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
  @{ $admin->{'Mod-Date'} };
 
-The hash may also contain Abstract, Version, Org, Loc or other attribute; all
+The hash may also contain Abstract, Version, Org, Loc or other attributes--all
 of which are stored as plain text.
 
 VIEWS blocks contain information about what type of applications can be used
@@ -392,57 +392,190 @@ sub item_blocks
 
 #==============================================================================#
 
-=head2 directory_blocks([$item] [, @block_names])
+=head2 directory_blocks([\%item | $item] [, @block_names])
 
 If the request was a Gopher+ directory attribute information request, then you
-can use method to parse the attribute information blocks for each item in the
+can use method to get attribute information blocks for any of the items in the
 server's response. This method works like the C<item_blocks()> method,
 allowing you to specify the block values you want; however, with this method
-you must also specify which item you want the block values from. So to get the
-VIEWS block value from the first item, you'd do this:
+you must also specify which item you want the block values from. This is done
+using a hash ref as the first argument in which you specify certain attributes
+about the item, then this method will go searching each item's INFO block to
+see if it matches, and when the method finds the first matching item, it
+returns the block values you specified, for that item.
 
- my $views = $response->directory_blocks(1, 'VIEWS');
+The hash can contain any of the following key=value pairs:
 
-To get the ABSTRACT and ADMIN blocks for the third item, you'd do this:
+ N          = The item must be the n'th item in the response.
+ Type       = The item must be of this type.
+ Text       = The item must have this description text.
+ Selector   = The item must have this selector string.
+ Host       = The item must be on this host.
+ Port       = The item must be at this port.
+ GopherPlus = The item must have this Gopher+ string.
 
- my ($abstract, $admin) = $response->directory_blocks(3, 'ABSTRACT', 'ADMIN');
+So to get the VIEWS and ADMIN block values for the item with the selector of
+/welcome, you'd do this:
+
+ my ($views, $admin) = $response->directory_blocks(
+ 	{Selector => '/welcome'}, 'VIEWS', 'ADMIN'
+ );
+
+Or use even more options for more accuracy:
+
+ my $views = $response->directory_blocks(
+ 	{
+		N        => 7,
+ 		Selector => '/welcome',
+ 		Host     => 'gopher.somehost.com',
+ 		Port     => '70',
+ 	}, 'VIEWS'
+ );
+
+Which means the VIEWS block value for the 7th item in the response, which must
+have a selector string of /welcome, on gopher.somehost.com at port 70.
+
+If you only want to specify the item by number, you can forgo the hash ref
+altogether. So to get the ADMIN block for the second item, you can just do
+this:
+
+ my $admin = $response->directory_blocks(2, 'ADMIN');
 
 To get the names of all of the information blocks for a single item, don't
-specify any block names, only an item number:
+specify any block names, only a parameters hash or item number:
+
+ my @block_names = $response->directory_blocks({
+ 		Type     => 1,
+ 		Selector => '/stuff',
+ 		Host     => 'gopher.somehost.com',
+ 		Port     => 70
+ 	}
+ );
+
+Or:
 
  # the names of all of the blocks for the fourth item:
  my @block_names = $response->directory_blocks(4);
 
-To get the total number of items, don't specify either block names or an item
-number:
+To get the total number of items, don't specify either block names or a
+parameters hash/item number:
 
- my $items = $response->directory_blocks;
+ my $num_items = $response->directory_blocks;
+
+This method will return undef if it couldn't find any of the blocks you
+specified, or if the item you specified does not exist.
 
 =cut
 
 sub directory_blocks
 {
 	my $self        = shift;
-	my $item        = shift;
+	my $item_to_get = shift;
 	my @block_names = @_;
 
 	$self->_parse_blocks() unless (defined $self->{'info_blocks'});
 
-	if ($item)
+	if (defined $item_to_get and ref $item_to_get)
 	{
-		$item--; # for zero indexing.
-
-		if (@block_names)
+		my %match;
+		if (ref $item_to_get eq 'ARRAY')
 		{
-			return @{ $self->{'info_blocks'}[$item] }{@block_names};
+			%match = @$item_to_get;
 		}
 		else
 		{
-			return sort keys %{ $self->{'info_blocks'}[$item] };
+			%match = %$item_to_get;
+		}
+
+		# a reference to hash contaiing the block names and values
+		# for the item the user specified:
+		my $matching_item;
+
+		# the items to search:
+		my @items = $match{'N'}
+				? $self->{'info_blocks'}[$match{'N'} - 1]
+				: @{ $self->{'info_blocks'} };
+
+		# now search the items looking for the one that matches:
+		foreach my $item (@items)
+		{
+			if (defined $match{'Type'})
+			{
+				unless ($item->{'INFO'}{'type'} eq $match{'Type'})
+				{
+					next;
+				}
+			}
+			if (defined $match{'Text'})
+			{
+				unless ($item->{'INFO'}{'text'} eq $match{'Text'})
+				{
+					next;
+				}
+			}
+			if (defined $match{'Selector'})
+			{
+				unless ($item->{'INFO'}{'selector'} eq $match{'Selector'})
+				{
+					next;
+				}
+			}
+			if (defined $match{'Host'})
+			{
+				unless ($item->{'INFO'}{'host'} eq $match{'Host'})
+				{
+					next;
+				}
+			}
+			if (defined $match{'Port'})
+			{
+				unless ($item->{'INFO'}{'port'} eq $match{'Port'})
+				{
+					next;
+				}
+			}
+			if (defined $match{'GopherPlus'})
+			{
+				unless ($item->{'INFO'}{'gopher+'} eq $match{'GopherPlus'})
+				{
+					next;
+				}
+			}
+
+			# it matches:
+			$matching_item = $item;
+			last;
+		}
+
+		return unless ($matching_item);
+
+		if (@block_names)
+		{
+			return @{ $matching_item }{@block_names};
+		}
+		else
+		{
+			return sort keys %$matching_item;
+		}
+	}
+	elsif (defined $item_to_get)
+	{
+		my $i = $item_to_get - 1;
+
+		if (@block_names)
+		{
+			# hash slice to lookup and return all of the block
+			# values the user wanted from this item:
+			return @{ $self->{'info_blocks'}[$i] }{@block_names};
+		}
+		else
+		{
+			return sort keys %{ $self->{'info_blocks'}[$i] };
 		}
 	}
 	else
 	{
+		# return the total number of items:
 		return scalar @{ $self->{'info_blocks'} };
 	}
 }
@@ -684,7 +817,7 @@ sub is_terminated
 	my $self  = shift;
 	my $error = shift;
 
-	if ($self->{'content'} =~ /$NEWLINE \. $NEWLINE? $/x)
+	if ($self->{'content'} =~ /$NEWLINE\.$NEWLINE?$/)
 	{
 		return 1;
 	}
@@ -815,7 +948,7 @@ sub _parse_blocks
 		# get the space separated name and value:
 		my ($name, $value) = $name_and_value =~ /(\S+)\s(.*)/s;
 
-		# block names are always postfixed with colons:
+		# block names are usually postfixed with colons:
 		$name =~ s/:$//;
 
 		# now remove the leading spaces from each attribute:
@@ -844,8 +977,9 @@ sub _parse_blocks
 
 		if ($name eq 'INFO')
 		{
-			# info blocks get turned into hashrefs like the items
-			# in the array returned by as_menu():
+			# info blocks get turned into hashrefs in the same form
+			# as the the elements in the array returned by
+			# as_menu():
 			$value = $self->_get_item_hashref($value);
 		}
 		elsif ($name eq 'VIEWS')
@@ -899,7 +1033,7 @@ sub _parse_blocks
 			{
 				# now for the Admin attribute, get the admin
 				# name and email:
-				my ($name, $email) = 
+				my ($name, $email) =
 				$attributes->{'Admin'} =~ /(.+?)\s*<(.*?)>\s*/;
 
 				$attributes->{'Admin'} = [$name, $email];
@@ -954,12 +1088,13 @@ sub _parse_blocks
 			# by tabs. For example:
 			#    Ask: How many?\tone\ttwo\tthree
 			#    AskP: Your password:
-			#    Choose: Pcik one:\tred\tgreen\tblue
+			#    Choose: Pick one:\tred\tgreen\tblue
 			#    
-			# This will store each ASK query as as a hashref:
+			# This will store each ASK query as as a hashref
+			# containing the quer type, the question and any
+			# defaults:
 			my @ask;
 
-			# extract each query:
 			foreach my $query (split(/$NEWLINE/, $value))
 			{
 				# get the query type, and the question and
@@ -973,13 +1108,12 @@ sub _parse_blocks
 					split(/\t/, $question_and_defaults);
 
 				push(@ask, {
-						type     => $type,
-						question => $question,
-						defaults => (@defaults)
-								? \@defaults
-								: undef
-					}
-				);	
+					type     => $type,
+					question => $question,
+					defaults => (@defaults)
+							? \@defaults
+							: undef
+				});	
 			}
 
 			$value = \@ask;
@@ -1016,7 +1150,6 @@ sub _get_attribute_hashref
 	my $self        = shift;
 	my $block_value = shift;
 
-	# get each "name: value" attribute:
 	my @attributes = split(/$NEWLINE/, $block_value);
 
 	my %block_attributes;

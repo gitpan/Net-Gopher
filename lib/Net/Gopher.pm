@@ -19,12 +19,9 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  my $response = $gopher->request('/menu', Type => 1);
  
  # check for errors:
- if ($response->is_success)
- {
+ if ($response->is_success) {
  ...
- }
- else
- {
+ } else {
  	print $response->error;
  }
  
@@ -63,14 +60,14 @@ use warnings;
 use vars qw($VERSION);
 use Carp;
 use IO::Select;
-use IO::Socket;
+use IO::Socket qw(SOCK_STREAM inet_ntoa);
 use URI;
 use Net::Gopher::Response;
 use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.40';
+$VERSION = '0.43';
 
 
 
@@ -106,7 +103,7 @@ sub new
 		# the IO::Socket::INET socket:
 		io_socket     => undef,
 
-		# theIO::Select object for the socket stored in io_socket:
+		# the IO::Select object for the socket stored in io_socket:
 		io_select     => undef,
 
 		# the number of seconds before a timeout occurs (when
@@ -257,7 +254,7 @@ big string:
  	Attributes => '+NAME+NAME2+NAME3',
  	Type       => $type
  );
- 
+
 or you can put them in an array ref:
 
  $gopher->request($selector,
@@ -305,7 +302,7 @@ sub request
 
 
 	# empty the socket buffer and all of the socket data that was read
-	# during a previous request:
+	# during any previous request:
 	$self->{'socket_buffer'} = undef;
 	$self->{'socket_data'}   = undef;
 
@@ -426,7 +423,8 @@ sub request
 	# show the request we just sent for debugging:
 	if ($self->{'debug'})
 	{
-		print "Sent this request:\n$request\n", '-' x 79, "\n";
+		print "Sent this request:\n$request\n",
+		      '-' x 79, "\n";
 	}
 
 	# make sure *something* was sent:
@@ -718,12 +716,12 @@ sub request_url
 	# the URL if a scheme isn't already there (e.g., if you call
 	# $url->scheme("foo") on a URL like subdomain.domain.com, you end up
 	# with foo:subdomain.domain.com, which is not what we want):
-	$url = "gohper://$url" unless ($url =~ m|^[a-zA-Z0-9]+?://|);
+	$url = "gopher://$url" unless ($url =~ m|^[a-zA-Z0-9]+?://|);
 
 	my $uri = new URI $url;
 
 	# make sure the URL's scheme isn't something other than gopher:
-	return $self->error('Protocol "' . $uri->scheme . '" is not supported')
+	croak 'Protocol "' . $uri->scheme . '" is not supported'
 		unless ($uri->scheme eq 'gopher');
 
 	# set the scheme to gopher:
@@ -738,11 +736,6 @@ sub request_url
 	my $search_words = $uri->search;
 	my $gopher_plus  = $uri->string;
 
-	# now build the request string:
-	my $request_string  = $selector;
-	   $request_string .= "\t$search_words" if (defined $search_words);
-	   $request_string .= "\t$gopher_plus"  if (defined $gopher_plus);
-
 	# First, we need to connect to the Gopher server. If we can connect,
 	# then we'll send the request and return the Net::Gopher::Response
 	# object for the server's response. If we can't, then we'll create our
@@ -750,7 +743,42 @@ sub request_url
 	my $ngr;
 	if ($self->connect($host, Port => $port))
 	{
+		# now build the request string:
+		my $request_string  = $selector;
+		   $request_string .= "\t$search_words"
+		   	if (defined $search_words);
+
+		my $representation;
+		my $attributes;
+		if (defined $gopher_plus)
+		{
+			# The Gopher+ string should contain either a
+			# plus, a plus followed by a MIME type
+			# (representation), or a '!' or '?', or a '!' or '?'
+			# followed by any attribute block names. We need to
+			# extract the representation or attributes so we can
+			# send them as their own arguments to request():
+			if ($gopher_plus =~ s/^\+(.+)/+/)
+			{
+				$representation = $2;
+			}
+			elsif ($gopher_plus =~ s/^(\!|\$)(.+)/$1/)
+			{
+				$attributes = $2;
+			}
+
+			# add anything else remaining to the request:
+			$request_string .= "\t$gopher_plus";
+		}
+
+		# send the request:
 		$ngr = $self->request($request_string,
+			defined $representation
+				? (Representation => $representation)
+				: (),
+			defined $attributes
+				? (Attributes => $attributes)
+				: (),
 			Type => $item_type
 		);
 	}
@@ -929,9 +957,6 @@ sub _get_status_line
 
 	FIRSTLINE: while ($self->_get_buffer($error))
 	{
-		# exit if we ran into any errors:
-		return if ($$error);
-
 		while (length $self->{'socket_buffer'})
 		{
 			# grab a single character from the buffer:
@@ -947,6 +972,9 @@ sub _get_status_line
 			}
 		}
 	}
+	
+	# exit if we ran into any errors:
+	return if ($$error);
 
 
 
