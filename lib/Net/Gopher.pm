@@ -79,7 +79,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.32';
+$VERSION = '0.33';
 
 
 
@@ -260,7 +260,8 @@ sub request
 	my %args     = @_;
 
 
-	# clear the socket buffer and all of the socket data that's been read:
+
+	# empty the socket buffer and all of the socket data that's been read:
 	$self->{'socket_buffer'} = undef;
 	$self->{'socket_data'}   = undef;
 
@@ -270,7 +271,8 @@ sub request
 
 	# $request_type stores the type of request we're going to send (either
 	# 1 for Gopher request, 2 for Gopher+ request, or 3 for Gopher+ item
-	# attribute information request):
+	# attribute information request or directory attribute information
+	# request):
 	my $request_type;
 	if (defined $args{'Representation'} || defined $args{'DataBlock'})
 	{
@@ -278,7 +280,6 @@ sub request
 		# Gopher+ request, which means we need to add the trailing tab
 		# and + to the selector if the user hasn't done so:
 		$request_type = 2;
-		$selector    .= "\t+" unless ($selector =~ /\t\+$/);
 	}
 	elsif ($selector =~ /\t\+$/)
 	{
@@ -293,7 +294,6 @@ sub request
 		# tab and ! to the selector if there isn't one or if there
 		# isn't a trailing tab and $:
 		$request_type = 3;
-		$selector    .= "\t!" unless ($selector =~ /\t(?:\!|\$)$/);
 	}
 	elsif ($selector =~ /\t(?:\!|\$)$/)
 	{
@@ -315,11 +315,17 @@ sub request
 
 
 	# the request string to send to the server:
-	my $request = '';
+	my $request;
 
 	if ($request_type == 2)
 	{
 		$request .= $selector;
+
+		# add the trailing tab and plus for this Gopher+ request if the
+		# user hasn't done so:
+		$request .= "\t+" unless ($request =~ /\t\+$/);
+
+		# add the representation (MIME type):
 		$request .= $args{'Representation'}
 			if (defined $args{'Representation'});
 
@@ -342,6 +348,12 @@ sub request
 	elsif ($request_type == 3)
 	{
 		$request .= $selector;
+
+		# this is either an item attribute information request ('!') or
+		# a directory attribute information request ('$'), so we need
+		# to add the trailing tab and '!' if there isn't already a
+		# trailing tab and '!' or '$':
+		$request .= "\t!" unless ($request =~ /\t(?:\!|\$)$/);
 
 		if (defined $args{'Attributes'})
 		{
@@ -738,11 +750,11 @@ sub request_url
 	my $url  = shift;
 
 	# We need to add a scheme if one isn't there yet. We have to do this
-	# insead of just using URI's scheme() method cause that--for some
+	# instead of just using URI's scheme() method cause that--for some
 	# reason--just adds the scheme name plus colon to the beginning of
 	# the URL if a scheme isn't already there (e.g., if you call
 	# scheme("foo") on a URL like subdomain.domain.com, you end up with
-	# foo:subdomain.domain.com, which is not what we want).
+	# foo:subdomain.domain.com, which is not what we want):
 	$url = "gohper://$url" unless ($url =~ /^[a-zA-Z0-9]+?:\/\//);
 
 	my $uri = new URI $url;
@@ -768,9 +780,22 @@ sub request_url
 	   $request_string .= "\t$search_words" if (defined $search_words);
 	   $request_string .= $gopher_plus      if (defined $gopher_plus);
 
-	# connect to the Gopher server send the request:
-	$self->connect($host, Port => $port);
-	my $ngr = $self->request($request_string, Type => $item_type);
+	# First, we need to connect to the Gopher server. If we can connect,
+	# then we'll send the request and return the Net::Gopher::Response
+	# object for the server's response. If we can't, then we'll create our
+	# own Net::Gopher::Response object for the connect() error:
+	my $ngr;
+	if ($self->connect($host, Port => $port))
+	{
+		$ngr = $self->request($request_string,
+			Type => $item_type
+		);
+	}
+	else
+	{
+		$ngr = new Net::Gopher::Response (Error => $self->error);
+	}
+
 	$self->disconnect;
 
 	return $ngr;

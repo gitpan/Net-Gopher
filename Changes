@@ -1,5 +1,9 @@
 Revision history for Perl extension Net::Gopher.
 
+0.33 - The request_url() now properly returns a Net::Gopher::response object if
+       if fails to connect to the server. Also fixed a typo in  the  POD  which
+       had (until now) gone unnoticed.
+
 0.32 - Added new is_menu() and is_blocks() methods.
 
 0.30 - Removed as_block() and replaced it with item_blocks(), and added the new

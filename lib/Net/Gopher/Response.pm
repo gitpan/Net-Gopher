@@ -3,7 +3,7 @@ package Net::Gopher::Response;
 
 =head1 NAME
 
-Net::Gopher::Reponse - Class encapsulating Gopher responses
+Net::Gopher::Response - Class encapsulating Gopher responses
 
 =head1 SYNOPSIS
 
@@ -52,7 +52,7 @@ use Carp;
 use Time::Local;
 use Net::Gopher::Utility qw($CRLF $NEWLINE);
 
-$VERSION = '0.32';
+$VERSION = '0.33';
 
 
 
@@ -469,11 +469,25 @@ sub as_blocks
 
 	if (scalar @blocks == 1)
 	{
-		return wantarray ? %{ $blocks[0] } : $blocks[0];
+		if (wantarray)
+		{
+			return %{ $blocks[0] };
+		}
+		else
+		{
+			return $blocks[0];
+		}
 	}
 	else
 	{
-		return wantarray ? @blocks : \@blocks;
+		if (wantarray)
+		{
+			return @blocks;
+		}
+		else
+		{
+			\@blocks;
+		}
 	}
 }
 
