@@ -70,7 +70,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.34';
+$VERSION = '0.35';
 
 
 
@@ -143,9 +143,9 @@ you don't supply this then the default of 60 seconds will be used instead.
 
 sub connect
 {
-	my $self  = shift;
-	my $host  = (scalar @_ % 2) ? shift : undef;
-	my %args  = @_;
+	my $self = shift;
+	my $host = (scalar @_ % 2) ? shift : undef;
+	my %args = @_;
 
 	# I eventually hope to have this class work like the other Net::*
 	# modules, looking for hostnames in libnet.cfg:
@@ -198,7 +198,7 @@ sub connect
 =head2 request($selector [, Representation => $mime_type, DataBlock => $data |, Attributes => $attributes] [, Type => $type])
 
 This method sends a request to the Gopher/Gopher+ server you've connected to
-(L<connect()>) and returns a Net::Gopher::Response object for the server's
+with connect(), and returns a Net::Gopher::Response object for the server's
 response. The first argument is the selector string to send to the server. This
 method also takes four optional named parameters. The first, Representation,
 is used for Gopher+ requests to ask a Gopher+ server to return an item in a
@@ -408,7 +408,7 @@ sub request
 		Error => "Can't read response from socket."
 	) unless ($self->{'io_select'}->can_read($self->{'timeout'}));
 
-	# this variable stores any errors encountered while recieving the
+	# this variable stores any errors encountered while receiving the
 	# response:
 	my $response_error;
 
@@ -427,7 +427,7 @@ sub request
 
 		# this will store the content of the response, everything after
 		# the status line:
-		my $content;
+		my $content = '';
 
 		# (Read the documentation below for _get_status_line().) Any
 		# characters remaining in the buffer after calling the
@@ -439,14 +439,18 @@ sub request
 		{
 			while ($self->_get_buffer(\$response_error))
 			{
-				# exit if we ran into any errors getting the
+				# break if we ran into any errors getting the
 				# last buffer:
-				return new Net::Gopher::Response (
-					Error => $response_error
-				) if ($response_error);
+				last if ($response_error);
 
 				$content .= $self->{'socket_buffer'};
 			}
+
+			# exit if we ran into any errors while receiving the
+			# response:
+			return new Net::Gopher::Response (
+				Error => $response_error
+			) if ($response_error);
 
 			if ($response_length == -1)
 			{
@@ -473,23 +477,38 @@ sub request
 		{
 			# a length other than -1 or -2 is the total length of
 			# the response content in bytes:
-			while ($self->_get_buffer(\$response_error))
+			while ((my $bytes_remaining =
+				$response_length - length $content))
 			{
-				# exit if we ran into any errors while
-				# filling the buffer:
-				return new Net::Gopher::Response (
-					Error => $response_error
-				) if ($response_error);
+				# fill the buffer if it's empty:
+				unless (length $self->{'socket_buffer'})
+				{ 
+					my $bytes_read =
+					$self->_get_buffer(\$response_error);
 
-				
-				while (length $content < $response_length
-					and length $self->{'socket_buffer'})
-				{
-					$content .= substr(
-						$self->{'socket_buffer'},0,1,''
-					);
+					# break if we read everything and
+					# the server's closed the connction:
+					last unless ($bytes_read);
+
+					# break if we ran into any errors
+					# getting the last buffer:
+					last if ($response_error);
 				}
+
+				# try to read all of the remaining bytes of the
+				# server's response from the buffer and add
+				# them to the response content:
+				$content .= substr(
+					$self->{'socket_buffer'}, 0,
+					$bytes_remaining, ''
+				);
 			}
+
+			# exit if we ran into any errors while receiving the
+			# response:
+			return new Net::Gopher::Response (
+				Error => $response_error
+			) if ($response_error);
 		}
 
 		if ((defined $args{'Type'} and $args{'Type'} eq 1)
@@ -532,16 +551,19 @@ sub request
 		}
 
 		# now, read the server's response as a series of buffers,
-		# storing each buffer one at a time in $self->{'socket_buffer'}
-		# and add each buffer to the end of $self->{'socket_data'}:
+		# storing each buffer one at a time in
+		# $self->{'socket_buffer'}, adding each buffer to the end of
+		# $self->{'socket_data'}:
 		while ($self->_get_buffer(\$response_error))
 		{
-			# exit if we ran into any errors getting the last
+			# break if we ran into any errors getting the last
 			# buffer:
-			return new Net::Gopher::Response (
-				Error => $response_error
-			) if ($response_error);
+			last if ($response_error);
 		}
+	
+		# exit if we ran into any errors receiving the response:
+		return new Net::Gopher::Response (Error => $response_error)
+			if ($response_error);
 
 		# the content of the response:
 		my $content = $self->{'socket_data'};

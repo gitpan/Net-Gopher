@@ -1,4 +1,6 @@
-print "1..12\n";
+# this file tests the Gopher+ support in Net::Gopher using gopher.quux.org
+
+print "1..15\n";
 use strict;
 use warnings;
 use Net::Gopher;
@@ -13,7 +15,7 @@ else
 	print "not ok 1\n";
 }
 
-my $response = $gopher->request('	+');
+my $response = $gopher->request('	+', Type => 1);
 $gopher->disconnect;
 
 if ($response->is_success)
@@ -25,9 +27,7 @@ else
 	print "not ok 2\n";
 }
 
-my @menu = $response->as_menu;
-
-if (@menu)
+if ($response->is_menu)
 {
 	print "ok 3\n";
 }
@@ -36,9 +36,9 @@ else
 	print "not ok 3\n";
 }
 
+my @menu = $response->as_menu;
 
-
-if ($gopher->connect('gopher.quux.org', Port => 70))
+if (@menu)
 {
 	print "ok 4\n";
 }
@@ -47,8 +47,9 @@ else
 	print "not ok 4\n";
 }
 
-$response = $gopher->request('	!');
-if ($response->is_success)
+
+
+if ($gopher->connect('gopher.quux.org', Port => 70))
 {
 	print "ok 5\n";
 }
@@ -57,7 +58,8 @@ else
 	print "not ok 5\n";
 }
 
-if ($response->is_blocks)
+$response = $gopher->request('	!');
+if ($response->is_success)
 {
 	print "ok 6\n";
 }
@@ -66,11 +68,7 @@ else
 	print "not ok 6\n";
 }
 
-my $info = $response->item_blocks('INFO');
-
-if (exists $info->{'type'} and exists $info->{'text'}
-	and exists $info->{'selector'} and exists $info->{'host'}
-	and exists $info->{'port'})
+if ($response->is_blocks)
 {
 	print "ok 7\n";
 }
@@ -79,9 +77,11 @@ else
 	print "not ok 7\n";
 }
 
-my $admin = $response->item_blocks('ADMIN');
+my $info = $response->item_blocks('INFO');
 
-if (@{ $admin->{'Mod-Date'} } == 9)
+if (exists $info->{'type'} and exists $info->{'text'}
+	and exists $info->{'selector'} and exists $info->{'host'}
+	and exists $info->{'port'})
 {
 	print "ok 8\n";
 }
@@ -90,7 +90,9 @@ else
 	print "not ok 8\n";
 }
 
-if (scalar @{ $admin->{'Admin'} } == 2)
+my $admin = $response->item_blocks('ADMIN');
+
+if (@{ $admin->{'Mod-Date'} } == 9)
 {
 	print "ok 9\n";
 }
@@ -99,11 +101,7 @@ else
 	print "not ok 9\n";
 }
 
-my %blocks = $response->as_blocks;
-
-if (exists $blocks{'INFO'}{'type'} and exists $blocks{'INFO'}{'text'}
-	and exists $blocks{'INFO'}{'selector'} and exists $blocks{'INFO'}{'host'}
-	and exists $blocks{'INFO'}{'port'})
+if (scalar @{ $admin->{'Admin'} } == 2)
 {
 	print "ok 10\n";
 }
@@ -112,7 +110,11 @@ else
 	print "not ok 10\n";
 }
 
-if (@{ $blocks{'ADMIN'}{'Mod-Date'} } == 9)
+my %blocks = $response->as_blocks;
+
+if (exists $blocks{'INFO'}{'type'} and exists $blocks{'INFO'}{'text'}
+	and exists $blocks{'INFO'}{'selector'} and exists $blocks{'INFO'}{'host'}
+	and exists $blocks{'INFO'}{'port'})
 {
 	print "ok 11\n";
 }
@@ -121,11 +123,42 @@ else
 	print "not ok 11\n";
 }
 
-if (@{ $blocks{'ADMIN'}{'Admin'} } == 2)
+if (@{ $blocks{'ADMIN'}{'Mod-Date'} } == 9)
 {
 	print "ok 12\n";
 }
 else
 {
 	print "not ok 12\n";
+}
+
+if (@{ $blocks{'ADMIN'}{'Admin'} } == 2)
+{
+	print "ok 13\n";
+}
+else
+{
+	print "not ok 13\n";
+}
+
+if ($gopher->connect('gopher.quux.org', Port => 70))
+{
+	print "ok 14\n";
+}
+else
+{
+	print "not ok 14\n";
+}
+
+$response = $gopher->request(
+	'/Software/Gopher/screenshots/lynx.gif	+',
+	Type => 'g'
+);
+if ($response->is_success)
+{
+	print "ok 15\n";
+}
+else
+{
+	print "not ok 15\n";
 }

@@ -71,7 +71,7 @@ use Carp;
 use Time::Local;
 use Net::Gopher::Utility qw($CRLF $NEWLINE);
 
-$VERSION = '0.34';
+$VERSION = '0.35';
 
 
 
@@ -92,7 +92,7 @@ sub new
 
 	my $self = {
 		# any error that occurred while sending the request or while
-		# recieving the response:
+		# receiving the response:
 		error       => $args{'Error'},
 
 		# the request that was sent to the server:
@@ -774,7 +774,7 @@ sub _parse_blocks
 	# the block name, and everything after the first space is the value.
 	if ($self->is_terminated)
 	{
-		$content =~ s/$NEWLINE\.$//;
+		$content =~ s/$NEWLINE\.$NEWLINE?$//;
 	}
 
 	# remove all leading whitespace and the leading + for the first block
@@ -841,8 +841,8 @@ sub _parse_blocks
 
 				if ($size and $size =~ /<(\.?\d+)(k)?>/i)
 				{
-					# turn <55> into 55, <55K> into 55000,
-					# and <.5K> into 500:
+					# turn <55> into 55, <600B> into 600,
+					# <55K> into 55000, and <.5K> into 500:
 					$size  = $1;
 					$size *= 1000 if ($2);
 				}

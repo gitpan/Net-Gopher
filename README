@@ -1,4 +1,4 @@
-Net::Gopher version 0.34
+Net::Gopher version 0.35
 ========================
 
 For usage, run:
@@ -15,6 +15,17 @@ To install this module type the following:
    make
    make test
    make install
+
+TESTING
+
+Since Net::Gopher is a network library, all of the tests that come with
+Net::Gopher interact with other machines--Gopher servers--over a network. What
+this means is that if one of the machines tested is down, then all of the tests
+for that machine will fail. If this happens, look in the /tests directory for
+the corresponding *.t file and get the hostname from the first line and attempt
+to connect to it manually using some other Gopher client (Lynx, Netscape 4x,
+etc.) to make sure the site is really down, and that there's nothing (to) horribly
+wrong with your distribution.
 
 DEPENDENCIES
 

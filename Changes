@@ -1,8 +1,12 @@
 Revision history for Perl extension Net::Gopher.
 
+0.35 - Improved the error checking  in  request().  Also,  request()  now  more
+       efficiently handles Gopher+ responses  with  content  lengths (a  number
+       denoting the length of the response in bytes as opposed to -1 or -2).
+
 0.34 - The request() method now removes the period on a line by itself  in  the
        response content if Type is supplied and isn't 0  or  1.  Also,  periods
-       escaped by adding and extra period (e.g., '..' instead of '.'), are now
+       escaped by adding and extra period (e.g., '..' instead of '.'), are  now
        unescaped in the response content.
 
 0.33 - The request_url() now properly returns a Net::Gopher::response object if

@@ -1,3 +1,5 @@
+# this file tests the Gopher support in Net::Gopher using gopher.floodgap.com
+
 print "1..4\n";
 use strict;
 use warnings;
