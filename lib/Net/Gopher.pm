@@ -187,7 +187,7 @@ use constant MAX_STATUS_LINE_SIZE => 64;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '0.99';
+$VERSION = '1.00';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -1278,7 +1278,7 @@ sub _read_from_socket
 		unless (defined $bytes_read)
 		{
 			# try again if we were interrupted by SIGCHLD or
-			# whatever:
+			# something else:
 			redo if ($! == EINTR);
 
 			# a network error occurred and there's nothing we can
@@ -1288,7 +1288,7 @@ sub _read_from_socket
 			);
 		}
 
-		# show how many bytes we wrote for debugging:
+		# show how many bytes we read for debugging:
 		$self->debug_print(
 			sprintf('Received %d %s of data from server.',
 				$bytes_read,
@@ -1329,8 +1329,7 @@ sub _write_to_socket
 
 	while (1)
 	{
-		# make sure that the socket is ready for writing and the the OS
-		# buffer isn't full:
+		# make sure that the socket is ready for writing:
 		return $self->_network_error('Request timed out')
 			unless ($self->_select->can_write($self->timeout));
 
@@ -1340,7 +1339,7 @@ sub _write_to_socket
 		unless (defined $bytes_written)
 		{
 			# try again if we were interrupted by SIGCHLD or
-			# whatever:
+			# something else:
 			redo if ($! == EINTR);
 
 			# a network error occurred and there's nothing we can

@@ -5,13 +5,12 @@ use strict;
 use Cwd;
 use Errno 'EINTR';
 use Getopt::Std;
-use IO::Socket 'SOCK_STREAM';
+use IO::Socket qw(SOCK_STREAM SOMAXCONN);
 use IO::Select;
 
-use constant DEFAULT_PORT            => 70;
-use constant BUFFER_SIZE             => 4096;
-use constant TIMEOUT                 => 60;
-use constant MAX_PENDING_CONNECTIONS => 32;
+use constant DEFAULT_PORT => 70;
+use constant BUFFER_SIZE  => 4096;
+use constant TIMEOUT      => 60;
 
 use vars qw($CRLF);
 $CRLF = "\015\012";
@@ -36,26 +35,27 @@ BEGIN
 
 
 
-
-
-my $error;
 my %opts;
 getopts('ep:', \%opts);
 
+
+
+my $error;
+my $port = $opts{'p'} || DEFAULT_PORT;
 my $server = new IO::Socket::INET (
 	Type      => SOCK_STREAM,
 	Proto     => 'tcp',
-	LocalPort => $opts{'p'} || DEFAULT_PORT,
+	LocalPort => $port,
 	Timeout   => TIMEOUT,
-	Listen    => MAX_PENDING_CONNECTIONS,
+	Listen    => SOMAXCONN,
 	Reuse     => 1,
-) or die "Couldn't listen on localhost at port $opts{'p'}: $@";
+) or die "(Test server) Couldn't listen on localhost at port $port: $@";
 
 
 
 
 
-CLIENT: while (my $client = $server->accept)
+while (my $client = $server->accept)
 {
 	my $select = new IO::Select ($client);
 
@@ -80,7 +80,7 @@ CLIENT: while (my $client = $server->accept)
 	else
 	{
 		$selector =~ s{\\}{/}g;
-		$selector =  "/$selector" unless (substr($selector,0,1) eq '/');
+		$selector =  "/$selector" unless ($selector =~ m|^/|);
 
 		my $path = (getcwd() =~ m|/t$|)
 				? './items'

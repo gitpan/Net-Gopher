@@ -150,8 +150,8 @@ sub as_request
 
 	$self->call_warn(
 		"You're trying to convert an inline text (\"i\" item type) " .
-		"menu item into a Net::Gopher::Request object. Inline text " .
-		"items are not supposed to be downloadable."
+		"menu item into a request object. Inline text items are not " .
+		"supposed to be downloadable."
 	) if ($self->item_type eq INLINE_TEXT_TYPE);
 
 	my $request;

@@ -5,6 +5,7 @@ MANIFEST
 Makefile.PL
 README
 bin/gget
+bin/out.txt
 examples/alternatestyle.pl
 examples/newservers.pl
 examples/screenshots.pl

@@ -1,0 +1,37 @@
+iWelcome to Floodgap Systems' official gopher server.		error.host	1
+iFloodgap has been serving the gopher community since		error.host	1
+i1999 (formerly gopher.ptloma.edu).		error.host	1
+i 		error.host	1
+iWe run Bucktooth 0.1-pr5 on inetd as our server system.		error.host	1
+igopher.floodgap.com is an Apple Power Macintosh 7300 with		error.host	1
+ia G3/500 processor and 512MB RAM running NetBSD/macppc.		error.host	1
+iSend questions on server maintenance to		error.host	1
+i 		error.host	1
+i        gopher@floodgap.com		error.host	1
+i 		error.host	1
+0Does this gopher menu look correct?	/gopher/proxy	gopher.floodgap.com	70
+i(plus using the Floodgap Public Gopher Proxy)		error.host	1
+i 		error.host	1
+1Getting started with gopher, software, more	/gopher	gopher.floodgap.com	70
+0Using web browsers in Gopherspace	/gopher/wbgopher	gopher.floodgap.com	70
+i(why you shouldn't use Internet Explorer, and other		error.host	1
+iuseful tips for gopher newbies)		error.host	1
+i 		error.host	1
+1Search Gopherspace with Veronica-2 and VISHNU	/v2	gopher.floodgap.com	70
+i(updated with robot updates)		error.host	1
+1All the gopher servers (that we know of)	/world	gopher.floodgap.com	70
+i(updated with robot updates)		error.host	1
+1New Gopher servers since 1999	/new	gopher.floodgap.com	70
+i(updated 15 June 2003)		error.host	1
+i 		error.host	1
+1The Bucktooth gopher server	/buck	gopher.floodgap.com	70
+i(version 0.1-pr5 released 27 June 2003)		error.host	1
+i 		error.host	1
+0"/usr/bin/tail" our gopher server log	/recent	gopher.floodgap.com	70
+0RIP, Master gopher at University of Minnesota	/umngone	gopher.floodgap.com	70
+hFloodgap.com (Web pages)	URL:http://www.floodgap.com/	gopher.floodgap.com	70
+i 		error.host	1
+iPlease note that this gopher is now an independent		error.host	1
+ientity and is no longer affiliated with Point Loma		error.host	1
+iNazarene University.		error.host	1
+.

@@ -2,6 +2,8 @@
 use strict;
 use Net::Gopher;
 
+my $ng = new Net::Gopher;
+
 my $response = $ng->url(shift);
 
 die $response->error if ($response->is_error);
