@@ -3,6 +3,8 @@ use strict;
 use IO::Socket 'SOCK_STREAM';
 use Test;
 
+use constant TIMEOUT => 120;
+
 # make sure that we are connected to the net:
 BEGIN
 {
@@ -11,7 +13,7 @@ BEGIN
 		Proto    => 'tcp',
 		PeerAddr => 'gopher.floodgap.com',
 		PeerPort => 70,
-		Timeout  => 60
+		Timeout  => TIMEOUT
 	);
 
 	if ($socket)
@@ -34,7 +36,7 @@ BEGIN
 use Net::Gopher;
 
 {
-	my $ng = new Net::Gopher;
+	my $ng = new Net::Gopher (Timeout => TIMEOUT);
 
 	my $response = $ng->gopher(Host => 'gopher.floodgap.com');
 
@@ -54,7 +56,7 @@ use Net::Gopher;
 }
 
 {
-	my $ng = new Net::Gopher;
+	my $ng = new Net::Gopher (Timeout => TIMEOUT);
 
 	my $response = $ng->gopher_plus(Host => 'gopher.quux.org');
 
@@ -74,7 +76,7 @@ use Net::Gopher;
 }
 
 {
-	my $ng = new Net::Gopher;
+	my $ng = new Net::Gopher (Timeout => TIMEOUT);
 
 	my $response = $ng->item_attribute(Host => 'gopher.quux.org');
 
@@ -94,7 +96,7 @@ use Net::Gopher;
 }
 
 {
-	my $ng = new Net::Gopher;
+	my $ng = new Net::Gopher (Timeout => TIMEOUT);
 
 	my $response = $ng->directory_attribute(Host => 'gopher.quux.org');
 

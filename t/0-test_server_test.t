@@ -60,11 +60,11 @@ ok($select->can_write(TIMEOUT)); # 6
 ok($socket->send('test', 0), 4); # 7
 ok($socket->shutdown(SHUT_WR));  # 8
 
-ok($select->can_read(TIMEOUT));               # 9
+ok($select->can_read(TIMEOUT));                       # 9
 my $response;
-ok($socket->recv($response, BUFFER_SIZE, 0)); # 10
-ok($response, 'test');                        # 11
-ok($socket->close);                           # 12
+ok(defined $socket->recv($response, BUFFER_SIZE, 0)); # 10
+ok($response, 'test');                                # 11
+ok($socket->close);                                   # 12
 
 
 kill(INT => $pid);

@@ -55,14 +55,14 @@ $server = new IO::Socket::INET (
 	Reuse     => 1,
 ) or die "(Test server) Couldn't make TCP server: $@";
 
-# this process is meant to pipe opened for reading, so we write something back
-# to the parent process for them to read:
+# this process is meant to be pipe opened for reading, so we write something
+# meaningful back to the parent process for them to read...
 printf("# Listening on port %d...\n", $server->sockport);
 
 # ...and then redirect standard output to tell the kernel we're done writing.
 # This makes sure that we get to the while loop below, and once we start
 # blocking, waiting for incoming connections, control will be returned to the
-# parent:
+# parent so it can start making requests of us:
 if ($^O !~ /MSWin/i)
 {
 	open(STDOUT, '>/dev/null') || die "Can't redirect STDOUT: $!";

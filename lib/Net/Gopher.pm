@@ -194,7 +194,7 @@ use constant MAX_STATUS_LINE_SIZE => 64;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '1.07';
+$VERSION = '1.08';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -469,6 +469,8 @@ sub request
 	# calls:
 	$self->_network_error(undef);
 
+
+
 	# try to connect to the Gopherspace:
 	my $socket = new IO::Socket::INET (
 		Type     => SOCK_STREAM,
@@ -505,7 +507,7 @@ sub request
 
 
 
-	# generate and send the request:
+	# generate and send the Gopher or Gopher+ request:
 	my $request_string = $request->as_string;
 
 	$self->_write_to_socket($request_string);
@@ -514,8 +516,6 @@ sub request
 		if ($self->_network_error);
 
 	$self->debug_print("Sent this request: [$request_string]");
-
-
 
 	# we sent the request and we have nothing else to send, so we're
 	# finished writing:
@@ -712,13 +712,13 @@ sub request
 
 
 
-		# For original Gopher, we're just gonna read from the TCP
-		# stream over and over again using read_from_socket() and store
-		# each buffer read one at a time in $self->_buffer, then store
-		# the buffer in the response object. When the server is done
-		# sending its response, it should close the connection (or at
-		# least shutdown write portion of it), resulting in an EOF read
-		# and exiting of the while loop below.
+		# For the original Gopher, we're just gonna read from the TCP
+		# stream over and over again using _read_from_socket() and
+		# store each buffer read one at a time in $self->_buffer, then
+		# store the buffer in the response object. When the server is
+		# done sending its response, it should close the connection (or
+		# at least shutdown write portion of it), resulting in an EOF
+		# read and exiting of the while loop below.
 		#
 		# If we were going to follow RFC 1436 to the letter, we would
 		# probably check each buffer for a terminating period on a line
