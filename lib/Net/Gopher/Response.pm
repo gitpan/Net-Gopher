@@ -71,7 +71,7 @@ use Carp;
 use Time::Local;
 use Net::Gopher::Utility qw($CRLF $NEWLINE);
 
-$VERSION = '0.37';
+$VERSION = '0.40';
 
 
 
@@ -168,10 +168,11 @@ requested was a text file, then escaped periods are unescaped (i.e., '..' at
 the start of a line becomes '.'). Also, if response was terminated by a period
 on a line by itself but it isn't a text file or menu, then the period on a line
 by itself will be removed from the content (though you can still check to see
-if it was period terminated using the L<is_terminated()|is_terminated()>
-method). This is because if you were requesting an image or some other non-text
-file (especially in Gopher+), odds are you don't want the newline and period at
-the end the content.
+if it was period terminated using the
+L<is_terminated()|Net::Gopher::Response/is_terminated()> method). This is
+because if you were requesting an image or some other non-text file (especially
+in Gopher+), odds are you don't want the newline and period at the end the
+content.
 
 Note that B<Net::Gopher> will only attempt the aforementioned modifications if
 you supply the I<Type> argument to C<request()>. Also note that in Gopher+,
@@ -211,7 +212,7 @@ this method to parse it and return its values. When called, this method will
 parse the content returned by C<content()> and return either an array (in list
 context) or a reference to an array (in scalar context) containing hash refs as
 its elements. Each hash contains the data for one menu item, and has the
-following keys:
+following key=value pairs:
 
  type     = The item type (e.g., 0, 1, I, g, etc.);
  text     = The item description (e.g., "A file you should download");
@@ -274,12 +275,6 @@ This method is a more simple alternative to the C<directory_blocks()> method.
 Use this method when you issue item attribute information requests ('!') and
 use C<directory_blocks()> when you issue directory attribute information
 requests ('$').
-
-Please note that with this method, with the C<directory_blocks()> method, and
-with the C<as_blocks()> method, the blocks in the server's response are only
-parsed once, the first time you call either of these methods, and stored in the
-response object, so multiple calls to any of these three methods will not
-result in performance degradation.
  
 This method can be used to retrieve the value of an item information block by
 specifying the block name or block names as arguments. If you don't supply any
@@ -291,22 +286,25 @@ than asking for '+INFO:' you should ask for just plain 'INFO'. These methods
 will also strip leading spaces from each line of a multi-line block value.
 
 Since the only block values who's formats have been officially defined are
-INFO, ADMIN, and VIEWS, these methods will parse those values. Requesting any
-of these three blocks will return data structures (each data structure is
+INFO, ADMIN, VIEWS, and ASK, these methods will parse those values. Requesting
+any of these four blocks will return data structures (each data structure is
 described below). With all other block names, just strings containing the
-block values will be returned. Now, since the format of INFO, ADMIN, and VIEWS
-block values have been officially defined, what do these methods do to them?
+block values will be returned. Now, since the format of INFO, ADMIN, VIEWS and
+ASK block values have been officially defined, what do these methods do to
+them?
+
 Well, since INFO blocks contain tab separated item information just like you
 find in a menu, they will parse INFO block values and create hash refs in the
-same format as the ones described above (L<as_menu()|as_menu()>), so you can
-use it like this:
+same format as the ones described above
+(L<as_menu()|Net::Gopher::Response/as_menu()>), so you can use it like this:
 
  my $info = $response->item_blocks('INFO');
  
- print "Type: $info->{'type'}\n",
-       "Description: $info->{'text'}\n",
-       "On: $info->{'host'}\n",
-       "At: $info->{'port'}\n";
+ print "Item type: $info->{'type'};\n",
+       "Item description: $info->{'text'};\n",
+       "Selector: $info->{'selector'};\n",
+       "On: $info->{'host'};\n",
+       "At: $info->{'port'};\n";
 
 ADMIN blocks contain information about the person running the Gopher+ server
 and what the admin has done with the item in question. These methods will
@@ -314,7 +312,7 @@ parse ADMIN blocks and create hash refs with (at least) two key=value pairs:
 Admin and Mod-Date.
 
 Admin attributes contain strings in the form of "John Doe <jdoe@fake.email>"
-about who the administrator of this Gopher+ server is. These methods will parse
+about who the administrator of the Gopher+ server is. These methods will parse
 Admin attributes and turn them into a reference to a two-element array
 containing the name and email in that order.
 
@@ -332,6 +330,9 @@ C<perldoc -f localtime>):
  my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
  @{ $admin->{'Mod-Date'} };
 
+The hash may also contain Abstract, Version, Org, Loc or other attribute; all
+of which are stored as plain text.
+
 VIEWS blocks contain information about what type of applications can be used
 to view the item as well as the total size of the item in bytes, and sometimes
 a language as well (e.g., text/plain En_US: <77K>). These methods will parse
@@ -347,6 +348,24 @@ arithmetic on; the total size in bytes (e.g., <80> becomes 80, <40K> becomes
  foreach my $view (@$views) {
  	print "$view->{'type'} ($view->{'size'} bytes) ($type->{'language'})\n";
  }
+
+ASK blocks contain a form to be filled out by the user, with ASK queries on
+lines by themselves, consisting of the type of query, followed by the question
+and any default values separated by tabs (e.g., "Ask: Some question?\tdefault
+answer 1\tdefault answer 2", "Choose: A question?choice 1\tchoice 2\tchoice3").
+These methods will parse ASK blocks and turn them into an array containing
+hash refs of each query in the order they appeared, with each hash having
+the following key=value pairs:
+
+ type     = The type of query (e.g, Ask, AskP, Select, Choose, etc.).
+ question = The question.
+ defaults = An array containing the default answers.
+
+Please note that with this method, with the C<directory_blocks()> method, and
+with the C<as_blocks()> method, the blocks in the server's response are only
+parsed once, the first time you call any one of these methods, and stored in
+the response object, so multiple calls to any of these three methods will not
+result in performance degradation.
 
 =cut
 
@@ -513,7 +532,7 @@ First, weather it's a Gopher or Gopher+ request, it won't be "successful" if
 any network errors occurred. Beyond that, in Gopher+, for a request to be a
 "success" means that the status code returned by the server indicated success
 (a code of +). In plain old Gopher, success is rather loosely defined.
-Basically, since Gopher has no built-in uniform error-handling, as long as
+Basically, since Gopher has no built-in uniform error handling, as long as
 some response was received from the server (even "An error has occurred" or
 "The item you requested does not exist"), this method will return true. For
 more accuracy with Gopher requests you can use the C<is_terminated()> method.
@@ -559,7 +578,7 @@ sub is_success
 
 This method will return true if the request was unsuccessful; false otherwise.
 Success and failure are the same as described above
-(see L<is_success()|is_success()>).
+(see L<is_success()|Net::Gopher::Response/is_success()>).
 
 =cut
 
@@ -632,10 +651,12 @@ sub is_menu
 {
 	my $self = shift;
 
-	my $item = qr/[^\t]* \t [^\t]* \t [^\t]* \t [^\t]* \t?.?/x;
+	my $field = qr/[^\t\012\015]*?/;
+	my $item  = qr/$field\t$field\t$field\t$field (?:\t[\+\!\?\$])?/x;
 
 	if ($self->{'content'} =~
-		/^(?:$item (?:$NEWLINE | $NEWLINE \. $NEWLINE? | ) )+$/x)
+		/^$item (?:$NEWLINE $item)*
+		 (?:$NEWLINE\.$NEWLINE?|$NEWLINE)? $/x)
 	{
 		return 1;
 	}
@@ -864,17 +885,20 @@ sub _parse_blocks
 		{
 			# ADMIN blocks contain two attributes, Admin and
 			# Mod-Date, in the form of:
+			# 
 			#   Admin: Foo Bar <foobar@foo.com>
 			#   Mod-Date: WWW MMM DD hh:mm:ss YYYY <YYYYMMDDhhmmss>
-
+			# 
 			# first, get the Admin, Mod-Date, and any other
 			# attributes in the form of a hash ref:
 			my $attributes = $self->_get_attribute_hashref($value);
 
-			# now for the Admin attribute, get the admin name and
-			# email:
+
+
 			if (exists $attributes->{'Admin'})
 			{
+				# now for the Admin attribute, get the admin
+				# name and email:
 				my ($name, $email) = 
 				$attributes->{'Admin'} =~ /(.+?)\s*<(.*?)>\s*/;
 
@@ -920,8 +944,45 @@ sub _parse_blocks
 				$attributes->{'Mod-Date'} = [ localtime $time ];
 			}
 
-			# save all of the ADMIN attributes:
 			$value = $attributes;
+		}
+		elsif ($name eq 'ASK')
+		{
+			# ASK blocks contain Gopher+ queries which are to be
+			# filled out by the user. Each ASK query has a type,
+			# followed by a quetion and optional defaults separated
+			# by tabs. For example:
+			#    Ask: How many?\tone\ttwo\tthree
+			#    AskP: Your password:
+			#    Choose: Pcik one:\tred\tgreen\tblue
+			#    
+			# This will store each ASK query as as a hashref:
+			my @ask;
+
+			# extract each query:
+			foreach my $query (split(/$NEWLINE/, $value))
+			{
+				# get the query type, and the question and
+				# default values:
+				my ($type, $question_and_defaults) =
+					$query =~ /^(\S+)+:\s?(.*)/;
+
+				# the question and any default values are all
+				# tab separated:
+				my ($question, @defaults) =
+					split(/\t/, $question_and_defaults);
+
+				push(@ask, {
+						type     => $type,
+						question => $question,
+						defaults => (@defaults)
+								? \@defaults
+								: undef
+					}
+				);	
+			}
+
+			$value = \@ask;
 		}
 
 		$blocks{$name} = $value;

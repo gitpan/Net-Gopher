@@ -45,9 +45,9 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
 
 B<Net::Gopher> is a Gopher/Gopher+ client API for Perl. B<Net::Gopher>
 implements the Gopher and Gopher+ protocols as desbribed in
-I<RFC 1436: The Internet Gopher Protocol>, Anklesaria et al., and in
+I<RFC 1436: The Internet Gopher Protocol>, Anklesaria, et al., and in
 I<Gopher+: Upward Compatible Enhancements to the Internet Gopher Protocol>,
-Anklesaria et al., bringing Gopher and Gopher+ support to Perl and enabling
+Anklesaria, et al.; bringing Gopher and Gopher+ support to Perl, and enabling
 Perl 5 applications to easily interact with both Gopher as well as Gopher+
 servers.
 
@@ -70,7 +70,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.37';
+$VERSION = '0.40';
 
 
 
@@ -89,9 +89,10 @@ for Gopher+. When turned off, B<Net::Gopher> will never make Gopher+ requests,
 only Gopher requests. By default, support for Gopher+ is on. Finally, I<Debug>
 allows you turn on or turn of debugging information, which by default is off.
 
-Also see the corresponding get/set L<buffer_size()|buffer_size($size)>,
-L<gopher_plus()|gopher_plus($boolean)>, and L<debug()|debug($boolean)> methods
-below.
+Also see the corresponding get/set
+L<buffer_size()|Net::Gopher/buffer_size($size)>,
+L<gopher_plus()|Net::Gopher/gopher_plus($boolean)>,
+and L<debug()|Net::Gopher/debug($boolean)> methods below.
 
 =cut
 
@@ -153,8 +154,8 @@ sub new
 =head2 connect($host [, Port => $port_num, Timeout => $seconds])
 
 This method attempts to connect to a Gopher server. If C<connect()> is able to
-connect, it returns true; false otherwise (call L<error()|error()> to find out
-why). As its first argument it takes a mandatory hostname (e.g.,
+connect, it returns true; false otherwise (call L<error()|Net::Gopher/error()>
+to find out why). As its first argument it takes a mandatory hostname (e.g.,
 gopher.host.com). In addition to the hostname, it takes two optional named
 paramters. The first, I<Port>, takes an optional port number. If you don't
 supply this, then the default of 70 will be used instead. The second,
@@ -270,8 +271,8 @@ block name with a plus; this method will do it for you if you don't.
 The fourth named parameter, I<Type>, helps B<Net::Gopher> determine how exactly
 it should handle the response from the Gopher server, and what (if any)
 modifications it should make to the response content (see the
-L<Net::Gopher::Response content()|Net::Gopher::Response/content()> method). You
-don't have to supply this, but I'd advise that you do.
+L<Net::Gopher::Response content()|Net::Gopher::Response/content()> method). If
+you don't supply this, then the default item type of 1 will be used instead.
 
 For Gopher+ requests, while you'll usually need to add a trailing tab and plus
 to the selector string, it's not always necessary; if either the
@@ -294,13 +295,21 @@ sub request
 
 
 
-	# empty the socket buffer and all of the socket data that's been read:
-	$self->{'socket_buffer'} = undef;
-	$self->{'socket_data'}   = undef;
-
 	# remove any trailing newline from the selector:
 	$selector = '' unless (defined $selector);
 	$selector =~ s/$NEWLINE$//;
+
+	# default to Gopher menu item type:
+	$args{'Type'} = 1 unless (defined $args{'Type'});
+
+
+
+	# empty the socket buffer and all of the socket data that was read
+	# during a previous request:
+	$self->{'socket_buffer'} = undef;
+	$self->{'socket_data'}   = undef;
+
+
 
 	# $request_type stores the type of request we're going to send (either
 	# 1 for Gopher request, 2 for Gopher+ request, or 3 for Gopher+ item
@@ -496,11 +505,9 @@ sub request
 				# Remove anything after the period on a line by
 				# itself:
 				$content =~
-				s/($NEWLINE\.)($NEWLINE)? .*/$1$2/xs;
+				s/($NEWLINE\.$NEWLINE?).*/$1/s;
 
-				if (defined $args{'Type'}
-					and $args{'Type'} ne 0
-					and $args{'Type'} ne 1
+				if ($args{'Type'} ne 0 and $args{'Type'} ne 1
 					and exists $GOPHER_PLUS_ITEM_TYPES{$args{'Type'}})
 				{
 					# remove the period on a line by itself
@@ -555,7 +562,7 @@ sub request
 			      '#' x 79, "\n\n";
 		}
 
-		if ((defined $args{'Type'} and $args{'Type'} eq 1)
+		if ($args{'Type'} eq 1
 			or (defined $args{'Representation'}
 				and $args{'Representation'} =~ m|^text/|i))
 		{
@@ -623,15 +630,14 @@ sub request
 		# and 9, the server sends a series of bytes then closes the
 		# connection. With all other types, it sends a block of text
 		# terminated by a period on a line by itself:
-		if (defined $args{'Type'}
-			and $args{'Type'} ne 5 and $args{'Type'} ne 9)
+		if ($args{'Type'} ne 5 and $args{'Type'} ne 9)
 		{
 			if (exists $GOPHER_ITEM_TYPES{$args{'Type'}})
 			{
 				# remove everything after the period on a line
-				# by itself:
+				# by itself in the response content:
 				$content =~
-				s/($NEWLINE\.)($NEWLINE)? .*/$1$2/xs;
+				s/($NEWLINE\.$NEWLINE?).*/$1/s;
 			}
 
 			if ($args{'Type'} ne 0 and $args{'Type'} ne 1
@@ -658,133 +664,6 @@ sub request
 			Content  => $content
 		);
 	}
-}
-
-
-
-
-
-################################################################################
-#
-#	Method
-#		_get_status_line($error)
-#
-#	Purpose
-#		This method fills the buffer stored in $self->{'socket_buffer'}
-#		(using _get_buffer()) and removes character after character
-#		from the the buffer looking for the the newline, refilling
-#		the buffer if it gets empty. Once it finds the newline, it
-#		checks to make sure the line is in the format of a Gopher+
-#		status line. If the line is a status line, this method will
-#		return it. Otherwise, this method will return undef.
-#
-#	Parameters
-#		$error - A reference to a scalar; _get_status_line() will store
-#		         any error encountered while looking for the status
-#		         line in this variable.
-#
-
-sub _get_status_line
-{
-	my $self  = shift;
-	my $error = shift;
-
-	# To get the first line, the status line, we'll use the _get_buffer()
-	# method to read and store a buffer in $self->{'socket_buffer'}, then
-	# remove character after character from the beginning of the buffer and
-	# add them to $first_line, then check for the CRLF in $first_line. If
-	# we end up removing everything from the buffer, then we refill it. If
-	# we can't refill it, then that means we read everything and the server
-	# has closed the connection and that the server is not a Gopher+
-	# server.
-
-	my $first_line;    # everything up till the first CRLF in the response.
-	my $found_newline; # did we find the newline?
-
-	FIRSTLINE: while ($self->_get_buffer($error))
-	{
-		# exit if we ran into any errors:
-		return if ($$error);
-
-		while (length $self->{'socket_buffer'})
-		{
-			# grab a single character from the buffer:
-			$first_line .= substr(
-				$self->{'socket_buffer'}, 0, 1, ''
-			);
-
-			# ok, look (starting at the end) for the CRLF:
-			if (index($first_line, $CRLF, -1) > 0)
-			{
-				$found_newline = 1;
-				last FIRSTLINE;
-			}
-		}
-	}
-
-
-
-	# if we found the newline and the first character contains
-	# the status (+ or -) followed by a positive or negative number,
-	# then the response is a Gopher+ response:
-	if ($found_newline and $first_line =~ /^[\+\-] (?:\-[12]|\d+) $CRLF/x)
-	{
-		return $first_line;
-	}
-	else
-	{
-		return;
-	}
-}
-
-
-
-
-
-################################################################################
-#
-#	Method
-#		_get_buffer($error)
-#
-#	Purpose
-#		This method reads the socket stored in $self->{'io_socket'}
-#		for one $self->{'buffer_size'} length and stores the data in
-#		$self->{'socket_buffer'} and stores any error it encounters in
-#		the variable you specifiy. It also copies the buffer to the
-#		end of $self->{'socket_data'}. This method returns either the
-#		number of bytes read into $self->{'socket_buffer'} or undef if
-#		an error occurred.
-#
-#	Parameters
-#		$error - A reference to a scalar; _get_buffer() will store any
-#		         error encountered while reading the buffer in this
-#		         variable.
-#
-
-sub _get_buffer
-{
-	my $self      = shift;
-	my $error_var = shift;
-
-	# read part of the response into the buffer:
-	my $num_bytes_read = sysread(
-		$self->{'io_socket'},
-		$self->{'socket_buffer'},
-		$self->{'buffer_size'}
-	);
-
-	# make sure something was received:
-	unless (defined $num_bytes_read)
-	{
-		$$error_var = "No response received: $!";
-		return;
-	}
-
-	# add the buffer to socket_data, which will store every single byte
-	# read from the socket:
-	$self->{'socket_data'} .= $self->{'socket_buffer'};
-
-	return $num_bytes_read;
 }
 
 
@@ -862,7 +741,7 @@ sub request_url
 	# now build the request string:
 	my $request_string  = $selector;
 	   $request_string .= "\t$search_words" if (defined $search_words);
-	   $request_string .= $gopher_plus      if (defined $gopher_plus);
+	   $request_string .= "\t$gopher_plus"  if (defined $gopher_plus);
 
 	# First, we need to connect to the Gopher server. If we can connect,
 	# then we'll send the request and return the Net::Gopher::Response
@@ -894,7 +773,7 @@ sub request_url
 =head2 buffer_size($size)
 
 This is a get/set method that enables you to change the buffer sized used. (The
-default is 1024).
+default is 1024.)
 
 =cut
 
@@ -1011,10 +890,136 @@ sub error
 
 
 
+################################################################################
+#
+#	Method
+#		_get_status_line($error)
+#
+#	Purpose
+#		This method fills the buffer stored in $self->{'socket_buffer'}
+#		(using _get_buffer()) and removes character after character
+#		from the the buffer looking for the the newline, refilling
+#		the buffer if it gets empty. Once it finds the newline, it
+#		checks to make sure the line is in the format of a Gopher+
+#		status line. If the line is a status line, this method will
+#		return it. Otherwise, this method will return undef.
+#
+#	Parameters
+#		$error - A reference to a scalar; _get_status_line() will store
+#		         any error encountered while looking for the status
+#		         line in this variable.
+#
+
+sub _get_status_line
+{
+	my $self  = shift;
+	my $error = shift;
+
+	# To get the status line (the first line), we'll use the _get_buffer()
+	# method to read and store a buffer in $self->{'socket_buffer'}, then
+	# remove character after character from the beginning of the buffer and
+	# add them to $first_line, checking for the CRLF in $first_line. If
+	# we end up removing everything from the buffer, then we refill it. If
+	# we can't refill it, then that means we read everything and the server
+	# has closed the connection and that the server is not a Gopher+
+	# server.
+
+	my $first_line;    # everything up till the first CRLF in the response.
+	my $found_newline; # did we find the newline?
+
+	FIRSTLINE: while ($self->_get_buffer($error))
+	{
+		# exit if we ran into any errors:
+		return if ($$error);
+
+		while (length $self->{'socket_buffer'})
+		{
+			# grab a single character from the buffer:
+			$first_line .= substr(
+				$self->{'socket_buffer'}, 0, 1, ''
+			);
+
+			# ok, look (starting at the end) for the CRLF:
+			if (index($first_line, $CRLF, -1) > 0)
+			{
+				$found_newline = 1;
+				last FIRSTLINE;
+			}
+		}
+	}
+
+
+
+	# if we found the newline and the first character contains
+	# the status (+ or -) followed by a positive or negative number,
+	# then the response is a Gopher+ response:
+	if ($found_newline and $first_line =~ /^[\+\-] (?:\-[12]|\d+) $CRLF/x)
+	{
+		return $first_line;
+	}
+	else
+	{
+		return;
+	}
+}
+
+
+
+
+
+################################################################################
+#
+#	Method
+#		_get_buffer($error)
+#
+#	Purpose
+#		This method reads the socket stored in $self->{'io_socket'}
+#		for one $self->{'buffer_size'} length and stores the data in
+#		$self->{'socket_buffer'} and stores any error it encounters in
+#		the variable you specifiy. It also copies the buffer to the
+#		end of $self->{'socket_data'}. This method returns either the
+#		number of bytes read into $self->{'socket_buffer'} or undef if
+#		an error occurred.
+#
+#	Parameters
+#		$error - A reference to a scalar; _get_buffer() will store any
+#		         error encountered while reading the buffer in this
+#		         variable.
+#
+
+sub _get_buffer
+{
+	my $self      = shift;
+	my $error_var = shift;
+
+	# read part of the response into the buffer:
+	my $num_bytes_read = sysread(
+		$self->{'io_socket'},
+		$self->{'socket_buffer'},
+		$self->{'buffer_size'}
+	);
+
+	# make sure something was received:
+	unless (defined $num_bytes_read)
+	{
+		$$error_var = "No response received: $!";
+		return;
+	}
+
+	# add the buffer to socket_data, which will store every single byte
+	# read from the socket:
+	$self->{'socket_data'} .= $self->{'socket_buffer'};
+
+	return $num_bytes_read;
+}
+
+
+
+
+
 sub DESTROY
 {
-	my $self = shift;
-	   $self->disconnect;
+	shift->disconnect;
 }
 
 1;

@@ -1,5 +1,10 @@
 Revision history for Perl extension Net::Gopher.
 
+0.40 - The Net::Gopher::Response attribute information methods now  also  parse
+       Gopher+ +ASK blocks. The is_menu() method  is  now  far  more  accurate.
+       Also, request() now defaults to item type 1 (menu) if you don't  specify
+       the 'Type' named parameter.
+
 0.37 - Added  named  parameters  to  the  Net::Gopher  constructor: BufferSize,
        GopherPlus, and Debug. Added  debugging,  which  causes  Net::Gopher  to
        print out various diagnostic messages at different times. Also  added  a

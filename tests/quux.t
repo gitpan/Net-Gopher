@@ -33,6 +33,7 @@ if ($response->is_menu)
 }
 else
 {
+	print $response->content;
 	print "not ok 3\n";
 }
 

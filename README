@@ -1,5 +1,6 @@
-Net::Gopher version 0.37
+Net::Gopher version 0.40
 ========================
+
 
 For usage, run:
  $ perldoc Net::Gopher
@@ -7,7 +8,9 @@ and:
  $ perldoc Net::Gopher::Response
 after installation.
 
+
 INSTALLATION
+
 
 To install this module type the following:
 
@@ -16,7 +19,9 @@ To install this module type the following:
    make test
    make install
 
+
 TESTING
+
 
 Since  Net::Gopher  is  a  network  library,  all of the tests that come with
 Net::Gopher  interact  with  other  machines--Gopher servers--over a network.
@@ -27,16 +32,20 @@ line and attempt to connect to it manually using  some  other  Gopher  client
 (Lynx, Netscape 4x, etc.) to make sure the site  is  really  down,  and  that
 there's nothing (to) horribly wrong with your distribution.
 
+
 DEPENDENCIES
+
 
 This module requires these other modules and libraries:
 
  URI.
 
+
 COPYRIGHT AND LICENCE
+
 
 Copyright 2003, William G. Davis.
 
-This code is free software released under the GNU General Public License, the
-full terms of which can be found in the "COPYING" file in this directory.
+This code is free software released under the  GNU  General  Public  License,
+the full terms of which can be found in the "COPYING" file in this directory.
 
