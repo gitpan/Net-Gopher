@@ -1,53 +1,64 @@
-Net::Gopher version 0.90
-========================
+Net::Gopher, version 0.92 (BETA).
+===============================================================================
 
 
-For usage, run:
+INTRODUCTION
+
+
+Net::Gopher is the Perl Gopher/Gopher+ API. This library  will  enable  you  to
+communicate with Gopher and Gopher+ servers using Perl. To  get  started  using
+Net::Gopher, use the following commands after installation:
  $ perldoc Net::Gopher
-and:
+ $ perldoc Net::Gopher::Request
  $ perldoc Net::Gopher::Response
-after installation.
+ $ perldoc Net::Gopher::Response::MenuItem
+ $ perldoc Net::Gopher::Response::InformationBlock
+ $ perldoc Net::Gopher::Constants
 
 
 INSTALLATION
 
 
-To install this module type the following:
+Install Net::Gopher as you would most other modules:
+ $ perl Makefile.PL
+ $ make
+ $ make test
+ $ make install
 
-   perl Makefile.PL
-   make
-   make test
-   make install
-
-
-ON TESTING
-
-
-Since  Net::Gopher  is  a  network  library,  all of the tests that come with
-Net::Gopher  interact  with  other  machines--Gopher servers--over a network.
-What this means is that if one of the machines tested is  down,  then  all of
-the tests for that machine will fail. If this happens,  look  in  the  /tests
-directory for the corresponding *.t file and get the hostname from the  first
-line and attempt to connect to it manually using  some  other  Gopher  client
-(Lynx, Netscape 4x, etc.) to make sure the site  is  really  down,  and  that
-there's nothing (to) horribly wrong with your distribution.
+You can also use Module::Build instead of GNU Make:
+ $ perl Build.PL
+ $ perl Build
+ $ perl Build test
+ $ perl Build install
 
 
-DEPENDENCIES
+PREREQUISITES
 
 
-This module requires these other modules and libraries that do not come  with
-the standard library:
+Net::Gopher requires these modules:
+ IO::String (at least version 1.0);
+ IO::Socket (not really sure on this one... 1.26 should be OK);
+ IO::Socket::INET (again, not really sure. 1.25 and up);
+ URI (at least version 1.27);
+ XML::Writer (at least version 0.4);
 
- URI, v1.27;
- XML::Writer, v0.4;
- IO::String, v1.0;
 
-COPYRIGHT AND LICENCE
+TESTING
+
+
+The new test suite that comes with Net::Gopher as of  0.92  has  its  own  test
+server. This server runs on ports 70 and 80, so  make  sure  you  have  nothing
+listening on them when you "make test". Also, live.t contains live  tests  that
+will be done using  real-world  Gopher  servers  if  you're  connected  to  the
+Internet.  If  these  sites  are  down  or  malfunctioning,  this  tests   will
+inexplicably fail.
+
+
+COPYRIGHT AND LICENSE
 
 
 Copyright 2003 by William G. Davis.
 
-This code is free software released under the  GNU  General  Public  License,
-the full terms of which can be found in the "COPYING" file in this directory.
+This code is free software released under the GNU General Public  License,  the
+full terms of which can be found in the "COPYING" file in this directory.
 

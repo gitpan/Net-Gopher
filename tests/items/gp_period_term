@@ -1,0 +1,130 @@
++-1
+Status of this Memo
+
+   This memo provides information for the Internet community.  It does
+   not specify an Internet standard.  Distribution of this memo is
+   unlimited.
+
+Abstract
+
+   The Internet Gopher protocol is designed for distributed document
+   search and retrieval.  This document describes the protocol, lists
+   some of the implementations currently available, and has an overview
+   of how to implement new client and server applications.  This
+   document is adapted from the basic Internet Gopher protocol document
+   first issued by the Microcomputer Center at the University of
+   Minnesota in 1991.
+
+Introduction
+
+   gopher  n.  1. Any of various short tailed, burrowing mammals of the
+   family Geomyidae, of North America.  2. (Amer. colloq.) Native or
+   inhabitant of Minnesota: the Gopher State.  3. (Amer. colloq.) One
+   who runs errands, does odd-jobs, fetches or delivers documents for
+   office staff.  4. (computer tech.) software following a simple
+   protocol for burrowing through a TCP/IP internet.
+
+   The Internet Gopher protocol and software follow a client-server
+   model.  This protocol assumes a reliable data stream; TCP is assumed.
+   Gopher servers should listen on port 70 (port 70 is assigned to
+   Internet Gopher by IANA).  Documents reside on many autonomous
+   servers on the Internet.  Users run client software on their desktop
+   systems, connecting to a server and sending the server a selector (a
+   line of text, which may be empty) via a TCP connection at a well-
+   known port.  The server responds with a block of text terminated by a
+   period on a line by itself and closes the connection.  No state is
+   retained by the server.
+
+
+
+Anklesari, McCahill, Lindner, Johnson, Torrey & Alberti         [Page 1]
+
+RFC 1436                         Gopher                       March 1993
+
+
+   While documents (and services) reside on many servers, Gopher client
+   software presents users with a hierarchy of items and directories
+   much like a file system.  The Gopher interface is designed to
+   resemble a file system since a file system is a good model for
+   organizing documents and services; the user sees what amounts to one
+   big networked information system containing primarily document items,
+   directory items, and search items (the latter allowing searches for
+   documents across subsets of the information base).
+
+   Servers return either directory lists or documents.  Each item in a
+   directory is identified by a type (the kind of object the item is),
+   user-visible name (used to browse and select from listings), an
+   opaque selector string (typically containing a pathname used by the
+   destination host to locate the desired object), a host name (which
+   host to contact to obtain this item), and an IP port number (the port
+   at which the server process listens for connections). The user only
+   sees the user-visible name.  The client software can locate and
+   retrieve any item by the trio of selector, hostname, and port.
+
+   To use a search item, the client submits a query to a special kind of
+   Gopher server: a search server.  In this case, the client sends the
+   selector string (if any) and the list of words to be matched. The
+   response yields "virtual directory listings" that contain items
+   matching the search criteria.
+
+   Gopher servers and clients exist for all popular platforms.  Because
+   the protocol is so sparse and simple, writing servers or clients is
+   quick and straightforward.
+
+1.  Introduction
+
+   The Internet Gopher protocol is designed primarily to act as a
+   distributed document delivery system.  While documents (and services)
+   reside on many servers, Gopher client software presents users with a
+   hierarchy of items and directories much like a file system.  In fact,
+   the Gopher interface is designed to resemble a file system since a
+   file system is a good model for locating documents and services.  Why
+   model a campus-wide information system after a file system?  Several
+   reasons:
+
+      (a) A hierarchical arrangement of information is familiar to many
+      users.  Hierarchical directories containing items (such as
+      documents, servers, and subdirectories) are widely used in
+      electronic bulletin boards and other campus-wide information
+      systems. People who access a campus-wide information server will
+      expect some sort of hierarchical organization to the information
+      presented.
+
+
+
+
+Anklesari, McCahill, Lindner, Johnson, Torrey & Alberti         [Page 2]
+
+RFC 1436                         Gopher                       March 1993
+
+
+      (b) A file-system style hierarchy can be expressed in a simple
+      syntax.  The syntax used for the internet Gopher protocol is
+      easily understandable, and was designed to make debugging servers
+      and clients easy.  You can use Telnet to simulate an internet
+      Gopher client's requests and observe the responses from a server.
+      Special purpose software tools are not required.  By keeping the
+      syntax of the pseudo-file system client/server protocol simple, we
+      can also achieve better performance for a very common user
+      activity: browsing through the directory hierarchy.
+
+      (c) Since Gopher originated in a University setting, one of the
+      goals was for departments to have the option of publishing
+      information from their inexpensive desktop machines, and since
+      much of the information can be presented as simple text files
+      arranged in directories, a protocol modeled after a file system
+      has immediate utility.  Because there can be a direct mapping from
+      the file system on the user's desktop machine to the directory
+      structure published via the Gopher protocol, the problem of
+      writing server software for slow desktop systems is minimized.
+
+      (d) A file system metaphor is extensible.  By giving a "type"
+      attribute to items in the pseudo-file system, it is possible to
+      accommodate documents other than simple text documents.  Complex
+      database services can be handled as a separate type of item.  A
+      file-system metaphor does not rule out search or database-style
+      queries for access to documents.  A search-server type is also
+      defined in this pseudo-file system.  Such servers return "virtual
+      directories" or list of documents matching user specified
+      criteria.
+.

@@ -12,58 +12,32 @@ use warnings;
 use vars qw(
 	@EXPORT_OK %EXPORT_TAGS
 
-	$CRLF $NEWLINE %ITEM_DESCRIPTIONS
+	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS
 );
 use base 'Exporter';
 use Carp;
 
+BEGIN
+{
+	# this hack allows us to "use bytes" or fake it for older (pre-5.6.1)
+	# versions of Perl (thanks to Liz from PerlMonks):
+	eval { require bytes };
 
+	if ($@)
+	{
+		# couldn't find it, but pretend we did anyway:
+		$INC{'bytes.pm'} = 1;
 
-
-
-
-
-
-
+		# 5.005_03 doesn't inherit UNIVERSAL::unimport:
+		eval "sub bytes::unimport { return 1 }";
+	}
+}
 
 @EXPORT_OK = qw(
-	$CRLF $NEWLINE %ITEM_DESCRIPTIONS
+	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS
 
-	check_params get_os_name chars_to_entities
+	check_params size_in_bytes remove_bytes get_os_name chars_to_entities
 );
-
-%EXPORT_TAGS = (
-	request_constants   => [qw(
-		GOPHER_REQUEST
-		GOPHER_PLUS_REQUEST
-		ITEM_ATTRIBUTE_REQUEST
-		DIRECTORY_ATTRIBUTE_REQUEST
-	)],
-	item_type_constants => [qw(
-		TEXT_FILE_TYPE
-		GOPHER_MENU_TYPE
-		CCSO_NAMESERVER_TYPE
-		ERROR_TYPE
-		BINHEXED_MACINTOSH_FILE_TYPE
-		DOS_BINARY_FILE_TYPE
-		UNIX_UUENCODED_FILE_TYPE
-		INDEX_SEARCH_SERVER_TYPE
-		TELNET_SESSION_TYPE
-		BINARY_FILE_TYPE
-		GIF_IMAGE_TYPE
-		IMAGE_FILE_TYPE
-		TN3270_SESSION_TYPE
-		BITMAP_IMAGE_TYPE
-		MOVIE_TYPE
-		SOUND_TYPE
-		HTML_FILE_TYPE
-		INLINE_TEXT_TYPE
-		MIME_FILE_TYPE
-		MULAW_AUDIO_TYPE
-	)]
-);
-
-
 
 
 
@@ -72,15 +46,26 @@ use Carp;
 # This is the line ending used by Net::Gopher and Net::Gopher::response. You
 # can change this to the line ending of your choosing, but I wouldn't recommend
 # it since the Gopher protocol mandates standard ASCII carriage return/line
-# feed (though most servers will accept any line ending):
+# feed:
 $CRLF = "\015\012";
 
-# This is pattern used to match newlines:
-$NEWLINE = qr/(?:\015\012|\015|\012)/;
 
-# This hash contains all of the item types described in __RFC 1436 : The
-# Internet Gopher Protocol__ and in __Gopher+: Upward Compatible Enhancements
-# to the Internet Gopher Protocol__ as well as some other item types in common
+
+# This pattern is used to match newlines:
+$NEWLINE_PATTERN = qr/(?:\015\012|\015|\012)/;
+
+
+
+# $ITEM_PATTERN pattern is used to match item descriptions within Gopher menus
+# and other areas:
+my $field = qr/[^\t\012\015]*?/; # a tab delimited field.
+$ITEM_PATTERN = qr/$field\t$field\t$field\t$field(?:\t$field)?/;
+
+
+
+# This hash contains all of the item types described in *RFC 1436 : The
+# Internet Gopher Protocol* and in *Gopher+: Upward Compatible Enhancements
+# to the Internet Gopher Protocol* as well as some other item types in common
 # usage (like 'i'). Each key is an item type and each value is a description of
 # that type:
 %ITEM_DESCRIPTIONS = (
@@ -91,12 +76,12 @@ $NEWLINE = qr/(?:\015\012|\015|\012)/;
 	3   => 'error',
 	4   => 'binhexed Macintosh file',
 	5   => 'DOS binary archive',
-	6   => 'UNIX uuencoded file',
+	6   => 'Unix uuencoded file',
 	7   => 'index-search server',
 	8   => 'text-based telnet session',
 	9   => 'binary file',
 	'+' => 'redundant server',
-	g   => 'GIF file',
+	g   => 'GIF image file',
 	I   => 'image file',
 	T   => 'text-based tn3270 session',
 
@@ -109,8 +94,7 @@ $NEWLINE = qr/(?:\015\012|\015|\012)/;
 	h   => 'HTML file',
 	i   => 'inline text',
 	M   => 'MIME file',
-	s   => 'Mulaw audio file',
-
+	s   => 'Mulaw audio file'
 );
 
 
@@ -120,46 +104,141 @@ $NEWLINE = qr/(?:\015\012|\015|\012)/;
 ################################################################################
 #
 #	Function
-#		check_params(\@param_names, @arg_list)
+#		check_params($param_names, $arg_list, $strict)
 #
 #	Purpose
-#		This method is used to validate and retrieve a subroutine's
-#		named parameters. The first argument contains a reference to a
-#		list containing the (case sensitive) parameter names your
-#		subroutine can receive. The second argument contains the
-#		Name => "Value" parameters. If this function finds named
-#		parameters in @arg_list besides those specified in
-#		@param_names, it will do a stack trace and croak listing the
-#		name of your function and the invalid parameters.
+#		This function is used to validate and retrieve the named
+#		parameters sent to a function. It takes a list containing
 #
 #	Parameters
-#		A list containing the values for the parameters you specified
-#		in the order that you specified.
+#		$param_names - A reference to an array containing the names of
+#		               the parameters to accept and return.
+#		$arg_list    - Either a reference to a hash or array containing
+#		               "ParamName => 'value'" pairs. This can just be
+#		               a reference to @_.
+#		$strict      - (Optional.) Should this function croak if 
 #
 
 sub check_params
 {
-	my $param_names = shift;
-	my %params      = @_;
+	my ($names_ref, $params_ref, $remove, $strict) = @_;
 
-	my @values;
-	foreach my $name (@$param_names)
+	my @args = (ref $params_ref eq 'ARRAY')
+			? @$params_ref
+			: %$params_ref;
+
+	my %params;
+	if (@args == 1 and my $ref_type = ref $args[0])
 	{
-		push(@values, delete $params{$name});
+		if ($ref_type eq 'HASH')
+		{
+			%params = %{ shift @args };
+		}
+		elsif ($ref_type eq 'ARRAY')
+		{
+			%params = @{ shift @args };
+		}
+		else
+		{
+			croak join(' ',
+				"Bad reference type \"$ref_type\" for",
+				"parameters. Use either a hash or array",
+				"reference instead."
+			);
+		}
+	}
+	else
+	{
+		%params = @args;
 	}
 
-	# We should have deleted everything from %params. If there's anything
-	# left, then the remaining parameters are invaid:
-	if (my @invalid_keys = sort keys %params)
+
+
+	my @good_names;
+	push(@good_names, lc $_) foreach (@$names_ref);
+
+	my %values;
+	   $values{$_} = undef foreach (@good_names);
+
+	my @bad_names;
+	foreach my $name (keys %params)
 	{
-		croak(
-			"Can't supply \"",
-			join('", "', @invalid_keys),
-			"\" to ", (caller(1))[3]
+		if (exists $values{lc $name})
+		{
+			$values{lc $name} = $params{$name};
+		}
+		else
+		{
+			push(@bad_names, $name);
+		}
+	}
+
+
+
+	if ($strict and @bad_names)
+	{
+		(my $function_name = (caller(1))[3]) =~ s/.*:://;
+
+		croak sprintf("Can't supply \"%s\" to %s",
+			join('", "', @bad_names),
+			$function_name
 		);
 	}
 
-	return @values;
+	return @values{@good_names};
+}
+
+
+
+
+
+################################################################################
+#
+#	Function
+#		size_in_bytes($string)
+#
+#	Purpose
+#		This function returns the size of a scalar value in bytes. Use
+#		this instead of the built-in length() function (that, as of
+#		5.6.1, returns the length in characters as opposed to bytes)
+#		when you need the length of a scalar in bytes, not characters.
+#
+#	Parameters
+#		$string - The string you want the size of.
+#
+
+sub size_in_bytes ($)
+{
+	use bytes;
+
+	return length shift;
+}
+
+
+
+
+
+################################################################################
+#
+#	Function
+#		remove_bytes($string, $bytes)
+#
+#	Purpose
+#		This function removes one or more bytes from the beginning of
+#		of string. Use this instead of the built-in substr() function
+#		(that, as of 5.6.1, is used to retrieve or remove one or more
+#		characters from a string as opposed to bytes) when you need to
+#		remove bytes, not characters, from a string.
+#
+#	Parameters
+#		None.
+#
+
+sub remove_bytes ($$)
+{
+	use bytes;
+
+	return substr($_[0], 0, $_[1], '');
 }
 
 
@@ -172,7 +251,7 @@ sub check_params
 #		get_os_name()
 #
 #	Purpose
-#		This method reliably returns the name of the OS the script is
+#		This function reliably returns the name of the OS the script is
 #		running one, checking $^O or using Config.pm if that doesn't
 #		work.
 #
@@ -182,10 +261,9 @@ sub check_params
 
 sub get_os_name
 {
-	# first, find out what OS we're on:
 	my $operating_system = $^O;
 
-	# not all OS's support $^O:
+	# not all systems support $^O:
 	unless ($operating_system)
 	{
 		require Config;
@@ -215,12 +293,13 @@ sub get_os_name
 
 sub chars_to_entities
 {
-	my $text =  shift;
-	   $text =~ s/&/&amp;/g;
-	   $text =~ s/</&lt;/g;
-	   $text =~ s/>/&gt;/g;
-	   $text =~ s/"/&quot;/g;
-	   $text =~ s/'/&apos;/g;
+	my $text = shift;
+
+	   $text =~ s/&/&amp;/gx;
+	   $text =~ s/</&lt;/gx;
+	   $text =~ s/>/&gt;/gx;
+	   $text =~ s/"/&quot;/gx;
+	   $text =~ s/'/&apos;/gx;
 
 	return $text;
 }

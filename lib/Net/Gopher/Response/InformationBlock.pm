@@ -3,7 +3,7 @@ package Net::Gopher::Response::InformationBlock;
 
 =head1 NAME
 
-Net::Gopher::Response::InformationBlock - Manipulate Gopher+ information blocks.
+Net::Gopher::Response::InformationBlock - Manipulate Gopher+ information blocks
 
 =head1 SYNOPSIS
 
@@ -20,8 +20,9 @@ Net::Gopher::Response::InformationBlock - Manipulate Gopher+ information blocks.
  
  
  
- # You can retrieve all of the attributes within a block at once in the
- # form of a hash using attributes_as_hash():
+ # if a block value contains attributes, you can retrieve all of the
+ # attributes within it at once in the form of a hash using
+ # attributes_as_hash():
  my %attributes = $block->attributes_as_hash;
  print(
  	"Gopherspace name: $attributes{'Site'}\n",
@@ -29,41 +30,43 @@ Net::Gopher::Response::InformationBlock - Manipulate Gopher+ information blocks.
  	"        Location: $attributes{'Loc'}\n"
  );
  
- # or you retrieve individual attribute values by name using
- # get_attributes():
+ # ...or you retrieve one or more individual attribute values by name
+ # using get_attributes():
  printf("    Adminstrator: %s\n", $block->get_attributes('Admin'));
  
  
  
  # There are also methods available to parse individual block values and
  # attributes. For example, the extract_description() method parses
- # +INFO blocks:
+ # +INFO blocks and extracts their contents:
  my ($type, $display, $selector, $host, $port, $gopher_plus) =
  	$response->get_blocks(Blocks => '+INFO')->extract_description;
  
+ # finally, note that for all of the block and attribute parsing methods
+ # in this class, there are wrappers in Net::Gopher::Response which
+ # enable you call the methods directly on the Net::Gopher::Response
+ # object for item attribute information requests:
+ my ($admin_name, $admin_email) = $response->extract_admin;
  
- 
- # finaly, note that for all of the block and attribute parsing methods in
- # this class, there are wrappers in Net::Gopher::Response which enable
- # you call the methods directly on the Net::Gopher::Response object for
- # item attribute information requests:
- my ($admin_name, $admin_email) = $response->extract_administrator;
- 
- # is the same as:
+ # ...is the same as:
  ($admin_name, $admin_email) =
- 	$response->get_blocks(Blocks => '+ADMIN')->extract_administrator;
+ 	$response->get_blocks(Blocks => '+ADMIN')->extract_admin;
 
 =head1 DESCRIPTION
 
-The B<Net::Gopher::Response> C<get_blocks()> method returns one or more
-item/directory attribute information blocks in the form of
+The L<Net::Gopher::Response|Net::Gopher::Response> C<get_blocks()> method
+returns one or more item/directory attribute information blocks in the form of
 B<Net::Gopher::Response::InformationBlocks> objects. This class contains
-methods to retrieve and parse these block objects.
+methods to parse and manipulate these block objects.
 
 To make things as simple as possible, this class overloads stringification,
 so if you don't need to do anything fancy and just want the block value, you
 can treat these objects as though they're strings and they'll behave like
 strings, returning what the C<value()> method does.
+
+The first series of methods in this class retrieve block names, block values,
+and attributes within block values. After that, there are methods to extract
+specific bits of information from certain blocks.
 
 =head1 METHODS
 
@@ -74,13 +77,20 @@ The following methods are available:
 use 5.005;
 use strict;
 use warnings;
+use vars qw(@ISA);
 use overload (
 	'""'     => sub { shift->value },
 	fallback => 1,
 );
 use Carp;
-use Time::Local qw(timelocal);
-use Net::Gopher::Utility qw(check_params);
+use Time::Local 'timelocal';
+use Net::Gopher::Constants ':item_types';
+use Net::Gopher::Debugging;
+use Net::Gopher::Exception;
+use Net::Gopher::Request;
+use Net::Gopher::Utility 'check_params';
+
+push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
 
 
@@ -95,14 +105,35 @@ sub new
 	my $invo  = shift;
 	my $class = ref $invo || $invo;
 
-	my ($name, $raw_value, $value) =
-		check_params(['Name', 'RawValue', 'Value'], @_);
+	my ($response, $name, $raw_value, $value) =
+		check_params([qw(
+			Response
+			Name
+			RawValue
+			Value
+			)], \@_
+		);
 
 	my $self = {
+		# the Net::Gopher::Response object:
+		response   => $response,
+
+		# the block name, minus the leading "+" (e.g., "ADMIN," "INFO,"
+		# "VIEWS," etc.):
 		name       => $name,
+
+		# the raw block value, with the leading space at the beginning
+		# of each line still intact:
 		raw_value  => $raw_value,
+
+		# the cleaned up block value, with the leading spaces removed:
 		value      => $value,
-		atrributes => undef
+
+		# if the block contains " AttributeName: attribute value" pairs
+		# of attributes on each line, then this will contain a
+		# reference to a hash with the attribute names and their
+		# corresponding attribute values:
+		attributes => undef
 	};
 
 	bless($self, $class);
@@ -116,9 +147,18 @@ sub new
 
 #==============================================================================#
 
+sub response { return shift->{'response'}; }
+
+
+
+
+
+#==============================================================================#
+
 =head2 name()
 
-This method returns the block name with leading "+" character.
+This method returns the block name (prefixed with a leading "+" character,
+e.g., "+ADMIN").
 
 =cut
 
@@ -175,6 +215,9 @@ sub attributes_as_hash
 
 	$self->_parse_attributes unless (defined $self->{'attributes'});
 
+	# if it was called in list context, then rather than just returning the
+	# hash in $self->{'attributes'}, we return a copy of it, to prevent the
+	# user from directly manipulating $self->{'attributes'}:
 	return wantarray
 		? %{$self->{'attributes'}}
 		: { %{$self->{'attributes'}} };
@@ -199,9 +242,14 @@ sub get_attributes
 {
 	my ($self, @names) = @_;
 
-	croak "No attribute names supplied" unless (@names);
+	return $self->call_die(
+		'The names of the attributes to get were not supplied.'
+	) unless (@names);
 
-	$self->_parse_attributes unless (defined $self->{'attributes'});
+	unless (defined $self->{'attributes'})
+	{
+		return unless ($self->_parse_attributes);
+	}
 
 	my @values = @{ $self->{'attributes'} }{@names};
 
@@ -240,6 +288,76 @@ sub is_attributes
 
 #==============================================================================#
 
+=head2 as_request()
+
+Documentation.
+
+=cut
+
+sub as_request
+{
+	my $self = shift;
+
+	return new Net::Gopher::Request (URL => $self->as_url);
+}
+
+
+
+
+
+#==============================================================================#
+
+=head2 as_url()
+
+Documentation.
+
+=cut
+
+sub as_url
+{
+	my $self = shift;
+
+	my ($item_type, $display, $selector, $host, $port, $gopher_plus) =
+		$self->extract_description;
+
+	my $uri = new URI (undef, 'gopher');
+	   $uri->scheme('gopher');
+	   $uri->host($host);
+	   $uri->port($port);
+	   $uri->gopher_type($item_type);
+	   $uri->selector($selector);
+	   $uri->string($gopher_plus);
+
+	return $uri->as_string;
+}
+
+
+
+
+
+#==============================================================================#
+
+=head1 METHODS SPECIFIC TO +ABSTRACT BLOCKS
+
+C<+ABSTRACT> blocks contain a short synopsis of the item. 
+
+=head2 extract_abstract()
+
+=cut
+
+sub extract_abstract
+{
+	my $self = shift;
+
+	
+}
+
+
+
+
+
+#==============================================================================#
+
 =head1 METHODS SPECIFIC TO +ADMIN BLOCKS
 
 C<+ADMIN> blocks contain attributes detailing information about a particular
@@ -250,7 +368,7 @@ they can (and often do) contain many more.
 The following methods are available specifically for parsing C<+ADMIN> blocks
 and their attribute:
 
-=head2 extract_administrator()
+=head2 extract_admin()
 
 This method can be used to parse the I<Admin> attribute of an C<+ADMIN> block.
 The I<Admin> attribute contains the name of the administrator and his or her
@@ -261,7 +379,7 @@ the I<Admin> attribute.
 
 =cut
 
-sub extract_administrator
+sub extract_admin
 {
 	my $self = shift;
 
@@ -373,7 +491,7 @@ default values separated by tabs (e.g.,
 
 The following methods are available specifically for parsing C<+ASK> blocks:
 
-=head2 extract_ask_queries()
+=head2 extract_queries()
 
 This method parses the C<+ASK> block and returns an array containing references
 to hashes for each Ask query in the order they appeared, with each hash having
@@ -385,9 +503,18 @@ the following key=value pairs:
 
 =cut
 
-sub extract_ask_queries
+sub extract_queries
 {
 	my $self = shift;
+
+	$self->call_warn(
+		sprintf('Are you sure there are queries to extract? The block '.
+		        'object contains a %s block, not an +ASK block.',
+			$self->name
+		)
+	) unless ($self->name eq '+ASK');
+
+
 
 	# This will store each Ask query as a hashref containing the query
 	# type, the question, and any defaults:
@@ -406,7 +533,7 @@ sub extract_ask_queries
 				question => $question,
 				defaults => \@defaults
 			}
-		);	
+		);
 	}
 
 	return @ask;
@@ -453,6 +580,8 @@ is the same as this:
 sub extract_description
 {
 	my $self = shift;
+
+
 
 	# get the item type and display string, selector, host, port,
 	# and Gopher+ string from the +INFO block value:
@@ -514,6 +643,15 @@ an integer; the total size in bytes (e.g., <80> becomes 80, <40K> becomes
 sub extract_views
 {
 	my $self = shift;
+
+	$self->call_warn(
+		sprintf('Are you sure there are views to extract? The block '.
+		        'object contains a %s block, not an +VIEWS block.',
+			$self->name
+		)
+	) unless ($self->name eq '+VIEWS');
+
+
 
 	# This array will store each view as a hashref:
 	my @views;
@@ -588,13 +726,10 @@ sub _parse_timestamp
 	my ($year, $month, $day, $hour, $minute, $second) =
 		$timestamp =~ /<(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})>/x;
 
-	foreach ($year, $month, $day, $hour, $minute, $second)
+	unless (defined $year and defined $month and defined $day
+		and defined $hour and defined $minute and defined $second)
 	{
-		unless (defined)
-		{
-			carp "Couldn't parse timestamp";
-			return;
-		}
+		return;
 	}
 
 	# we need to convert the year value into the  number years since 1900

@@ -1,0 +1,9 @@
+iThis is a Gopher menu.			
+1Item one	/directory	localhost	70
+1Item two	/another_directory	localhost	70
+0Item three	/three.txt	localhost	70
+1Item four	/one_more_directory	localhost	70
+iDownload this:			
+gGIF image	/image.gif	localhost	70
+0Item six	/six.txt	localhost	70
+.

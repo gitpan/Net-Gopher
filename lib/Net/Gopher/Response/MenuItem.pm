@@ -10,7 +10,7 @@ Net::Gopher::Response::MenuItem - Manipulate Gopher/Gopher+ menu items
  use Net::Gopher;
  ...
  
- my @items = $response->extract_menu_items(IgnoreTypes => 'i');
+ my @items = $response->extract_items(ExceptTypes => 'i');
  
  foreach my $menu_item (@items)
  {
@@ -29,12 +29,15 @@ Net::Gopher::Response::MenuItem - Manipulate Gopher/Gopher+ menu items
  	# ...or Net::Gopher::Request objects:
  	my $request = $menu_item->as_request;
  	$response   = $ng->request($request);
+
+	# the menu item as it appeared in the Gopher menu:
+	print $menu_item->raw_item;
  }
 
 =head1 DESCRIPTION
 
-The B<Net::Gopher::Response> C<extract_menu_items()> method parses
-Gopher/Gopher+ menus and returns the parsed menu items in the form of
+The B<Net::Gopher::Response> C<extract_items()> method parses
+Gopher menus and returns the parsed menu items in the form of
 B<Net::Gopher::Response::MenuItem> objects. Use the methods in this class to
 manipulate them.
 
@@ -47,11 +50,20 @@ The following methods are available:
 use 5.005;
 use strict;
 use warnings;
+use vars qw(@ISA);
+use overload (
+	'""'     => sub { shift->raw_item },
+	fallback => 1,
+);
 use Carp;
 use URI;
+use Net::Gopher::Constants ':item_types';
+use Net::Gopher::Debugging;
+use Net::Gopher::Exception;
 use Net::Gopher::Request;
-use Net::Gopher::Utility qw(check_params);
-use Net::Gopher::Constants qw(:item_types);
+use Net::Gopher::Utility 'check_params';
+
+push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
 
 
@@ -66,12 +78,16 @@ sub new
 	my $invo  = shift;
 	my $class = ref $invo || $invo;
 
-	my ($raw_item,$item_type,$display,$selector,$host,$port,$gopher_plus) =
-		check_params(
-			[
-				'RawItem', 'ItemType', 'Display', 'Selector',
-				'Host', 'Port', 'GopherPlus'
-			], @_
+	my ($raw_item, $item_type, $display, $selector, $host, $port,
+	    $gopher_plus) =
+		check_params([qw(
+			RawItem
+			ItemType
+			Display
+			Selector
+			Host
+			Port
+			GopherPlus)], \@_
 		);
 
 	my $self = {
@@ -95,13 +111,13 @@ sub new
 
 #==============================================================================#
 
-=head2 as_string()
+=head2 raw_item()
 
 This method returns a string containing the item as it appeared in the menu.
 
 =cut
 
-sub as_string { return shift->{'raw_item'} }
+sub raw_item { return shift->{'raw_item'} }
 
 
 
@@ -112,9 +128,7 @@ sub as_string { return shift->{'raw_item'} }
 =head2 as_request()
 
 This method creates and returns a new B<Net::Gopher::Request> object using the
-values present in the menu item. It will not, however, convert inline text
-("i" item type) items to request objects and will raise an error if you ask it
-to.
+values present in the menu item.
 
 =cut
 
@@ -122,10 +136,79 @@ sub as_request
 {
 	my $self = shift;
 
-	croak "Can't convert inline text (\"i\" item type) to request object"
-		if ($self->item_type eq INLINE_TEXT_TYPE);
+	$self->call_warn(
+		join(' ',
+			"You're trying to convert an inline text (\"i\" item",
+			"type) menu item into a Net::Gopher::Request object.",
+			"Inline text items are not supposed to be downloadable."
+		)
+	) if ($self->item_type eq INLINE_TEXT_TYPE);
 
-	return new Net::Gopher::Request (URL => $self->as_url);
+	my $request;
+	if (defined $self->gopher_plus and length $self->gopher_plus)
+	{
+		my ($request_char, $other_stuff) =
+		(substr($self->gopher_plus,0,1), substr($self->gopher_plus,1));
+
+		# The usage of $other_stuff here to allow someone to put an
+		# item representation following the "+" or to allow someone
+		# to create a menu item pointing to an attribute/directory
+		# information request and then even put attributes following
+		# the "!" or "$" in the Gopher+ string field isn't in the
+		# Gopher+ standard, but it's possible someone will attempt to
+		# use Gopher+ menu items in this way:
+		if ($request_char eq '+' or $request_char eq '?')
+		{
+			$request = new Net::Gopher::Request ('GopherPlus',
+				Host           => $self->host,
+				Port           => $self->port,
+				Selector       => $self->selector,
+				Representation => $other_stuff,
+				ItemType       => $self->item_type
+			);
+		}
+		elsif ($request_char eq '!')
+		{
+			$request = new Net::Gopher::Request ('ItemAttribute',
+				Host       => $self->host,
+				Port       => $self->port,
+				Selector   => $self->selector,
+				Attributes => $other_stuff
+			);
+		}
+		elsif ($request_char eq '$')
+		{
+			$request = new Net::Gopher::Request ('DirectoryAttribute',
+				Host       => $self->host,
+				Port       => $self->port,
+				Selector   => $self->selector,
+				Attributes => $other_stuff
+			);
+		}
+		else
+		{
+			return $self->call_die(
+				join(' ',
+					"Can't convert malformed menu item",
+					"into a request object: the Gopher+",
+					"string contains an invalid request",
+					'type character ("$request_char"). It',
+					'should be "+", "?", "!", or "$".'
+				)
+			);
+		}
+	}
+	else
+	{
+		$request = new Net::Gopher::Request ('Gopher',
+			Host     => $self->host,
+			Port     => $self->port,
+			Selector => $self->selector,
+			ItemType => $self->item_type
+		);
+	}
+
+	return $request;
 }
 
 
@@ -137,8 +220,7 @@ sub as_request
 =head2 as_url()
 
 This method creates and returns a new gopher:// URL using the values in the
-menu item. It will not, however, convert inline text ("i" item type) items to
-URLs and will raise an error if you ask it to.
+menu item.
 
 =cut
 
@@ -146,8 +228,18 @@ sub as_url
 {
 	my $self = shift;
 
-	croak "Can't convert inline text (\"i\" item type) to URL"
-		if ($self->item_type eq INLINE_TEXT_TYPE);
+	$self->call_warn(
+		"The menu item lacks a hostname, and any URL it's converted " .
+		"to will be invalid."
+	) unless (defined $self->host and length $self->host);
+
+	$self->call_warn(
+		join(' ',
+			"You're trying to convert an inline text (\"i\" item",
+			"type) menu item into a Gopher URL. Inline text items",
+			"are not supposed to be downloadable."
+		)
+	) if ($self->item_type eq INLINE_TEXT_TYPE);
 
 	my $uri = new URI (undef, 'gopher');
 	   $uri->scheme('gopher');
@@ -238,8 +330,8 @@ sub port { return shift->{'port'} }
 
 =head2 gopher_plus()
 
-For a Gopher+ menu, this will return the Gopher+ string of a menu item. With
-Gopher it will just return undef.
+For a Gopher+ menu item, this will return the Gopher+ string of a menu item.
+With Gopher items it will just return undef.
 
 =cut
 

@@ -10,9 +10,9 @@ use 5.005;
 use warnings;
 use strict;
 use vars qw(@EXPORT_OK);
-use base qw(Exporter);
-use Net::Gopher::Utility qw(%ITEM_DESCRIPTIONS);
+use base 'Exporter';
 use Net::Gopher::Constants qw(:request :item_types);
+use Net::Gopher::Utility '%ITEM_DESCRIPTIONS';
 
 @EXPORT_OK = qw(
 	gen_block_xml
@@ -200,7 +200,7 @@ sub gen_menu_xml
 		url         => $response->request->as_url
 	);
 
-	foreach my $menu_item ($response->extract_menu_items)
+	foreach my $menu_item ($response->extract_items)
 	{
 		if ($menu_item->item_type eq INLINE_TEXT_TYPE)
 		{
@@ -208,7 +208,7 @@ sub gen_menu_xml
 		}
 		else
 		{
-			$writer->startTag('item');
+			$writer->startTag('item', url => $menu_item->as_url);
 			$writer->dataElement('item-type', $menu_item->item_type);
 			$writer->dataElement('display-string', $menu_item->display);
 			$writer->dataElement('selector-string', $menu_item->selector);

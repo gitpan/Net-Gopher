@@ -1,7 +1,50 @@
 Revision history for Perl extension Net::Gopher.
 
+0.92 -
+       (1) 
+           A new, much improved, much enhanced test  suite  complete  with  its
+           own (almost) functional server.
+
+       (2) 
+           Net::Gopher now fully supports  (experimentally)  Unicode.  Selector
+           strings,  attributes,  data  blocks--everything--can   now   contain
+           multi-byte UTF-8 characters.
+
+       (3) 
+           Net::Gopher now dies and warns much, much more and with  much,  much
+           more detailed messages (using carp() and croak(), but this  behavior
+           can be controlled with the options listed next).
+
+       (4) 
+           The   Net::Gopher   constructor   takes   several   new   arguments:
+           WarnHandler, DieHandler, Silent, and LogFile.
+
+       (5) 
+           The request() method option "Callback" has been renamed "Handler".
+
+       (6) 
+           User-defined response handler subs  for  the  request()  method  now
+           receive the following arguments in this order: the  raw,  unmodified
+           buffer; the request object; the response object.
+
+       (7) 
+           Net::Gopher::Response   has   three   new   methods:   error_code(),
+           error_admin(), and error_message() to parse Gopher+ errors.
+
+       (8) 
+           The extract_menu_items() method has been renamed extract_items().
+
+       (9) 
+           The    extract_administrator()    method    has     been     renamed
+           extract_admin(),  and   extract_ask_queries()   has   been   renamed
+           extract_queries().
+
+       (10) 
+           The  Net::Gopher::MenuItem  as_string()  method  has  been   renamed
+           raw_item().
+
 0.90 - First beta release:
-       (a) 
+       (1) 
            Added     a     new     class     for     menu     items      called
            Net::Gopher::Response::MenuItem  with  methods   to   retrieve   the
            tab-delimited fields of a menu  item,  convert  a  menu  item  to  a
@@ -10,13 +53,13 @@ Revision history for Perl extension Net::Gopher.
            a list containing Net::Gopher::Response::MenuItem objects  for  each
            item.
 
-       (b) 
+       (2) 
            item_blocks(), directory_blocks(), and as_blocks(),  are  all  gone,
            for good. The names were never that descriptive or well-thought  out
            in the first place, and their  functionality  was  easily  condensed
            into one new method: get_blocks().
 
-       (c) 
+       (3) 
            The   Net::Gopher::Response::Blocks   class   has    been    renamed
            Net::Gopher::Response::InformationBlock. In  addition,  its  methods
            have been renamed, removed, and replaced. Where possible,  they  now
@@ -26,36 +69,36 @@ Revision history for Perl extension Net::Gopher.
            stringification so block objects can be treated  as  simple  scalars
            containing block values.
 
-       (d) 
+       (4) 
            The items and their attribute  information  block  objects  are  now
            stored internally as an array of arrays.
 
-       (e) 
+       (5) 
            Added the as_xml() method to Net::Gopher::Response, which  generates
            XML  for  item/directory  attribute  information  requests,   Gopher
            menus, and other non-menu text items.
 
-       (f) 
+       (6) 
            A new module, Net::Gopher::Constants has been added,  which  exports
            on demand constants for every known item type, constants to  compare
            against the value  returned  by  request_type(),  and  constants  to
            compare against the value returned by status().
 
-       (g) 
+       (7) 
            Added the as_url() method to Net::Gopher::Request,  which  generates
            a Gopher URL using the request object.
 
-       (h) 
+       (8) 
            The  Net::Gopher::Response  as_string()  method  has  been   renamed
            raw_response(). Even if as_string() is the current president set  by
            LWP and others, I don't think it's descriptive enough.
        
-       (i) 
+       (9) 
            The attribute information block methods  as_string()  and  content()
            have been replaced with raw_value() and value() respectively, and  a
            new method, name(), has been added.
        
-       (j) 
+       (10) 
            %GOPHER_ITEM_TYPES  and  %GOPHER_PLUS_ITEM_TYPES  have  been  merged
            into %ITEM_DESCRIPTIONS.
 
@@ -65,50 +108,50 @@ Revision history for Perl extension Net::Gopher.
 
 0.77 - This version incorporates a wealth of new functionality into
        Net::Gopher, including:
-       (a)
+       (1)
            A new class, Net::Gopher::Request, is used to encapsulate  requests.
 	   This class has accessor methods to modify every relevant aspect of a
 	   Gopher/Gopher+ request, as well as named constructors you can import
 	   for each type of request.
 
-       (b)
+       (2)
            The Net::Gopher connect() and disconnect()  methods  are  gone.  The
            request() method now takes care of connecting and  disconnecting  by
            itself.
 
-       (c)
+       (3)
            The request() method now takes a Net::Gopher::Request object as  its
            first argument. In addition, it  takes  the  parameters  "File"  and
            "Callback," with the first specifying  a  file  where  the  response
            content should be outputted to, and the other, a reference to a  sub
            that will be called as the response is collected.
 
-       (d)
+       (4)
            The request_url() method is gone.
 
-       (e)
+       (5)
            Net::Gopher  now  has  the  Net::Gopher::Request  shortcut   methods
            gopher(), gopher_plus(), item() and directory().
 
-       (f)
+       (6)
            _get_buffer() is gone, replaced with _read() to do all reading,  and
            a new function, _write(), used to do all writing.
 
-       (g)
+       (7)
            The code to generate the request string from the parameters or  from
            a URL has been moved to Net::Gopher::Request.
 
-       (h)
+       (8)
            All   response   content-modifying   code   has   been   moved    to
            Net::Gopher::Response,    which    means    _unescape    is    gone.
            Net::Gopher::Response now has the  methods  _convert_newlines()  and
            _clean_period_termination() to do that work.
 
-       (i)
+       (9)
            Net::Gopher::Response  now  has  the   convenient   is_gopher_plus()
            method and the is_text() method.
 
-       (j)
+       (10)
            Added check_params()  routine  to  Net::Gopher::Utility.  This  will
            ensure that param names are not misspelled, raising an error if  the
            user supplies an invalid parameter name when calling a method.

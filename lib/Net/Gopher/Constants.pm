@@ -3,23 +3,34 @@ package Net::Gopher::Constants;
 
 =head1 NAME
 
-Net::Gopher::Constants - Exports on demand constants for Net::Gopher
+Net::Gopher::Constants - Exports constants on demand for Net::Gopher scripts
 
 =head1 SYNOPSIS
 
  use Net::Gopher::Constants qw(:request);
+ ...
+ if ($request->request_type == GOPHER_PLUS_REQUEST) {
+ ...
  
  # and/or:
  use Net::Gopher::Constants qw(:response);
+ ...
+ if ($response->status eq OK) {
+ ...
  
  # and/or
  use Net::Gopher::Constants qw(:item_types);
+ ...
+ if ($request->item_type eq TEXT_FILE_TYPE
+ 	or $request->item_type eq GOPHER_MENU_TYPE
+ 	or $request->item_type eq INDEX_SEARCH_SERVER_TYPE) {
+ ...
 
 =head1 DESCRIPTION
 
-This class defines and exports on demand numerous constants all used internally
-by B<Net::Gopher>. You may find use of these symbols in place of there numeric
-or string counterparts makes your program more readable.
+This class defines and exports on demand numerous constants used internally by
+B<Net::Gopher>. You may find use of these symbols in place of there numeric or
+string counterparts makes your program more readable.
 
 =cut
 
@@ -33,12 +44,57 @@ use base 'Exporter';
 
 
 
+# we use these arrays to make exporting easier:
+my @request_constants   = qw(
+	GOPHER_REQUEST
+	GOPHER_PLUS_REQUEST
+	ITEM_ATTRIBUTE_REQUEST
+	DIRECTORY_ATTRIBUTE_REQUEST
+);
+my @response_constants  = qw(OK NOT_OK);
+my @item_type_constants = qw(
+	TEXT_FILE_TYPE
+	GOPHER_MENU_TYPE
+	CCSO_NAMESERVER_TYPE
+	ERROR_TYPE
+	BINHEXED_MACINTOSH_FILE_TYPE
+	DOS_BINARY_FILE_TYPE
+	UNIX_UUENCODED_FILE_TYPE
+	INDEX_SEARCH_SERVER_TYPE
+	TELNET_SESSION_TYPE
+	BINARY_FILE_TYPE
+	GIF_IMAGE_TYPE
+	IMAGE_FILE_TYPE
+	TN3270_SESSION_TYPE
+	BITMAP_IMAGE_TYPE
+	MOVIE_TYPE
+	SOUND_TYPE
+	HTML_FILE_TYPE
+	INLINE_TEXT_TYPE
+	MIME_FILE_TYPE
+	MULAW_AUDIO_TYPE
+);
+
+
+
+@EXPORT_OK = (@request_constants, @response_constants, @item_type_constants);
+
+%EXPORT_TAGS = (
+	request    => [@request_constants],
+	response   => [@response_constants],
+	item_types => [@item_type_constants]
+);
+
+
+
+
+
 
 
 =head1 REQUEST CONSTANTS
 
 If you specify I<:request>, then four request type constants will be exported.
-These constants can be compared agaisnt the value returned by the
+These constants can be compared against the value returned by the
 B<Net::Gopher::Request> C<request_type()> method.
 
 =over 4
@@ -72,10 +128,10 @@ See L<request_type()|Net::Gopher::Request/request_type()>.
 
 =cut
 
-use constant GOPHER_REQUEST              => 100;
-use constant GOPHER_PLUS_REQUEST         => 200;
-use constant ITEM_ATTRIBUTE_REQUEST      => 300;
-use constant DIRECTORY_ATTRIBUTE_REQUEST => 400;
+sub GOPHER_REQUEST              () { return 100 }
+sub GOPHER_PLUS_REQUEST         () { return 200 }
+sub ITEM_ATTRIBUTE_REQUEST      () { return 300 }
+sub DIRECTORY_ATTRIBUTE_REQUEST () { return 400 }
 
 
 
@@ -87,15 +143,15 @@ If you specify I<:response>, then two constants will be exported. These
 constants can be compared against the value returned by the
 B<Net::Gopher::Response> C<status()> method.
 
- SUCCESS_CODE = Evaluates to "+";
- FAILURE_CODE = Evaluates to "-";
+ OK     = Evaluates to "+";
+ NOT_OK = Evaluates to "-";
 
 See L<status()|Net::Gopher::Response/status()>.
 
 =cut
 
-use constant SUCCESS_CODE => '+';
-use constant FAILURE_CODE => '-';
+sub OK ()     { return '+' }
+sub NOT_OK () { return '-' }
 
 
 
@@ -103,11 +159,11 @@ use constant FAILURE_CODE => '-';
 
 =head1 ITEM TYPE CONSTANTS
 
-Finaly, there are also constants for every known item type. These constants can
-be compared against the values returned by the various C<item_type()> method,
-as well as used in place of character or string literals when specifying the
-attributes you want from an item attribute information request or directory
-attribute information request.
+Finally, there are also constants for every known item type. These constants
+can be compared against the values returned by the various C<item_type()>
+methods, as well as used in place of character or string literals when
+specifying the attributes you want from an item attribute information request
+or directory attribute information request.
 
 =over 4
 
@@ -147,77 +203,30 @@ See L<status()|Net::Gopher::Response/status()>.
 =cut
 
 # Gopher item type constants:
-use constant TEXT_FILE_TYPE               => 0;
-use constant GOPHER_MENU_TYPE             => 1;
-use constant CCSO_NAMESERVER_TYPE         => 2;
-use constant ERROR_TYPE                   => 3;
-use constant BINHEXED_MACINTOSH_FILE_TYPE => 4;
-use constant DOS_BINARY_FILE_TYPE         => 5;
-use constant UNIX_UUENCODED_FILE_TYPE     => 6;
-use constant INDEX_SEARCH_SERVER_TYPE     => 7;
-use constant TELNET_SESSION_TYPE          => 8;
-use constant BINARY_FILE_TYPE             => 9;
-use constant GIF_IMAGE_TYPE               => 'g';
-use constant IMAGE_FILE_TYPE              => 'I';
-use constant TN3270_SESSION_TYPE          => 'T';
+sub TEXT_FILE_TYPE               () { return 0 }
+sub GOPHER_MENU_TYPE             () { return 1 }
+sub CCSO_NAMESERVER_TYPE         () { return 2 }
+sub ERROR_TYPE                   () { return 3 }
+sub BINHEXED_MACINTOSH_FILE_TYPE () { return 4 }
+sub DOS_BINARY_FILE_TYPE         () { return 5 }
+sub UNIX_UUENCODED_FILE_TYPE     () { return 6 }
+sub INDEX_SEARCH_SERVER_TYPE     () { return 7 }
+sub TELNET_SESSION_TYPE          () { return 8 }
+sub BINARY_FILE_TYPE             () { return 9 }
+sub GIF_IMAGE_TYPE               () { return 'g' }
+sub IMAGE_FILE_TYPE              () { return 'I' }
+sub TN3270_SESSION_TYPE          () { return 'T' }
 
 # Gopher+ item type constants:
-use constant BITMAP_IMAGE_TYPE => ':';
-use constant MOVIE_TYPE        => ';';
-use constant SOUND_TYPE        => '<';
+sub BITMAP_IMAGE_TYPE () { return ':' }
+sub MOVIE_TYPE        () { return ';' }
+sub SOUND_TYPE        () { return '<' }
 
 # constants for common but unofficial item types:
-use constant HTML_FILE_TYPE   => 'h';
-use constant INLINE_TEXT_TYPE => 'i';
-use constant MIME_FILE_TYPE   => 'M';
-use constant MULAW_AUDIO_TYPE => 's';
-
-
-
-
-
-# we use these arrays to make exporting easier:
-my @request_constants = qw(
-	GOPHER_REQUEST
-	GOPHER_PLUS_REQUEST
-	ITEM_ATTRIBUTE_REQUEST
-	DIRECTORY_ATTRIBUTE_REQUEST
-);
-
-my @response_constants = qw(SUCCESS_CODE FAILURE_CODE);
-
-my @item_type_constants = qw(
-	TEXT_FILE_TYPE
-	GOPHER_MENU_TYPE
-	CCSO_NAMESERVER_TYPE
-	ERROR_TYPE
-	BINHEXED_MACINTOSH_FILE_TYPE
-	DOS_BINARY_FILE_TYPE
-	UNIX_UUENCODED_FILE_TYPE
-	INDEX_SEARCH_SERVER_TYPE
-	TELNET_SESSION_TYPE
-	BINARY_FILE_TYPE
-	GIF_IMAGE_TYPE
-	IMAGE_FILE_TYPE
-	TN3270_SESSION_TYPE
-	BITMAP_IMAGE_TYPE
-	MOVIE_TYPE
-	SOUND_TYPE
-	HTML_FILE_TYPE
-	INLINE_TEXT_TYPE
-	MIME_FILE_TYPE
-	MULAW_AUDIO_TYPE
-);
-
-
-
-@EXPORT_OK = (@request_constants, @response_constants, @item_type_constants);
-
-%EXPORT_TAGS = (
-	request    => [@request_constants],
-	response   => [@response_constants],
-	item_types => [@item_type_constants]
-);
+sub HTML_FILE_TYPE   () { return 'h' }
+sub INLINE_TEXT_TYPE () { return 'i' }
+sub MIME_FILE_TYPE   () { return 'M' }
+sub MULAW_AUDIO_TYPE () { return 's' }
 
 1;
 

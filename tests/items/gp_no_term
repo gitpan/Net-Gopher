@@ -1,0 +1,160 @@
++-2
+Gopher+ upward compatible enhancements to
+the Internet Gopher protocol
+
+
+
+Farhad Anklesaria, Paul Lindner, Mark P.  McCahill,
+Daniel Torrey, David Johnson, Bob Alberti
+
+Microcomputer and Workstation  Networks Center /
+Computer and Information Systems
+University of Minnesota
+
+July 30, 1993
+
+
+
+gopher+  n.  1. Hardier strains of mammals of the
+family  Geomyidae.  2. (Amer. colloq.) Native or
+inhabitant of  Minnesota, the Gopher state, in full
+winter regalia (see  PARKA).  3. (Amer. colloq.)
+Executive secretary.  4.  (computer tech.) Software
+following a simple protocol for  burrowing through a
+TCP/IP internet, made more powerful by  simple
+enhancements (see CREEPING FEATURISM).
+
+
+Abstract
+
+The internet Gopher protocol was designed for
+distributed  document search and retrieval. The
+documents "The internet  Gopher protocol: a
+distributed document search and retrieval protocol"
+and internet RFC 1436 describe the basic  protocol and
+has an overview of how to implement new client  and
+server applications. This document describes a set of
+enhancements to the syntax, semantics and
+functionality of  the original Gopher protocol.
+
+
+Distribution of this document is unlimited.  Please
+send  comments to the Gopher development team:
+<gopher@boombox.micro.umn.edu>.  Implementation of
+the  mechanisms described here is encouraged.
+
+
+
+1.      Introduction
+
+The Internet Gopher protocol was designed primarily to
+act as a distributed document  delivery system.  It
+has enjoyed increasing popularity, and  is being used
+for purposes that were not visualized when the
+protocol was first outlined.  The rest of this
+document  describes the Gopher+ enhancements in a non-
+rigorous but easily read and understood  way.  There
+is a short BNF-like section at the end for exact
+syntax descriptions.  Throughout the document, "F"
+stands  for the ASCII TAB character. There is an
+implicit carriage  return and linefeed at the ends of
+lines; these will only be explicitly  mentioned where
+necessary to avoid confusion. To understand  this
+document, you really must be familiar with the basic
+Gopher protocol.
+
+
+Servers and clients understanding the Gopher+
+extensions will transmit extra information at the ends
+of list and request lines.  Old, basic gopher clients
+ignore such information.  New  Gopher+ aware servers
+continue to work at their old level  with unenhanced
+clients.  The extra information that can be
+communicated by Gopher+ clients may be used to summon
+new capabilities to bridge  the most keenly felt
+shortcomings of the venerable old  Gopher.
+
+
+
+
+2.      How does Gopher+ work?
+
+Gopher+ enhancements rely on transmitting an "extra"
+tab  delimited fields beyond what regular (old) Gopher
+servers and clients now use.  If most existing (old)
+clients were to encounter extra stuff beyond the
+"port"  field in a list (directory), most would ignore
+it. Gopher+  servers will return item descriptions in
+this form:
+
+
+1Display stringFselector stringFhostFportFextra
+stuff<CRLF>
+
+
+If an existing (old) client has problems with
+additional  information beyond the port, it should not
+take much more  than a simple tweak to have it discard
+unneeded stuff.
+
+
+
+
+2.1     Advisory issued to client maintainers.
+
+If it does not do this already, your existing client
+should be modified  as soon as possible to ignore
+extra fields beyond what it  expects to find.  This
+will ensure thatyour clients does not break  when it
+encounters Gopher+ servers in gopherspace.
+
+
+All the regular Gopher protocol info remains intact
+except for:
+
+
+(1)  Instead of just a CRLF after the port field in
+any item  of a list (directory) there may be an
+optional TAB followed  by extra stuff as noted above
+(explanation to follow).
+
+
+
+(2) In the original Gopher protocol, there was
+provision for a date-time descriptor (sec 3.6) to be
+sent  after the selector (for use by autoindexer
+beasts).  As far  as we know, while the descriptor is
+implemented in the Mac  server, it is not in any other
+server and no clients or  daemons use it.  This is a
+good time to withdraw this feature. The basic gopher
+protocol has been revised for the final time and will
+be  frozen.
+
+
+
+
+
+
+2.2     Gopher+ item lists.
+
+Gopher servers that can utilize the Gopher+
+enhancements  will send some additional stuff
+(frequently the character "+") after the port field
+describing any list item.  eg:
+
+
+1Some old directoryFfoo selectorFhost1Fport1
+
+1Some new directoryFbar selectorFhost1Fport1F+
+
+0Some file or otherFmoo selectorFhost2Fport2F+
+
+
+The first line is the regular old gopher item
+description. The second line is new Gopher+  item
+description.  The third line is a Gopher+ description
+of a document. Old  gopher clients can request the
+latter two items using old  format gopher selector
+strings and retrieve the items. New,  Gopher+ savvy
+clients will notice the trailing + and know that they
+can do extra  things with these kinds of items.

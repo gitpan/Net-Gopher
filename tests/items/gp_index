@@ -1,0 +1,8 @@
++322
+iThis is a Gopher+ style Gopher menu, where all of the items have a fifth field			
+icontaining a + or ? character.			
+1Some directory	/some_dir	localhost	70	+
+1Some other directory	/some_other_dir	localhost	70	+
+gA GIF image	/image.gif	localhost	70	+
+iFill out this form:			
+1Application	/ask_script	localhost	70	?
