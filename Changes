@@ -1,5 +1,15 @@
 Revision history for Perl extension Net::Gopher.
 
+0.97 -
+      Improved the timeout checking, fixed several errors  in  the  POD,  fixed
+      as_xml(), and fixed the newly added content  length  checking  introduced
+      in 0.96. The test suite  is  now  also  fixed,  and  should  work  right.
+      Finally,    _get_status_line()    was    renamed     _read_status_line();
+      _parse_blocks(),  _extract_blocks();  _parse_error(),   _extract_error();
+      _parse_attributes(), _extract_attributes();  and  _parse_attr_timestamp()
+      to _extract_attribute_timestamp() to synchronize them all with the public
+      API.
+
 0.96 -
       The _data_read() method is gone, long since outliving its usefulness  and
       serving only as a redundant source of data copying. For Gopher+  response

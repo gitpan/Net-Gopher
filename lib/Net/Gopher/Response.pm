@@ -129,7 +129,6 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS
 
 	check_params
-	get_os_name
 	convert_newlines
 	strip_status_line
 	strip_terminator
@@ -787,7 +786,7 @@ sub get_block
 	# object and store them in $self if we haven't done so yet:
 	unless (defined $self->{'_blocks'})
 	{
-		$self->_parse_blocks() || return;
+		$self->_exract_blocks() || return;
 	}
 
 
@@ -921,7 +920,7 @@ sub get_blocks
 	# object and store them in $self if we haven't done so yet:
 	unless (defined $self->{'_blocks'})
 	{
-		$self->_parse_blocks() || return;
+		$self->_exract_blocks() || return;
 	}
 
 
@@ -1014,6 +1013,9 @@ sub has_block
 	my $self = shift;
 	my $name = shift;
 
+	return $self->call_die('No block name supplied for has_block().')
+		unless ($name);
+
 	$self->call_warn(
 		"You didn't send an item attribute or directory attribute " .
 		"information request, so why would the response contain " .
@@ -1025,7 +1027,7 @@ sub has_block
 	# object and store them in $self if we haven't done so yet:
 	unless (defined $self->{'_blocks'})
 	{
-		$self->_parse_blocks() || return;
+		$self->_exract_blocks() || return;
 	}
 
 	my @blocks_to_check;
@@ -1077,13 +1079,13 @@ overwritten.
 
 The I<Pretty> parameter is used to control the style of the markup. If
 I<Pretty> is true, then this method will insert linebreaks between tags and
-add indentation. By default, this is on.
+add indentation. By default, pretty is true.
 
 =item Declaration
 
 The I<Declaration> parameter tells the method whether or not it should generate
-an XML <?xml ...?> declaration at the beginning of the generated XML. By
-default, it will generate the declaration.
+an XML C<E<lt>?xml ...?E<gt> declaration at the beginning of the generated XML.
+By default, this is true.
 
 =back
 
@@ -1143,8 +1145,8 @@ sub as_xml
 
 	my $writer = new XML::Writer (
 		OUTPUT      => $handle,
-		DATA_MODE   => $pretty ? 1 : 0,
-		DATA_INDENT => $pretty ? 3 : 0  # use a three-space indent
+		DATA_MODE   => $pretty ? 1 : 0, # add newlines.
+		DATA_INDENT => $pretty ? 3 : 0  # use a three-space indent.
 	);
 
 	$writer->xmlDecl('UTF-8') if ($declaration);
@@ -1427,7 +1429,7 @@ sub error_code
 
 	unless ($self->{'error_code'})
 	{
-		$self->_parse_error || return
+		$self->_exract_error || return
 	}
 
 	return $self->{'error_code'};
@@ -1455,7 +1457,7 @@ sub error_admin
 
 	unless ($self->{'error_admin'})
 	{
-		$self->_parse_error || return
+		$self->_exract_error || return
 	}
 
 	return @{ $self->{'error_admin'} } if (ref $self->{'error_admin'});
@@ -1481,7 +1483,7 @@ sub error_message
 
 	unless ($self->{'error_message'})
 	{
-		$self->_parse_error || return
+		$self->_exract_error || return
 	}
 
 	return $self->{'error_message'};
@@ -1563,7 +1565,7 @@ sub _convert_newlines
 ################################################################################
 #
 #	Method
-#		_parse_blocks()
+#		_exract_blocks()
 #
 #	Purpose
 #		This method parses the information blocks in $self->content
@@ -1577,7 +1579,7 @@ sub _convert_newlines
 #		None.
 #
 
-sub _parse_blocks
+sub _exract_blocks
 {
 	my $self = shift;
 
@@ -1661,6 +1663,45 @@ sub _parse_blocks
 	push(@{ $self->{'_blocks'} }, [ @blocks ]);
 
 	return 1;
+}
+
+
+
+
+
+################################################################################
+#
+#	Method
+#		_exract_error()
+#
+#	Purpose
+#		This method parses $self->error and attempts to extract a
+#		Gopher+ error message containing an error code, administrator
+#		contact information, and an error message. It stores them in
+#		$self->error_code, $self->error_admin, and $self->error_message
+#		respectively.
+#
+#	Parameters
+#		None.
+#
+
+sub _exract_error
+{
+	my $self = shift;
+
+	if ($self->error =~ /^(\d+) *(.*?) *<(.*?)>\n(?s)(.*)/)
+	{
+		$self->{'error_code'}    = $1;
+		$self->{'error_admin'}   = [$2, $3];
+		$self->{'error_message'} = $4;
+	}
+	else
+	{
+		return $self->call_die(
+			'The response either does not a contain a Gopher+ ' .
+			'error or it contains a malformed Gopher+ error.'
+		)
+	}
 }
 
 
@@ -1819,29 +1860,6 @@ sub _find_item_blocks
 	return unless ($item_wanted_from);
 
 	return @$item_wanted_from;
-}
-
-
-
-
-
-sub _parse_error
-{
-	my $self = shift;
-
-	if ($self->error =~ /^(\d+) *(.*?) *<(.*?)>\n(?s)(.*)/)
-	{
-		$self->{'error_code'}    = $1;
-		$self->{'error_admin'}   = [$2, $3];
-		$self->{'error_message'} = $4;
-	}
-	else
-	{
-		return $self->call_die(
-			'The response either does not a contain a Gopher+ ' .
-			'error or it contains a malformed Gopher+ error.'
-		)
-	}
 }
 
 1;

@@ -71,6 +71,7 @@ CLIENT: while (my $client = $server->accept)
 		binmode FILE;
 		my $item = join('', <FILE>);
 		close FILE;
+
 		write_to_socket($client, $select, $item);
 		die "(Test server) write error: $!" if ($error);
 	}
@@ -85,7 +86,7 @@ sub read_from_socket
 
 	# make sure we can read from the socket; that there's something in the
 	# OS buffer to read:
-	return unless ($select->can_read(TIMEOUT));
+	return error(1) unless ($select->can_read(TIMEOUT));
 
 	while (1)
 	{

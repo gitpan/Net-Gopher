@@ -4,23 +4,25 @@ use Module::Build;
 
 # don't prompt the user if we're not being called interactively (e.g., if we're
 # being called from cron or some such program instead of directly by the user):
-my $interactive = 1;
+my $interactive;
+$interactive = 1 if (-t STDIN and -t STDOUT);
 
 # first, make sure the line endings in the test items are correct:
 my %files_and_newlines = (
-	'index'          => 'LF',
-	gp_index         => 'CRLF',
-	gp_s_byte_term   => 'LF',
-	gp_s_period_term => 'CRLF',
-	gp_s_no_term     => 'CRLF',
-	gp_byte_term     => 'CR',
-	gp_period_term   => 'CRLF',
-	gp_no_term       => 'LF',
-	item_blocks      => 'CR',
-	directory_blocks => 'LF',
-	error_not_found  => 'CRLF',
-	error_multiline  => 'CR',
-	malformed_menu   => 'LF'
+	'index'             => 'LF',
+	gp_index            => 'CRLF',
+	gp_s_byte_term      => 'LF',
+	gp_s_period_term    => 'CRLF',
+	gp_s_no_term        => 'CRLF',
+	gp_byte_term        => 'CR',
+	gp_period_term      => 'CRLF',
+	gp_no_term          => 'LF',
+	gp_partial_response => 'LF',
+	item_blocks         => 'CR',
+	directory_blocks    => 'LF',
+	error_not_found     => 'CRLF',
+	error_multiline     => 'CR',
+	malformed_menu      => 'LF'
 );
 
 print "Converting the line endings in the test items...\n" if ($interactive);

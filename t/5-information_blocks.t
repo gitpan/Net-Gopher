@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test;
 
-BEGIN { plan(tests => 247) }
+BEGIN { plan(tests => 249) }
 
 use Net::Gopher;
 use Net::Gopher::Constants qw(:item_types :request);
@@ -14,7 +14,7 @@ require './t/serverfunctions.pl';
 
 
 
-run_server();
+ok(run_server()); # 1
 
 {
 	my $ng = new Net::Gopher;
@@ -24,163 +24,163 @@ run_server();
 		Selector => '/item_blocks'
 	);
 
-	ok($response->is_success); # 1
+	ok($response->is_success); # 2
 
 	{
-		ok($response->has_block('INFO')); # 2
+		ok($response->has_block('INFO')); # 3
 
 		my $block = $response->get_block('+INFO');
 
-		ok($block->name, '+INFO');                              # 3
+		ok($block->name, '+INFO');                              # 4
 		ok($block->value,
-			"1Gopher+ Index\t/gp_index\tlocalhost\t70\t+"); # 4
-		ok($block->raw_value,
 			"1Gopher+ Index\t/gp_index\tlocalhost\t70\t+"); # 5
-		ok(!$block->is_attributes);                             # 6
+		ok($block->raw_value,
+			"1Gopher+ Index\t/gp_index\tlocalhost\t70\t+"); # 6
+		ok(!$block->is_attributes);                             # 7
 
 		my ($type, $display, $selector, $host, $port, $gp) =
 			$block->extract_description;
 
-		ok($type, GOPHER_MENU_TYPE);                        # 7
-		ok($display, 'Gopher+ Index');                      # 8
-		ok($selector, '/gp_index');                         # 9
-		ok($host, 'localhost');                             # 10
-		ok($port, 70);                                      # 11
-		ok($gp, '+');                                       # 12
+		ok($type, GOPHER_MENU_TYPE);                        # 8
+		ok($display, 'Gopher+ Index');                      # 9
+		ok($selector, '/gp_index');                         # 10
+		ok($host, 'localhost');                             # 11
+		ok($port, 70);                                      # 12
+		ok($gp, '+');                                       # 13
 		ok($block->as_url,
-			"gopher://localhost:70/1/gp_index%09%09+"); # 13
+			"gopher://localhost:70/1/gp_index%09%09+"); # 14
 
 		{
 			my $request = $block->as_request;
 
-			ok($request->as_string, "/gp_index\t+$CRLF");       # 14
+			ok($request->as_string, "/gp_index\t+$CRLF");       # 15
 			ok($request->as_url,
-				'gopher://localhost:70/1/gp_index%09%09+'); # 15
-			ok($request->request_type, GOPHER_PLUS_REQUEST);    # 16
-			ok($request->host, 'localhost');                    # 17
-			ok($request->port, 70);                             # 18
-			ok($request->selector, '/gp_index');                # 19
-			ok(!defined $request->search_words);                # 20
-			ok(!defined $request->representation);              # 21
-			ok(!defined $request->data_block);                  # 22
-			ok(!defined $request->attributes);                  # 23
-			ok($request->item_type, GOPHER_MENU_TYPE);          # 24
+				'gopher://localhost:70/1/gp_index%09%09+'); # 16
+			ok($request->request_type, GOPHER_PLUS_REQUEST);    # 17
+			ok($request->host, 'localhost');                    # 18
+			ok($request->port, 70);                             # 19
+			ok($request->selector, '/gp_index');                # 20
+			ok(!defined $request->search_words);                # 21
+			ok(!defined $request->representation);              # 22
+			ok(!defined $request->data_block);                  # 23
+			ok(!defined $request->attributes);                  # 24
+			ok($request->item_type, GOPHER_MENU_TYPE);          # 25
 		}
 	}
 
 	{
-		ok($response->has_block('ADMIN')); # 25
+		ok($response->has_block('ADMIN')); # 26
 
 		my $block = $response->get_block('+ADMIN');
 
-		ok($block->name, '+ADMIN');                         # 26
+		ok($block->name, '+ADMIN');                         # 27
 		ok($block->value,
 			join('',
 				"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n",
 				"Mod-Date: <20030728173012>\n",
 				"Creation-Date: <20030728170201>\n",
 				"Expiration-Date: <20030909090001>"
-			));                                         # 27
+			));                                         # 28
 		ok($block->raw_value,
 			join('',
 				" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\015",
 				" Mod-Date: <20030728173012>\015",
 				" Creation-Date: <20030728170201>\015",
 				" Expiration-Date: <20030909090001>"
-			));                                         # 28
-		ok($block->is_attributes);                          # 29
-		ok($block->has_attribute('Admin'));                 # 30
+			));                                         # 29
+		ok($block->is_attributes);                          # 30
+		ok($block->has_attribute('Admin'));                 # 31
 		ok($block->get_attribute('Admin'),
-			'John Q. Sixpack <j_q_sixpack@yahoo.com>'); # 31
-		ok($block->has_attribute('Mod-Date'));              # 32
+			'John Q. Sixpack <j_q_sixpack@yahoo.com>'); # 32
+		ok($block->has_attribute('Mod-Date'));              # 33
 		ok($block->get_attribute('Mod-Date'),
-			'<20030728173012>');                        # 33
-		ok($block->has_attribute('Creation-Date'));         # 34
+			'<20030728173012>');                        # 34
+		ok($block->has_attribute('Creation-Date'));         # 35
 		ok($block->get_attribute('Creation-Date'),
-			'<20030728170201>');                        # 35
-		ok($block->has_attribute('Expiration-Date'));       # 36
+			'<20030728170201>');                        # 36
+		ok($block->has_attribute('Expiration-Date'));       # 37
 		ok($block->get_attribute('Expiration-Date'),
-			'<20030909090001>');                        # 37
+			'<20030909090001>');                        # 38
 
 
 
 		my %attributes = $block->get_attributes;
 		ok($attributes{'Admin'},
-			'John Q. Sixpack <j_q_sixpack@yahoo.com>');    # 38
-		ok($attributes{'Mod-Date'}, '<20030728173012>');       # 39
-		ok($attributes{'Creation-Date'}, '<20030728170201>');  # 40
-		ok($attributes{'Expiration-Date'},'<20030909090001>'); # 41
+			'John Q. Sixpack <j_q_sixpack@yahoo.com>');    # 39
+		ok($attributes{'Mod-Date'}, '<20030728173012>');       # 40
+		ok($attributes{'Creation-Date'}, '<20030728170201>');  # 41
+		ok($attributes{'Expiration-Date'},'<20030909090001>'); # 42
 
 
 
 		my $attributes = $block->get_attributes;
 		ok($attributes->{'Admin'},
-			'John Q. Sixpack <j_q_sixpack@yahoo.com>');      # 42
-		ok($attributes->{'Mod-Date'}, '<20030728173012>');       # 43
-		ok($attributes->{'Creation-Date'}, '<20030728170201>');  # 44
-		ok($attributes->{'Expiration-Date'},'<20030909090001>'); # 45
+			'John Q. Sixpack <j_q_sixpack@yahoo.com>');      # 43
+		ok($attributes->{'Mod-Date'}, '<20030728173012>');       # 44
+		ok($attributes->{'Creation-Date'}, '<20030728170201>');  # 45
+		ok($attributes->{'Expiration-Date'},'<20030909090001>'); # 46
 
 
 
 		my ($admin_name, $admin_email) = $block->extract_admin;
 
-		ok($admin_name, 'John Q. Sixpack');        # 46
-		ok($admin_email, 'j_q_sixpack@yahoo.com'); # 47
+		ok($admin_name, 'John Q. Sixpack');        # 47
+		ok($admin_email, 'j_q_sixpack@yahoo.com'); # 48
 
-		ok($block->extract_date_modified, 1059427812); # 48
-		ok($block->extract_date_created, 1059426121);  # 49
-		ok($block->extract_date_expires, 1063112401);  # 50
+		ok($block->extract_date_modified, 1059427812); # 49
+		ok($block->extract_date_created, 1059426121);  # 50
+		ok($block->extract_date_expires, 1063112401);  # 51
 	}
 
 	{
-		ok($response->has_block('+VIEWS')); # 51
+		ok($response->has_block('+VIEWS')); # 52
 
 		my $block = $response->get_block('VIEWS');
 
-		ok($block->name, '+VIEWS'); # 52
+		ok($block->name, '+VIEWS'); # 53
 		ok($block->value,
 			join('',
 				"text/plain: <.40k>\n",
 				"application/gopher+-menu En_US: <1200b>\n",
 				"text/html: <.77KB>"
-			));                 # 53
+			));                 # 54
 		ok($block->raw_value,
 			join('',
 				" text/plain: <.40k>\015",
 				" application/gopher+-menu En_US: <1200b>\015",
 				" text/html: <.77KB>"
-			));                 # 54
-		ok($block->is_attributes);  # 55
+			));                 # 55
+		ok($block->is_attributes);  # 56
 
 
 
 		my @views = $block->extract_views;
 
-		ok($views[0]->{'type'}, 'text/plain'); # 56
-		ok(!defined $views[0]->{'language'});  # 57
-		ok(!defined $views[0]->{'country'});   # 58
-		ok($views[0]->{'size'}, 410);          # 59
+		ok($views[0]->{'type'}, 'text/plain'); # 57
+		ok(!defined $views[0]->{'language'});  # 58
+		ok(!defined $views[0]->{'country'});   # 59
+		ok($views[0]->{'size'}, 410);          # 60
 
-		ok($views[1]->{'type'}, 'application/gopher+-menu'); # 60
-		ok($views[1]->{'language'}, 'En');                   # 61
-		ok($views[1]->{'country'}, 'US');                    # 62
-		ok($views[1]->{'size'}, 1200);                       # 63
+		ok($views[1]->{'type'}, 'application/gopher+-menu'); # 61
+		ok($views[1]->{'language'}, 'En');                   # 62
+		ok($views[1]->{'country'}, 'US');                    # 63
+		ok($views[1]->{'size'}, 1200);                       # 64
 
-		ok($views[2]->{'type'}, 'text/html'); # 64
-		ok(!defined $views[2]->{'language'}); # 65
-		ok(!defined $views[2]->{'country'});  # 66
-		ok($views[2]->{'size'}, 789);         # 67
+		ok($views[2]->{'type'}, 'text/html'); # 65
+		ok(!defined $views[2]->{'language'}); # 66
+		ok(!defined $views[2]->{'country'});  # 67
+		ok($views[2]->{'size'}, 789);         # 68
 
-		ok(scalar @views, 3); # 68
+		ok(scalar @views, 3); # 69
 	}
 
 	{
 	
-		ok($response->has_block('ASK')); # 69
+		ok($response->has_block('ASK')); # 70
 
 		my $block = $response->get_block('ASK');
 
-		ok($block->name, '+ASK');  # 70
+		ok($block->name, '+ASK');  # 71
 		ok($block->value,
 			join('',
 				"Ask: What is your name?\n",
@@ -189,7 +189,7 @@ run_server();
 				"Select: Contact using Email:\t1\n",
 				"Select: Contact using Instant Messenger:\t1\n",
 				"Select: Contact using IRC:\t0"
-			));                # 71
+			));                # 72
 		ok($block->raw_value,
 			join('',
 				" Ask: What is your name?\015",
@@ -198,49 +198,49 @@ run_server();
 				" Select: Contact using Email:\t1\015",
 				" Select: Contact using Instant Messenger:\t1\015",
 				" Select: Contact using IRC:\t0"
-			));                # 72
-		ok($block->is_attributes); # 73
+			));                # 73
+		ok($block->is_attributes); # 74
 
 
 
 		my @queries = $block->extract_queries;
 
-		ok($queries[0]->{'type'}, 'Ask');                    # 74
-		ok($queries[0]->{'question'}, 'What is your name?'); # 75
-		ok(!defined $queries[0]->{'value'});                 # 76
-		ok(!exists $queries[0]->{'choices'});                # 77
+		ok($queries[0]->{'type'}, 'Ask');                    # 75
+		ok($queries[0]->{'question'}, 'What is your name?'); # 76
+		ok(!defined $queries[0]->{'value'});                 # 77
+		ok(!exists $queries[0]->{'choices'});                # 78
 
-		ok($queries[1]->{'type'}, 'Ask');                     # 78
-		ok($queries[1]->{'question'}, 'Where are you from?'); # 79
-		ok($queries[1]->{'value'}, 'Montana');                # 80
-		ok(!exists $queries[1]->{'choices'});                 # 81
+		ok($queries[1]->{'type'}, 'Ask');                     # 79
+		ok($queries[1]->{'question'}, 'Where are you from?'); # 80
+		ok($queries[1]->{'value'}, 'Montana');                # 81
+		ok(!exists $queries[1]->{'choices'});                 # 82
 
-		ok($queries[2]->{'type'}, 'Choose');         # 82
+		ok($queries[2]->{'type'}, 'Choose');         # 83
 		ok($queries[2]->{'question'},
-			'What is your favorite color?');     # 83
-		ok(!exists $queries[2]->{'value'});          # 84
-		ok(ref $queries[2]->{'choices'}, 'ARRAY');   # 85
-		ok($queries[2]->{'choices'}->[0], 'red');    # 86
-		ok($queries[2]->{'choices'}->[1], 'green');  # 87
-		ok($queries[2]->{'choices'}->[2], 'blue');   # 88
-		ok(scalar @{ $queries[2]->{'choices'} }, 3); # 89
+			'What is your favorite color?');     # 84
+		ok(!exists $queries[2]->{'value'});          # 85
+		ok(ref $queries[2]->{'choices'}, 'ARRAY');   # 86
+		ok($queries[2]->{'choices'}->[0], 'red');    # 87
+		ok($queries[2]->{'choices'}->[1], 'green');  # 88
+		ok($queries[2]->{'choices'}->[2], 'blue');   # 89
+		ok(scalar @{ $queries[2]->{'choices'} }, 3); # 90
 
-		ok($queries[3]->{'type'}, 'Select');                   # 90
-		ok($queries[3]->{'question'}, 'Contact using Email:'); # 91
-		ok($queries[3]->{'value'}, '1');                       # 92
-		ok(!exists $queries[3]->{'choices'});                  # 93
+		ok($queries[3]->{'type'}, 'Select');                   # 91
+		ok($queries[3]->{'question'}, 'Contact using Email:'); # 92
+		ok($queries[3]->{'value'}, '1');                       # 93
+		ok(!exists $queries[3]->{'choices'});                  # 94
 
-		ok($queries[4]->{'type'}, 'Select');                               # 94
-		ok($queries[4]->{'question'}, 'Contact using Instant Messenger:'); # 95
-		ok($queries[4]->{'value'}, '1');                                   # 96
-		ok(!exists $queries[4]->{'choices'});                              # 97
+		ok($queries[4]->{'type'}, 'Select');                               # 95
+		ok($queries[4]->{'question'}, 'Contact using Instant Messenger:'); # 96
+		ok($queries[4]->{'value'}, '1');                                   # 97
+		ok(!exists $queries[4]->{'choices'});                              # 98
 
-		ok($queries[5]->{'type'}, 'Select');                 # 98
-		ok($queries[5]->{'question'}, 'Contact using IRC:'); # 99
-		ok($queries[5]->{'value'}, '0');                     # 100
-		ok(!exists $queries[5]->{'choices'});                # 101
+		ok($queries[5]->{'type'}, 'Select');                 # 99
+		ok($queries[5]->{'question'}, 'Contact using IRC:'); # 100
+		ok($queries[5]->{'value'}, '0');                     # 101
+		ok(!exists $queries[5]->{'choices'});                # 102
 
-		ok(scalar @queries, 6); # 102
+		ok(scalar @queries, 6); # 103
 	}
 
 
@@ -251,126 +251,126 @@ run_server();
 		my ($type, $display, $selector, $host, $port, $gp) =
 			$response->extract_description;
 
-		ok($type, GOPHER_MENU_TYPE);                        # 103
-		ok($display, 'Gopher+ Index');                      # 104
-		ok($selector, '/gp_index');                         # 105
-		ok($host, 'localhost');                             # 106
-		ok($port, 70);                                      # 107
-		ok($gp, '+');                                       # 108
+		ok($type, GOPHER_MENU_TYPE);                        # 104
+		ok($display, 'Gopher+ Index');                      # 105
+		ok($selector, '/gp_index');                         # 106
+		ok($host, 'localhost');                             # 107
+		ok($port, 70);                                      # 108
+		ok($gp, '+');                                       # 109
 	}
 
 	{
 		my ($admin_name, $admin_email) = $response->extract_admin;
 
-		ok($admin_name, 'John Q. Sixpack');        # 109
-		ok($admin_email, 'j_q_sixpack@yahoo.com'); # 110
+		ok($admin_name, 'John Q. Sixpack');        # 110
+		ok($admin_email, 'j_q_sixpack@yahoo.com'); # 111
 
 		{
 			my ($sec, $min, $hour, $mday, $mon,
 			    $year, $wday, $yday, $isdst) =
 				localtime $response->extract_date_modified;
-			ok($sec, 12);   # 111
-			ok($min, 30);   # 112
-			ok($hour, 17);  # 113
-			ok($mday, 28);  # 114
-			ok($mon, 6);    # 115
-			ok($year, 103); # 116
-			ok($wday, 1);   # 117
-			ok($yday, 208); # 118
-			ok($isdst, 1);  # 119
+			ok($sec, 12);   # 112
+			ok($min, 30);   # 113
+			ok($hour, 17);  # 114
+			ok($mday, 28);  # 115
+			ok($mon, 6);    # 116
+			ok($year, 103); # 117
+			ok($wday, 1);   # 118
+			ok($yday, 208); # 119
+			ok($isdst, 1);  # 120
 		}
 
 		{
 			my ($sec, $min, $hour, $mday, $mon,
 			    $year, $wday, $yday, $isdst) =
 				localtime $response->extract_date_created;
-			ok($sec, 1);    # 120
-			ok($min, 2);    # 121
-			ok($hour, 17);  # 122
-			ok($mday, 28);  # 123
-			ok($mon, 6);    # 124
-			ok($year, 103); # 125
-			ok($wday, 1);   # 126
-			ok($yday, 208); # 127
-			ok($isdst, 1);  # 128
+			ok($sec, 1);    # 121
+			ok($min, 2);    # 122
+			ok($hour, 17);  # 123
+			ok($mday, 28);  # 124
+			ok($mon, 6);    # 125
+			ok($year, 103); # 126
+			ok($wday, 1);   # 127
+			ok($yday, 208); # 128
+			ok($isdst, 1);  # 129
 		}
 
 		{
 			my ($sec, $min, $hour, $mday, $mon,
 			    $year, $wday, $yday, $isdst) =
 				localtime $response->extract_date_expires;
-			ok($sec, 1);    # 129
-			ok($min, 0);    # 130
-			ok($hour, 9);   # 131
-			ok($mday, 9);   # 132
-			ok($mon, 8);    # 133
-			ok($year, 103); # 134
-			ok($wday, 2);   # 135
-			ok($yday, 251); # 136
-			ok($isdst, 1);  # 137
+			ok($sec, 1);    # 130
+			ok($min, 0);    # 131
+			ok($hour, 9);   # 132
+			ok($mday, 9);   # 133
+			ok($mon, 8);    # 134
+			ok($year, 103); # 135
+			ok($wday, 2);   # 136
+			ok($yday, 251); # 137
+			ok($isdst, 1);  # 138
 		}
 	}
 
 	{
 		my @views = $response->extract_views;
 
-		ok($views[0]->{'type'}, 'text/plain'); # 138
-		ok(!defined $views[0]->{'language'});  # 139
-		ok(!defined $views[0]->{'country'});   # 140
-		ok($views[0]->{'size'}, 410);          # 141
+		ok($views[0]->{'type'}, 'text/plain'); # 139
+		ok(!defined $views[0]->{'language'});  # 140
+		ok(!defined $views[0]->{'country'});   # 141
+		ok($views[0]->{'size'}, 410);          # 142
 
-		ok($views[1]->{'type'}, 'application/gopher+-menu'); # 142
-		ok($views[1]->{'language'}, 'En');                   # 143
-		ok($views[1]->{'country'}, 'US');                    # 144
-		ok($views[1]->{'size'}, 1200);                       # 145
+		ok($views[1]->{'type'}, 'application/gopher+-menu'); # 143
+		ok($views[1]->{'language'}, 'En');                   # 144
+		ok($views[1]->{'country'}, 'US');                    # 145
+		ok($views[1]->{'size'}, 1200);                       # 146
 
-		ok($views[2]->{'type'}, 'text/html'); # 146
-		ok(!defined $views[2]->{'language'}); # 147
-		ok(!defined $views[2]->{'country'});  # 148
-		ok($views[2]->{'size'}, 789);         # 149
+		ok($views[2]->{'type'}, 'text/html'); # 147
+		ok(!defined $views[2]->{'language'}); # 148
+		ok(!defined $views[2]->{'country'});  # 149
+		ok($views[2]->{'size'}, 789);         # 150
 
-		ok(scalar @views, 3); # 150
+		ok(scalar @views, 3); # 151
 	}
 
 	{
 		my @queries = $response->extract_queries;
 
-		ok($queries[0]->{'type'}, 'Ask');                    # 151
-		ok($queries[0]->{'question'}, 'What is your name?'); # 152
-		ok(!defined $queries[0]->{'value'});                 # 153
-		ok(!exists $queries[0]->{'choices'});                # 154
+		ok($queries[0]->{'type'}, 'Ask');                    # 152
+		ok($queries[0]->{'question'}, 'What is your name?'); # 153
+		ok(!defined $queries[0]->{'value'});                 # 154
+		ok(!exists $queries[0]->{'choices'});                # 155
 
-		ok($queries[1]->{'type'}, 'Ask');                     # 155
-		ok($queries[1]->{'question'}, 'Where are you from?'); # 156
-		ok($queries[1]->{'value'}, 'Montana');                # 157
-		ok(!exists $queries[1]->{'choices'});                 # 158
+		ok($queries[1]->{'type'}, 'Ask');                     # 156
+		ok($queries[1]->{'question'}, 'Where are you from?'); # 157
+		ok($queries[1]->{'value'}, 'Montana');                # 158
+		ok(!exists $queries[1]->{'choices'});                 # 159
 
-		ok($queries[2]->{'type'}, 'Choose');         # 159
+		ok($queries[2]->{'type'}, 'Choose');         # 160
 		ok($queries[2]->{'question'},
-			'What is your favorite color?');     # 160
-		ok(!exists $queries[2]->{'value'});          # 161
-		ok(ref $queries[2]->{'choices'}, 'ARRAY');   # 162
-		ok($queries[2]->{'choices'}->[0], 'red');    # 163
-		ok($queries[2]->{'choices'}->[1], 'green');  # 164
-		ok($queries[2]->{'choices'}->[2], 'blue');   # 165
-		ok(scalar @{ $queries[2]->{'choices'} }, 3); # 166
+			'What is your favorite color?');     # 161
+		ok(!exists $queries[2]->{'value'});          # 162
+		ok(ref $queries[2]->{'choices'}, 'ARRAY');   # 163
+		ok($queries[2]->{'choices'}->[0], 'red');    # 164
+		ok($queries[2]->{'choices'}->[1], 'green');  # 165
+		ok($queries[2]->{'choices'}->[2], 'blue');   # 166
+		ok(scalar @{ $queries[2]->{'choices'} }, 3); # 167
 
-		ok($queries[3]->{'type'}, 'Select');                   # 167
-		ok($queries[3]->{'question'}, 'Contact using Email:'); # 168
-		ok($queries[3]->{'value'}, '1');                       # 169
-		ok(!exists $queries[3]->{'choices'});                  # 170
+		ok($queries[3]->{'type'}, 'Select');                   # 168
+		ok($queries[3]->{'question'}, 'Contact using Email:'); # 169
+		ok($queries[3]->{'value'}, '1');                       # 170
+		ok(!exists $queries[3]->{'choices'});                  # 171
 
-		ok($queries[4]->{'type'}, 'Select');                               # 171
-		ok($queries[4]->{'question'}, 'Contact using Instant Messenger:'); # 172
-		ok($queries[4]->{'value'}, '1');                                   # 173
-		ok(!exists $queries[4]->{'choices'});                              # 174
+		ok($queries[4]->{'type'}, 'Select');                               # 172
+		ok($queries[4]->{'question'}, 'Contact using Instant Messenger:'); # 173
+		ok($queries[4]->{'value'}, '1');                                   # 174
+		ok(!exists $queries[4]->{'choices'});                              # 175
 
-		ok($queries[5]->{'type'}, 'Select');                 # 175
-		ok($queries[5]->{'question'}, 'Contact using IRC:'); # 176
-		ok($queries[5]->{'value'}, '0');                     # 177
-		ok(!exists $queries[5]->{'choices'});                # 178
+		ok($queries[5]->{'type'}, 'Select');                 # 176
+		ok($queries[5]->{'question'}, 'Contact using IRC:'); # 177
+		ok($queries[5]->{'value'}, '0');                     # 178
+		ok(!exists $queries[5]->{'choices'});                # 179
 
-		ok(scalar @queries, 6); # 179
+		ok(scalar @queries, 6); # 180
 	}
 }
 
@@ -386,36 +386,36 @@ run_server();
 		Selector => '/directory_blocks'
 	);
 
-	ok($response->is_success); # 180
+	ok($response->is_success); # 181
 
 
 
 	{
-		ok($response->has_block('ADMIN', Item => 1)); # 181
+		ok($response->has_block('ADMIN', Item => 1)); # 182
 
 		my $block = $response->get_block('+ADMIN', Item => 1);
 
-		ok($block->name, '+ADMIN');             # 182
+		ok($block->name, '+ADMIN');             # 183
 		ok($block->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20030728173012>");  # 183
+			"Mod-Date: <20030728173012>");  # 184
 		ok($block->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20030728173012>"); # 184
+			" Mod-Date: <20030728173012>"); # 185
 	}
 
 	{
-		ok($response->has_block('INFO', [Item => 2])); # 185
+		ok($response->has_block('INFO', [Item => 2])); # 186
 
 		my $block = $response->get_block('INFO', {Item => 2});
 
-		ok($block->name, '+INFO');           # 186
+		ok($block->name, '+INFO');           # 187
 		ok($block->value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 187
+			"localhost\t70\t+");         # 188
 		ok($block->raw_value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 188
+			"localhost\t70\t+");         # 189
 	}
 
 	{
@@ -423,19 +423,19 @@ run_server();
 			Item => {
 				Selector => '/gp_period_term'
 			}
-		])); # 189
+		])); # 190
 
 		my $block = $response->get_block('ADMIN',
 			[Item => [Display => 'Period terminated file']]
 		);
 
-		ok($block->name, '+ADMIN');             # 190
+		ok($block->name, '+ADMIN');             # 191
 		ok($block->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20040101070206>");  # 191
+			"Mod-Date: <20040101070206>");  # 192
 		ok($block->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20040101070206>"); # 192
+			" Mod-Date: <20040101070206>"); # 193
 
 	}
 
@@ -449,7 +449,7 @@ run_server();
 				Port       => 70,
 				GopherPlus => '+'
 			}
-		])); # 193
+		])); # 194
 
 		my $block = $response->get_block('ADMIN',
 			[Item => {
@@ -463,13 +463,13 @@ run_server();
 			]
 		);
 
-		ok($block->name, '+ADMIN');             # 194
+		ok($block->name, '+ADMIN');             # 195
 		ok($block->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20040201182005>");  # 195
+			"Mod-Date: <20040201182005>");  # 196
 		ok($block->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20040201182005>"); # 196
+			" Mod-Date: <20040201182005>"); # 197
 	}
 
 	{
@@ -479,7 +479,7 @@ run_server();
 				Display    => qr/Byte terminated/,
 				Selector   => '/gp_byte_term',
 			}
-		)); # 197
+		)); # 198
 
 		my $block = $response->get_block('ADMIN',
 			Item => {
@@ -489,18 +489,18 @@ run_server();
 			}
 		);
 
-		ok($block->name, '+ADMIN');             # 198
+		ok($block->name, '+ADMIN');             # 199
 		ok($block->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20031201123000>");  # 199
+			"Mod-Date: <20031201123000>");  # 200
 		ok($block->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20031201123000>"); # 200
+			" Mod-Date: <20031201123000>"); # 201
 	}
 
 	{
 		ok(!$response->has_block('ADMIN',
-			Item => {Display => 'bad display'})); # 201
+			Item => {Display => 'bad display'})); # 202
 
 		my $block = $response->get_block('ADMIN',
 			Item => {
@@ -508,113 +508,113 @@ run_server();
 			}
 		);
 
-		ok(!defined $block); # 202
+		ok(!defined $block); # 203
 	}
 
 	{
 		my @directory_information = $response->get_blocks;
 
-		ok(scalar @directory_information, 4); # 203
+		ok(scalar @directory_information, 4); # 204
 
 
 
 		my @gp_index = @{ shift @directory_information };
 
-		ok($gp_index[0]->name, '+INFO');                       # 204
+		ok($gp_index[0]->name, '+INFO');                       # 205
 		ok($gp_index[0]->value,
-			"1Gopher+ Index	/gp_index\tlocalhost\t70\t+"); # 205
-		ok($gp_index[0]->raw_value,
 			"1Gopher+ Index	/gp_index\tlocalhost\t70\t+"); # 206
+		ok($gp_index[0]->raw_value,
+			"1Gopher+ Index	/gp_index\tlocalhost\t70\t+"); # 207
 
-		ok($gp_index[1]->name, '+ADMIN');       # 207
+		ok($gp_index[1]->name, '+ADMIN');       # 208
 		ok($gp_index[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20030728173012>");  # 208
+			"Mod-Date: <20030728173012>");  # 209
 		ok($gp_index[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20030728173012>"); # 209
+			" Mod-Date: <20030728173012>"); # 210
 
 
 
 		my @gp_byte_term = @{ shift @directory_information };
 
-		ok($gp_byte_term[0]->name, '+INFO'); # 210
+		ok($gp_byte_term[0]->name, '+INFO'); # 211
 		ok($gp_byte_term[0]->value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 211
+			"localhost\t70\t+");         # 212
 		ok($gp_byte_term[0]->raw_value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 212
+			"localhost\t70\t+");         # 213
 
-		ok($gp_byte_term[1]->name, '+ADMIN');   # 213
+		ok($gp_byte_term[1]->name, '+ADMIN');   # 214
 		ok($gp_byte_term[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20031201123000>");  # 214
+			"Mod-Date: <20031201123000>");  # 215
 		ok($gp_byte_term[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20031201123000>"); # 215
+			" Mod-Date: <20031201123000>"); # 216
 
 
 
 		my @gp_period_term = @{ shift @directory_information };
 
-		ok($gp_period_term[0]->name, '+INFO'); # 216
+		ok($gp_period_term[0]->name, '+INFO'); # 217
 		ok($gp_period_term[0]->value,
 			"0Period terminated file\t/gp_period_term\t" .
-			"localhost\t70\t+");           # 217
+			"localhost\t70\t+");           # 218
 		ok($gp_period_term[0]->raw_value,
 			"0Period terminated file\t/gp_period_term\t" .
-			"localhost\t70\t+");           # 218
+			"localhost\t70\t+");           # 219
 
-		ok($gp_period_term[1]->name, '+ADMIN'); # 219
+		ok($gp_period_term[1]->name, '+ADMIN'); # 220
 		ok($gp_period_term[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20040101070206>");  # 220
+			"Mod-Date: <20040101070206>");  # 221
 		ok($gp_period_term[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20040101070206>"); # 221
+			" Mod-Date: <20040101070206>"); # 222
 
 
 
 		my @gp_no_term = @{ shift @directory_information };
 
-		ok($gp_no_term[0]->name, '+INFO'); # 222
+		ok($gp_no_term[0]->name, '+INFO'); # 223
 		ok($gp_no_term[0]->value,
 			"0Non-terminated file\t/gp_no_term\t" .
-			"localhost\t70\t+");       # 223
+			"localhost\t70\t+");       # 224
 		ok($gp_no_term[0]->raw_value,
 			"0Non-terminated file\t/gp_no_term\t" .
-			"localhost\t70\t+");        # 224
+			"localhost\t70\t+");        # 225
 
-		ok($gp_no_term[1]->name, '+ADMIN');     # 225
+		ok($gp_no_term[1]->name, '+ADMIN');     # 226
 		ok($gp_no_term[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20040201182005>");  # 226
+			"Mod-Date: <20040201182005>");  # 227
 		ok($gp_no_term[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20040201182005>"); # 227
+			" Mod-Date: <20040201182005>"); # 228
 	}
 
 	{
 		my @gp_byte_term = $response->get_blocks(Item => 2);
 
-		ok(scalar @gp_byte_term, 2); # 228
+		ok(scalar @gp_byte_term, 2); # 229
 
-		ok($gp_byte_term[0]->name, '+INFO'); # 229
+		ok($gp_byte_term[0]->name, '+INFO'); # 230
 		ok($gp_byte_term[0]->value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 230
+			"localhost\t70\t+");         # 231
 		ok($gp_byte_term[0]->raw_value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 231
+			"localhost\t70\t+");         # 232
 
-		ok($gp_byte_term[1]->name, '+ADMIN');   # 232
+		ok($gp_byte_term[1]->name, '+ADMIN');   # 233
 		ok($gp_byte_term[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20031201123000>");  # 233
+			"Mod-Date: <20031201123000>");  # 234
 		ok($gp_byte_term[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20031201123000>"); # 234
+			" Mod-Date: <20031201123000>"); # 235
 	}
 
 	{
@@ -625,23 +625,23 @@ run_server();
 			}
 		);
 
-		ok(scalar @gp_period_term, 2); # 235
+		ok(scalar @gp_period_term, 2); # 236
 
-		ok($gp_period_term[0]->name, '+INFO'); # 236
+		ok($gp_period_term[0]->name, '+INFO'); # 237
 		ok($gp_period_term[0]->value,
 			"0Period terminated file\t/gp_period_term\t" .
-			"localhost\t70\t+");           # 237
+			"localhost\t70\t+");           # 238
 		ok($gp_period_term[0]->raw_value,
 			"0Period terminated file\t/gp_period_term\t" .
-			"localhost\t70\t+");           # 238
+			"localhost\t70\t+");           # 239
 
-		ok($gp_period_term[1]->name, '+ADMIN'); # 239
+		ok($gp_period_term[1]->name, '+ADMIN'); # 240
 		ok($gp_period_term[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20040101070206>");  # 240
+			"Mod-Date: <20040101070206>");  # 241
 		ok($gp_period_term[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20040101070206>"); # 241
+			" Mod-Date: <20040101070206>"); # 242
 	}
 }
 
@@ -661,25 +661,25 @@ run_server();
 		Selector => '/gp_index'
 	);
 
-	ok($response->is_success); # 242
+	ok($response->is_success); # 243
 
 	# there are no blocks, so we should get errors when we try to parse
 	# them:
-	ok(!$response->has_block('Something')); # 243
+	ok(!$response->has_block('Something')); # 244
 
-	ok(scalar @warnings, 1);     # 244
+	ok(scalar @warnings, 1);     # 245
 	ok($warnings[0], join(' ',
 		"You didn't send an item attribute or directory",
 		"attribute information request, so why would the",
 		"response contain attribute information blocks?"
-	));                          # 245
-	ok(scalar @fatal_errors, 1); # 246
+	));                          # 246
+	ok(scalar @fatal_errors, 1); # 247
 	ok($fatal_errors[0], join(' ',
 		'There was no leading "+" for the first block name at',
 		'the beginning of the response. The response either',
 		'does not contain any attribute information blocks or',
 		'contains malformed attribute information blocks.'
-	));                          # 247
+	));                          # 248
 }
 
-kill_server();
+ok(kill_server()); # 249

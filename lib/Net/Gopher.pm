@@ -58,6 +58,14 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  	ItemType       => 0
  );
  
+ # ...this, a Gopher+ item attirbute request:
+ $response = $ng->item_attribute(
+ 	Host       => 'gopher.host.com',
+ 	Selector   => '/doc.txt',
+ 	Attributes => '+VIEWS'
+ 	ItemType   => 0
+ );
+ 
  
  
  # For any Gopher request, item/directorty attribute information request,
@@ -134,20 +142,17 @@ object for you to manipulate.
 As far as requests go, there are four different kinds you can send using this
 module: Gopher requests,[3] Gopher+ requests,[4] item attribute information
 requests,[5] and directory attribute information requests.[6] This class also
-has shortcut methods for each type of request (for example, C<gopher()> and
-C<gopher_plus()>) which create the request object for you, send the request,
-and return the corresponding response object.
+has shortcut methods (C<gopher()>, C<gopher_plus()>, C<item_attribute()>, and
+C<directory_attribute()>) for each type of request, which create the request
+object for you, send the request, and return the corresponding response object.
 
 Just like the modules in I<libnet> (e.g., L<Net::NNTP|Net::NNTP>,
 L<Net::FTP|Net::FTP>), many of the methods in the B<Net::Gopher> distribution
-take named parameters. However, B<Net::Gopher> does not require usage of the
-non-spaced, first letter uppercased libnet style C<ParamName =E<gt> "value">
-convention. The more common all lowercase, underscore spaced
-C<param_name =E<gt> "value"> style can be used instead; nether case nor
-underscores matter: "param_name", "Param_Name", "ParamName", "PaRaMnAmE", and
-"PARAM_name" will all be accepted and treated as the same thing. You can even
-add leading dashes to parameter names a la Tk if you want, but please don't do
-that. Choose which ever style you prefer and stick with it.
+take named parameters. However, B<Net::Gopher> does not require that the
+parameter names be specified in the same manor. You can use LWP-style parameter
+names or even Tk-style parameter names, because neither case nor underscores
+nor leading dashes matter: "ParamName", "param_name", and "-paramname" will be
+accepted and treated as referring to the same thing.
 
 The named parameters, for every method that takes them, can be sent optionally
 as either a hash or array reference--though few methods, like
@@ -173,10 +178,7 @@ use Net::Gopher::Debugging;
 use Net::Gopher::Exception;
 use Net::Gopher::Request;
 use Net::Gopher::Response;
-use Net::Gopher::Utility qw(
-	$CRLF $NEWLINE_PATTERN
-	check_params size_in_bytes remove_bytes strip_terminator
-);
+use Net::Gopher::Utility qw($CRLF check_params size_in_bytes strip_terminator);
 
 use constant DEFAULT_GOPHER_PORT  => 70;
 use constant DEFAULT_TIMEOUT      => 30;
@@ -187,10 +189,9 @@ use constant MAX_STATUS_LINE_SIZE => 64;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '0.96_1';
+$VERSION = '0.97';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
-
 
 
 
@@ -223,9 +224,9 @@ will be used instead.
 =item Timeout
 
 I<Timeout> specifies the number of seconds at which a timeout will occur when
-trying to connect to the server, when sending requests to it, when reading
-responses from it, etc. If you don't specify a number of seconds, then the
-default of 30 seconds will be used instead.
+trying to connect to the server, when sending the request to it, and when
+receiving the response from it. If you don't specify a number of seconds, then
+the default of 30 seconds will be used instead.
 
 =item UpwardCompatible
 
@@ -325,8 +326,8 @@ sub new
 		# silently handle Gopher responses to Gopher+ type requests?
 		upward_compatible => ($upward_compatible) ? 1 : 0,
 
-		# when we read from the socket, we'll do so using a series of
-		# buffers:
+		# When we read from the socket, we'll do so using a series of
+		# buffers. This stores each buffer one at a time:
 		_buffer           => undef,
 
 		# the IO::Select object for the socket stored in _socket:
@@ -334,6 +335,10 @@ sub new
 
 		# the IO::Socket::INET socket:
 		_socket           => undef,
+
+		# this stores any network error that occurs during the
+		# request/response cycle:
+		_network_error    => undef
 	};
 
 	bless($self, $class);
@@ -376,18 +381,19 @@ sub new
 =head2 request(REQUEST [, OPTIONS])
 
 This method connects to a Gopherspace, sends a request, receives the response,
-and disconnects from the Gopherspace. It always returns a
-B<Net::Gopher::Response> object encapsulating the server's response.
+and disconnects from the Gopherspace. It returns a B<Net::Gopher::Response>
+object encapsulating the server's response.
 
 This method takes a B<Net::Gopher::Request> object encapsulating a Gopher or
 Gopher+ request as its first argument. This is the only required argument.
 
-If you didn't specify the I<Port> parameter of your request object (and
-never set it using the C<port()> method), then the default IANA designated port
-of 70 will be used when connecting to the Gopherspace. If you didn't specify
-the I<ItemType> parameter for I<Gopher> or I<GopherPlus> type requests (and
-never set it using the C<item_type()> method), then "1", Gopher menu type,
-will be assumed.
+If the C<port()> member of the request object is empty (probably because you
+never filled it out during the creation of the request object or later on with
+the C<port()> method), then the default IANA designated port of 70 will be used
+to connect to the Gopherspace. If the C<item_type()> member of the request
+object is empty (again, because you never set during creation or later on) and
+the request is not an item attribute information request or directory attribute
+information request, then "1", Gopher menu type, will be assumed.
 
 Some typical usage of request objects in conjunction with this method is
 illustrated in the L<SYNOPSIS|Net::Gopher/SYNOPSIS>. For a more detailed
@@ -430,6 +436,7 @@ sub request
 
 	my ($file, $handler) = check_params(['File', 'Handler'], \@_);
 
+	# the response object we'll return:
 	my $response = new Net::Gopher::Response;
 	   $response->ng($self);
 	   $response->request($request);
@@ -442,8 +449,8 @@ sub request
 		"creation or later on with the host() method."
 	) unless (defined $request->host and length $request->host);
 
-	# we also need a port, but we can use the default IANA designated
-	# Gopher port if none was specified:
+	# we also need a port number, but we can use the default IANA
+	# designated Gopher port number if none was specified:
 	$request->port(DEFAULT_GOPHER_PORT) unless ($request->port);
 
 	# if no item type was specified and it's not an item
@@ -461,7 +468,8 @@ sub request
 			PeerPort => $request->port,
 			Timeout  => $self->timeout,
 			Proto    => 'tcp',
-			Type     => SOCK_STREAM
+			Type     => SOCK_STREAM,
+			Blocking => 0
 		)
 	);
 
@@ -522,10 +530,6 @@ sub request
 
 
 
-	# empty the socket buffer and all of the data that was read from
-	# the socket during any previous request:
-	$self->_clear;
-
 	# is this a Gopher+ style request/response cycle? (Complete with
 	# additional tab delimited fields in the request string that we sent
 	# and a status line prefixing the response?)
@@ -578,7 +582,7 @@ sub request
 	my $remainder;
 
 	if ($is_gopher_plus
-		and my $status_line = $self->_get_status_line(\$remainder))
+		and my $status_line = $self->_read_status_line(\$remainder))
 	{
 		$response->_add_raw($status_line);
 
@@ -657,8 +661,7 @@ sub request
 					($actual_size == 1) ? 'byte' : 'bytes',
 					$supposed_size
 				)
-			) unless ($actual_size <= $supposed_size + 1
-				and $actual_size >= $supposed_size - 1);
+			) if ($actual_size < $supposed_size - 1);
 		}
 
 		# If the response was terminated by a period on a line by
@@ -758,9 +761,6 @@ sub request
 	# disconnect from the server:
 	$self->_socket->close;
 	$self->debug_print('Disconnected from server.');
-
-	# empty the buffers:
-	$self->_clear;
 
 
 
@@ -892,9 +892,10 @@ response.
 
 This:
 
- $ng->item(
+ $ng->item_attribute(
  	Host       => 'gopher.host.com',
- 	Selector   => '/file.txt'
+ 	Selector   => '/file.txt',
+	Attributes => '+INFO'
  );
 
 is roughly equivalent to this:
@@ -902,7 +903,8 @@ is roughly equivalent to this:
  $ng->request(
  	new Net::Gopher::Request ('ItemAttribute',
  		Host       => 'gopher.host.com',
- 		Selector   => '/file.txt'
+ 		Selector   => '/file.txt',
+ 		Attributes => '+INFO'
  	)
  );
 
@@ -994,7 +996,7 @@ is roughly equivalent to this:
  );
 
 Note that partial URLs are acceptable; you can leave out the scheme, port, item
-type, or selector string.
+type, or selector string (and anything after it) if you wish.
 
 =cut
 
@@ -1221,29 +1223,6 @@ sub _buffer
 ################################################################################
 #
 #	Method
-#		_clear()
-#
-#	Purpose
-#		This method empties the socket buffer ($self->_buffer).
-#
-#	Parameters
-#		None.
-#
-
-sub _clear
-{
-	my $self = shift;
-
-	$self->_buffer(undef);
-}
-
-
-
-
-
-################################################################################
-#
-#	Method
 #		_read()
 #
 #	Purpose
@@ -1262,12 +1241,14 @@ sub _read
 	my $self   = shift;
 	my $length = shift || $self->buffer_size;
 
+	# first, empty the buffer:
+	$self->_buffer(undef);
+
 	while (1)
 	{
-		# first, make sure we can read from the socket; that we're
-		# still connected to the server and there's something in the OS
-		# buffer to read:
-		return unless ($self->_select->can_read($self->timeout));
+		# make sure the socket's ready for reading:
+		return $self->_network_error('Response timed out')
+			unless ($self->_select->can_read($self->timeout));
 
 		# try to read part of the response from the socket into the
 		# buffer:
@@ -1326,8 +1307,8 @@ sub _write
 
 	while (1)
 	{
-		# make sure we can write to the socket; that we're still
-		# connected to the server and the OS buffer isn't full:
+		# make sure that the socket is ready for writing and the the OS
+		# buffer isn't full:
 		return $self->_network_error('Request timed out')
 			unless ($self->_select->can_write($self->timeout));
 
@@ -1375,7 +1356,7 @@ sub _write
 ################################################################################
 #
 #	Method
-#		_get_status_line()
+#		_read_status_line()
 #
 #	Purpose
 #		This calls _read() over and over again until it finds a CRLF or
@@ -1394,7 +1375,7 @@ sub _write
 #		None.
 #
 
-sub _get_status_line
+sub _read_status_line
 {
 	my ($self, $remainder_ref) = @_;
 

@@ -30,6 +30,7 @@ t/items/error_not_found
 t/items/gp_byte_term
 t/items/gp_index
 t/items/gp_no_term
+t/items/gp_partial_response
 t/items/gp_period_term
 t/items/gp_s_byte_term
 t/items/gp_s_no_term

@@ -97,7 +97,6 @@ push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 @EXPORT_OK = qw(
 	Gopher GopherPlus ItemAttribute DirectoryAttribute URL	
 );
-
 %EXPORT_TAGS = (
 	gopher      => [qw(Gopher URL)],
 	gopher_plus => [qw(GopherPlus ItemAttribute DirectoryAttribute URL)],

@@ -52,14 +52,14 @@ sub gen_block_xml
 	if ($response->request->request_type == ITEM_ATTRIBUTE_REQUEST)
 	{
 		$writer->startTag('response',
-			description => 'item attribute information request',
+			description => 'item attribute information',
 			url         => $response->request->as_url
 		);
 	}
 	else
 	{
 		$writer->startTag('response',
-			description => 'directory attribute information request',
+			description => 'directory attribute information',
 			url         => $response->request->as_url
 		);
 	}
@@ -80,7 +80,7 @@ sub gen_block_xml
 
 			if ($block->name eq '+ASK')
 			{
-				foreach my $query ($block->extract_ask_queries)
+				foreach my $query ($block->extract_queries)
 				{
 					$writer->startTag('query');
 					$writer->dataElement(
@@ -134,14 +134,14 @@ sub gen_block_xml
 						'country', $view->{'country'}
 					);
 					$writer->dataElement(
-						'bytes', $view->{'size'}
+						'size', $view->{'size'}
 					);
 					$writer->endTag('view');
 				}
 			}
 			elsif ($block->is_attributes)
 			{
-				my %attributes = $block->attributes_as_hash;
+				my %attributes = $block->get_attributes;
 
 				while (my ($name, $value) = each %attributes)
 				{

@@ -54,10 +54,11 @@ Net::Gopher::Response::InformationBlock - Manipulate Gopher+ information blocks
 
 =head1 DESCRIPTION
 
-The L<Net::Gopher::Response|Net::Gopher::Response> C<get_block()> method
-returns one or more item/directory attribute information blocks in the form of
-B<Net::Gopher::Response::InformationBlocks> objects. This class contains
-methods to parse and manipulate these block objects.
+Both the L<Net::Gopher::Response|Net::Gopher::Response> C<get_block()> and
+C<get_blocks()> methods returns one or more item/directory attribute
+information blocks in the form of B<Net::Gopher::Response::InformationBlocks>
+objects. This class contains methods to parse and manipulate these block
+objects.
 
 To make things as simple as possible, this class overloads stringification,
 so if you don't need to do anything fancy and just want the block value, you
@@ -220,7 +221,7 @@ sub get_attribute
 
 	unless (defined $self->{'attributes'})
 	{
-		return unless ($self->_parse_attributes);
+		return unless ($self->_extract_attributes);
 	}
 
 	return $self->{'attributes'}{$name}
@@ -252,7 +253,7 @@ sub get_attributes
 
 	unless (defined $self->{'attributes'})
 	{
-		$self->_parse_attributes || return;
+		$self->_extract_attributes || return;
 	}
 
 	if (@names)
@@ -308,7 +309,7 @@ sub has_attribute
 
 	unless (defined $self->{'attributes'})
 	{
-		$self->_parse_attributes || return;
+		$self->_extract_attributes || return;
 	}
 
 	return 1 if (exists $self->{'attributes'}->{$name});
@@ -543,7 +544,7 @@ sub extract_date_modified
 		)
 	) unless ($self->has_attribute('Mod-Date'));
 
-	return $self->_parse_attr_timestamp('Mod-Date');
+	return $self->_extract_attribute_timestamp('Mod-Date');
 }
 
 
@@ -575,7 +576,7 @@ sub extract_date_created
 		)
 	) unless ($self->has_attribute('Creation-Date'));
 
-	return $self->_parse_attr_timestamp('Creation-Date');
+	return $self->_extract_attribute_timestamp('Creation-Date');
 }
 
 
@@ -607,7 +608,7 @@ sub extract_date_expires
 		)
 	) unless ($self->has_attribute('Expiration-Date'));
 
-	return $self->_parse_attr_timestamp('Expiration-Date');
+	return $self->_extract_attribute_timestamp('Expiration-Date');
 }
 
 
@@ -855,7 +856,7 @@ sub extract_views
 
 
 
-sub _parse_attributes
+sub _extract_attributes
 {
 	my $self = shift;
 
@@ -883,7 +884,7 @@ sub _parse_attributes
 
 
 
-sub _parse_attr_timestamp
+sub _extract_attribute_timestamp
 {
 	my ($self, $attribute) = @_;
 

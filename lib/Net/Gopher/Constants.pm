@@ -180,10 +180,10 @@ sub HAS_MOVED_ERROR()       { return 3 }
 =head1 ITEM TYPE CONSTANTS
 
 Finally, there are also constants for every known item type. These constants
-can be compared against the values returned by the various C<item_type()>
-methods, as well as used in place of character or string literals when
-specifying the attributes you want from an item attribute information request
-or directory attribute information request.
+can be to the I<ItemType> parameter when creating Gopher or Gopher+ requests in
+place of the usual non-descriptive string or numeric literals. They can also be
+compared against the values returned by the various C<item_type()> methods:
+
 
 =over 4
 
