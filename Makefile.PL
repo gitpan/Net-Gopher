@@ -24,7 +24,8 @@ my %files_and_newlines = (
 	directory_blocks    => 'LF',
 	error_not_found     => 'CRLF',
 	error_multiline     => 'CR',
-	malformed_menu      => 'LF'
+	malformed_menu      => 'LF',
+	bad_blocks          => 'LF'
 );
 
 print "Converting the line endings in the test items...\n" if ($interactive);
@@ -37,15 +38,17 @@ while (my ($file, $nl) = each %files_and_newlines)
 print "Done.\n\n" if ($interactive);
 
 print <<END_OF_MESSAGE if ($interactive);
+
 Some of the tests I'm going to run employ the services of a test server that
-runs on ports 80 and 21 to serve up the test items. If you have anything
-running on those ports or if you have them blocked in some way that disables
-programs from listening on them, well, shutdown the programs or unblock the
-ports before continuing, otherwise some tests will inexplicably fail. The final
-test script, live.t, contains tests that employ real-world Gopherspaces (like
-gopher.floodgap.com). These live tests are not crucial and will be skipped if
-you're not connected to the Internet. If you want them to run, then connect
-to the Internet before continuing.
+listens on what ever ports the OS will let it, and serves up some test items to
+the *.t test scripts. If some big, port blocking scheme enabled, then these
+tests will inexplicably fail.
+
+The final test script, live.t, contains tests that employ real-world
+Gopherspaces (like gopher.floodgap.com). These live tests are not crucial and
+will be skipped if you're not connected to the Internet. If you want them to
+run, then connect to the Internet before continuing.
+
 Press <Return> to continue.
 END_OF_MESSAGE
 

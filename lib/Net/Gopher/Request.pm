@@ -378,8 +378,8 @@ sub new
 				Attributes
 				DataBlock
 				Itemtype
-			)], \@_
-		);
+				)], \@_
+			);
 	}
 
 

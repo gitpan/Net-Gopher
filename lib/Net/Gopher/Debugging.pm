@@ -96,7 +96,7 @@ sub debug_print
 	if ($LOG)
 	{
 		open(LOG, ">> $LOG_FILE")
-			|| return Net::Gopher::Exception->call_die(
+			or return Net::Gopher::Exception->call_die(
 				"Couldn't open debug log ($LOG_FILE): $!."
 			);
 		print LOG $message;
@@ -165,7 +165,7 @@ END {
 	if ($LOG)
 	{
 		open(LOG, ">> $LOG_FILE")
-			|| return Net::Gopher::Exception->call_die(
+			or return Net::Gopher::Exception->call_die(
 				"Couldn't open debug log ($LOG_FILE): $!."
 			);
 		print LOG $message;

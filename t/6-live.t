@@ -9,8 +9,8 @@ BEGIN
 	my $socket = new IO::Socket::INET (
 		Type     => SOCK_STREAM,
 		Proto    => 'tcp',
-		PeerAddr => 'www.cpan.org',
-		PeerPort => 80,
+		PeerAddr => 'gopher.floodgap.com',
+		PeerPort => 70,
 		Timeout  => 60
 	);
 

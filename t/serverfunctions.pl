@@ -22,30 +22,36 @@ $ECHO_SERVER_PID = undef;
 
 sub launch_item_server
 {
-	my $pid = open(ITEM_SERVER, "$PERL $PATH -p 80 |")
+	my $pid = open(ITEM_SERVER, "$PERL $PATH |")
 		or die "Couldn't launch the item server: $!.\n";
 
 	my $line = <ITEM_SERVER>;
 
+	(my $port) = $line =~ /(\d+)/;
+
 	die "Server isn't listening."
-		unless ($line =~ /^# Listening on port 80\.{3}/);
+		unless ($line =~ /^# Listening on port $port\.\.\./);
 
 	$ITEM_SERVER_PID = $pid;
 
-	return $ITEM_SERVER_PID;
+	return $port;
 }
 
 sub launch_echo_server
 {
-	my $pid = open(ECHO_SERVER, "$PERL $PATH -ep 21 |")
+	my $pid = open(ECHO_SERVER, "$PERL $PATH -e |")
 		or die "Couldn't launch the test server: $!.\n";
 
 	my $line = <ECHO_SERVER>;
 
-	die "Server isn't listening."
-		unless ($line =~ /^# Listening on port 21\.{3}/);
+	(my $port) = $line =~ /(\d+)/;
 
-	return $ECHO_SERVER_PID = $pid;
+	die "Server isn't listening."
+		unless ($line =~ /^# Listening on port $port\.\.\./);
+
+	$ECHO_SERVER_PID = $pid;
+
+	return $port;
 }
 
 sub kill_servers

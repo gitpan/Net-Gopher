@@ -8,9 +8,6 @@ use Net::Gopher;
 use Net::Gopher::Request;
 use Net::Gopher::Constants qw(:item_types);
 
-use constant SERVER_PORT => 80;
-use constant ECHO_PORT   => 21;
-
 require './t/serverfunctions.pl';
 
 
@@ -102,7 +99,8 @@ require './t/serverfunctions.pl';
 
 {
 	# this runs testserver.pl with -e to echo back each request:
-	ok(launch_echo_server()); # 29
+	my $port = launch_echo_server();
+	ok($port); # 29
 
 	my $ng = new Net::Gopher;
 
@@ -119,7 +117,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			Gopher => {
 				Host        => 'localhost',
-				Port        => ECHO_PORT,
+				Port        => $port,
 				Selector    => '/something',
 				SearchWords => ['red', 'green', 'blue']
 			}
@@ -142,7 +140,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => ECHO_PORT,
+				Port           => $port,
 				Selector       => '/something_else',
 				Representation => 'text/plain'
 			}
@@ -164,7 +162,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => ECHO_PORT,
+				Port           => $port,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      => 'This is a single-line block'
@@ -188,7 +186,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => ECHO_PORT,
+				Port           => $port,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      => 'This is a big single-line block ' x 2000
@@ -212,7 +210,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => ECHO_PORT,
+				Port           => $port,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      =>
@@ -237,7 +235,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => ECHO_PORT,
+				Port           => $port,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      =>
@@ -262,7 +260,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			ItemAttribute => {
 				Host           => 'localhost',
-				Port           => ECHO_PORT,
+				Port           => $port,
 				Selector       => '/some_item',
 				Attributes     => '+ATTR'
 			}
@@ -285,7 +283,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			DirectoryAttribute => {
 				Host           => 'localhost',
-				Port           => ECHO_PORT,
+				Port           => $port,
 				Selector       => '/some_dir',
 				Attributes     => '+ATTR'
 			}
@@ -320,7 +318,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			Gopher => {
 				Host        => 'localhost',
-				Port        => ECHO_PORT,
+				Port        => $port,
 				Selector    => '/something',
 				SearchWords => ['red', 'green', 'blue']
 			}
@@ -328,7 +326,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher(
 			Host        => 'localhost',
-			Port        => ECHO_PORT,
+			Port        => $port,
 			Selector    => '/something',
 			SearchWords => ['red', 'green', 'blue']
 		);
@@ -351,7 +349,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => ECHO_PORT,
+				Port           => $port,
 				Selector       => '/something_else',
 				Representation => 'text/plain'
 			}
@@ -359,7 +357,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host           => 'localhost',
-			Port           => ECHO_PORT,
+			Port           => $port,
 			Selector       => '/something_else',
 			Representation => 'text/plain'
 		);
@@ -382,7 +380,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			ItemAttribute => {
 				Host           => 'localhost',
-				Port           => ECHO_PORT,
+				Port           => $port,
 				Selector       => '/some_dir',
 				Attributes     => '+ATTR'
 			}
@@ -390,7 +388,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->item_attribute(
 			Host           => 'localhost',
-			Port           => ECHO_PORT,
+			Port           => $port,
 			Selector       => '/some_dir',
 			Attributes     => '+ATTR'
 		);
@@ -413,7 +411,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			DirectoryAttribute => {
 				Host           => 'localhost',
-				Port           => ECHO_PORT,
+				Port           => $port,
 				Selector       => '/some_dir',
 				Attributes     => '+ATTR'
 			}
@@ -421,7 +419,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->directory_attribute(
 			Host           => 'localhost',
-			Port           => ECHO_PORT,
+			Port           => $port,
 			Selector       => '/some_dir',
 			Attributes     => '+ATTR'
 		);
@@ -448,7 +446,10 @@ require './t/serverfunctions.pl';
 
 
 {
-	ok(launch_item_server()); # 58
+	# this launches a copy of the test server to serve up the items in
+	# ./t/items:
+	my $port = launch_item_server();
+	ok($port); # 58
 
 	my $ng = new Net::Gopher;
 
@@ -465,7 +466,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			Gopher => {
 				Host     => 'localhost',
-				Port     => SERVER_PORT,
+				Port     => $port,
 				Selector => '/index'
 			}
 		);
@@ -503,7 +504,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
-				Port     => SERVER_PORT,
+				Port     => $port,
 				Selector => '/gp_period_term'
 			}
 		);
@@ -541,7 +542,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
-				Port     => SERVER_PORT,
+				Port     => $port,
 				Selector => '/gp_no_term'
 			}
 		);
@@ -579,7 +580,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
-				Port     => SERVER_PORT,
+				Port     => $port,
 				Selector => '/gp_byte_term'
 			}
 		);
@@ -617,7 +618,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
-				Port     => SERVER_PORT,
+				Port     => $port,
 				Selector => '/gp_s_period_term'
 			}
 		);
@@ -655,7 +656,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
-				Port     => SERVER_PORT,
+				Port     => $port,
 				Selector => '/gp_s_no_term'
 			}
 		);
@@ -693,7 +694,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
-				Port     => SERVER_PORT,
+				Port     => $port,
 				Selector => '/gp_s_byte_term'
 			}
 		);
@@ -731,7 +732,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
-				Port     => SERVER_PORT,
+				Port     => $port,
 				Selector => '/index'
 			}
 		);
@@ -773,7 +774,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			Gopher => {
 				Host     => 'localhost',
-				Port     => SERVER_PORT,
+				Port     => $port,
 				Selector => '/index'
 			}
 		);
@@ -799,7 +800,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host     => 'localhost',
-				Port     => SERVER_PORT,
+				Port     => $port,
 				Selector => '/gp_index'
 			}
 		);

@@ -15,8 +15,10 @@ use 5.005;
 use strict;
 use warnings;
 use vars qw(
-	$DEFAULT_WARN_HANDLER $WARN_HANDLER
-	$DEFAULT_DIE_HANDLER $DIE_HANDLER
+	$DEFAULT_WARN_HANDLER
+	$WARN_HANDLER
+	$DEFAULT_DIE_HANDLER
+	$DIE_HANDLER
 	$SILENT
 );
 use Carp ();
@@ -105,9 +107,10 @@ sub call_die
 
 	$DIE_HANDLER->(@_);
 
-	# *always* return nothing, to ensure the stack unwinds correctly if
-	# one function called by another that was called by another... calls
-	# die:
+	# *Always* return nothing. This ensures that the stack unwinds
+	# correctly if one function called by another that was called by
+	# another... calls call_die(), and the die handler set by the user
+	# doesn't die()/exit():
 	return;
 }
 

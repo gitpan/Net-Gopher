@@ -14,8 +14,6 @@ use constant TIMEOUT      => 60;
 use vars qw($CRLF);
 $CRLF = "\015\012";
 
-
-
 BEGIN
 {
 	# this hack allows us to "use bytes" or fake it for older (pre-5.6.1)
@@ -34,25 +32,37 @@ BEGIN
 
 
 
+# the script arguments:
 my %opts;
-getopts('ep:', \%opts);
 
-
-
+# a string containing the error message for the last error to occur:
 my $error;
 
-die "(Test server) No port specified." unless ($opts{'p'});
+# the blessed file handle of the IO::Socket server:
+my $server;
 
-my $server = new IO::Socket::INET (
+
+
+# -e tells us to echo out what we're sent:
+getopts('e', \%opts);
+
+# now, create a TCP socket and listen() on what ever port the OS assigns to us:
+$server = new IO::Socket::INET (
 	Type      => SOCK_STREAM,
 	Proto     => 'tcp',
-	LocalPort => $opts{'p'},
 	Timeout   => TIMEOUT,
 	Listen    => SOMAXCONN,
 	Reuse     => 1,
-) or die "(Test server) Couldn't listen on localhost at port $opts{'p'}: $@";
+) or die "(Test server) Couldn't make TCP server: $@";
 
-print "# Listening on port $opts{'p'}...\n";
+# this process is meant to pipe opened for reading, so we write something back
+# to the parent process for them to read:
+printf("# Listening on port %d...\n", $server->sockport);
+
+# ...and then redirect standard output to tell the kernel we're done writing.
+# This makes sure that we get to the while loop below, and once we start
+# blocking, waiting for incoming connections, control will be returned to the
+# parent:
 if ($^O !~ /MSWin/i)
 {
 	open(STDOUT, '>/dev/null') || die "Can't redirect STDOUT: $!";
@@ -63,8 +73,12 @@ else
 }
 
 
+
 while (my $client = $server->accept)
 {
+	# we do non-blocking IO on the socket:
+	$client->blocking(0);
+
 	my $select = new IO::Select ($client);
 
 	my $request = '';
@@ -117,10 +131,10 @@ sub read_from_socket
 {
 	my ($socket, $select, $buffer) = @_;
 
-	# make sure we can read from the socket; that there's something in the
-	# OS buffer to read:
-	#	return error('timeout while reading.')
-	#	unless ($select->can_read(TIMEOUT));
+	# make sure we can read from the socket; that there's stuff waiting to
+	# be read:
+	return error('timeout while reading.')
+		unless ($select->can_read(TIMEOUT));
 
 	while (1)
 	{
@@ -147,9 +161,10 @@ sub write_to_socket
 {
 	my ($socket, $select, $data) = @_;
 
-	# make sure we can write to the socket; that the OS buffer isn't full:
-	#return error('timeout while writing.')
-	#	unless ($select->can_write(TIMEOUT));
+	# make sure we can write to the socket; that the socket's ready for
+	# writing:
+	return error('timeout while writing.')
+		unless ($select->can_write(TIMEOUT));
 
 	# now send the response to the client:
 	while (1)

@@ -48,6 +48,7 @@ BEGIN {
 	convert_newlines
 	strip_status_line
 	strip_terminator
+	remove_error_prefix
 );
 
 
@@ -422,6 +423,40 @@ sub strip_status_line
 sub strip_terminator
 {
 	return scalar $_[0] =~ s/$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$//o;
+}
+
+
+
+
+
+################################################################################
+#
+#	Function
+#		remove_error_prefix($@)
+#
+#	Purpose
+#		This function removes those annoying package and function name
+#		prefixes that the IO::Socket::* modules always add to what ever
+#		they put in $@.
+#
+#		Just call this function with $@ as the argument, and it will
+#		return a string containing the $@ error message, minus the
+#		prefix.
+#
+#	Parameters
+#		$@ - The eval error variable, used to store run time errors by
+#		     the IO::* modules for some terrible reason. This function
+#		     doesn't modify $@; no one, besides perl, should *ever*
+#		     modify $@.
+#
+
+sub remove_error_prefix
+{
+	my $error_message = shift;
+
+	$error_message =~ s/.*?: // if (defined $error_message);
+
+	return $error_message;
 }
 
 1;

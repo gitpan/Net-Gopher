@@ -2,13 +2,11 @@ use strict;
 use warnings;
 use Test;
 
-BEGIN { plan(tests => 287) }
+BEGIN { plan(tests => 382) }
 
 use Net::Gopher;
 use Net::Gopher::Constants qw(:item_types :request);
 use Net::Gopher::Utility '$CRLF';
-
-use constant SERVER_PORT => 80;
 
 require './t/serverfunctions.pl';
 
@@ -16,14 +14,15 @@ require './t/serverfunctions.pl';
 
 
 
-ok(launch_item_server()); # 1
+my $port = launch_item_server();
+ok($port); # 1
 
 {
 	my $ng = new Net::Gopher;
 
 	my $response = $ng->item_attribute(
 		Host     => 'localhost',
-		Port     => SERVER_PORT,
+		Port     => $port,
 		Selector => '/item_blocks'
 	);
 
@@ -326,134 +325,134 @@ ok(launch_item_server()); # 1
 
 		ok($warnings[0],
 			"The extract_description() method is depricated. Use " .
-			"extract_descriptor() instead."); # 13
-		ok(@warnings, 1);                         # 1
+			"extract_descriptor() instead."); # 137
+		ok(@warnings, 1);                         # 138
 
 		$ng->warn_handler($old_warn_handler);
 
-		ok($type, GOPHER_MENU_TYPE);                        # 131
-		ok($display, 'Gopher+ Index');                      # 132
-		ok($selector, '/gp_index');                         # 133
-		ok($host, 'localhost');                             # 134
-		ok($port, 70);                                      # 135
-		ok($gp, '+');                                       # 136
+		ok($type, GOPHER_MENU_TYPE);                        # 139
+		ok($display, 'Gopher+ Index');                      # 140
+		ok($selector, '/gp_index');                         # 141
+		ok($host, 'localhost');                             # 142
+		ok($port, 70);                                      # 143
+		ok($gp, '+');                                       # 144
 	}
 
 	{
 		my ($admin_name, $admin_email) = $response->extract_admin;
 
-		ok($admin_name, 'John Q. Sixpack');        # 137
-		ok($admin_email, 'j_q_sixpack@yahoo.com'); # 138
+		ok($admin_name, 'John Q. Sixpack');        # 145
+		ok($admin_email, 'j_q_sixpack@yahoo.com'); # 146
 
 		{
 			my @gmtime = gmtime $response->extract_date_modified;
 			
-			ok(scalar @gmtime, 9); # 139
+			ok(scalar @gmtime, 9); # 147
 
-			ok($gmtime[0], 12);  # 140
-			ok($gmtime[1], 30);  # 141
-			ok($gmtime[2], 17);  # 142
-			ok($gmtime[3], 28);  # 143
-			ok($gmtime[4], 6);   # 144
-			ok($gmtime[5], 103); # 145
-			ok($gmtime[6], 1);   # 146
-			ok($gmtime[7], 208); # 147
-			ok($gmtime[8], 0);   # 148
+			ok($gmtime[0], 12);  # 148
+			ok($gmtime[1], 30);  # 149
+			ok($gmtime[2], 17);  # 150
+			ok($gmtime[3], 28);  # 151
+			ok($gmtime[4], 6);   # 152
+			ok($gmtime[5], 103); # 153
+			ok($gmtime[6], 1);   # 154
+			ok($gmtime[7], 208); # 155
+			ok($gmtime[8], 0);   # 156
 		}
 
 		{
 			my @gmtime = gmtime $response->extract_date_created;
 
-			ok(scalar @gmtime, 9); # 149
+			ok(scalar @gmtime, 9); # 157
 
-			ok($gmtime[0], 1);   # 150
-			ok($gmtime[1], 2);   # 151
-			ok($gmtime[2], 17);  # 152
-			ok($gmtime[3], 28);  # 153
-			ok($gmtime[4], 6);   # 154
-			ok($gmtime[5], 103); # 155
-			ok($gmtime[6], 1);   # 156
-			ok($gmtime[7], 208); # 157
-			ok($gmtime[8], 0);   # 158
+			ok($gmtime[0], 1);   # 158
+			ok($gmtime[1], 2);   # 159
+			ok($gmtime[2], 17);  # 160
+			ok($gmtime[3], 28);  # 161
+			ok($gmtime[4], 6);   # 162
+			ok($gmtime[5], 103); # 163
+			ok($gmtime[6], 1);   # 164
+			ok($gmtime[7], 208); # 165
+			ok($gmtime[8], 0);   # 166
 		}
 
 		{
 			my @gmtime = gmtime $response->extract_date_expires;
 
-			ok(scalar @gmtime, 9); # 159
+			ok(scalar @gmtime, 9); # 167
 
-			ok($gmtime[0], 1);   # 160
-			ok($gmtime[1], 0);   # 161
-			ok($gmtime[2], 9);  # 162
-			ok($gmtime[3], 9);   # 163
-			ok($gmtime[4], 8);   # 164
-			ok($gmtime[5], 103); # 165
-			ok($gmtime[6], 2);   # 166
-			ok($gmtime[7], 251); # 167
-			ok($gmtime[8], 0);   # 168
+			ok($gmtime[0], 1);   # 168
+			ok($gmtime[1], 0);   # 169
+			ok($gmtime[2], 9);  # 170
+			ok($gmtime[3], 9);   # 171
+			ok($gmtime[4], 8);   # 172
+			ok($gmtime[5], 103); # 173
+			ok($gmtime[6], 2);   # 174
+			ok($gmtime[7], 251); # 175
+			ok($gmtime[8], 0);   # 176
 		}
 	}
 
 	{
 		my @views = $response->extract_views;
 
-		ok($views[0]->{'type'}, 'text/plain'); # 169
-		ok(!defined $views[0]->{'language'});  # 170
-		ok(!defined $views[0]->{'country'});   # 171
-		ok($views[0]->{'size'}, 410);          # 172
+		ok($views[0]->{'type'}, 'text/plain'); # 177
+		ok(!defined $views[0]->{'language'});  # 178
+		ok(!defined $views[0]->{'country'});   # 179
+		ok($views[0]->{'size'}, 410);          # 180
 
-		ok($views[1]->{'type'}, 'application/gopher+-menu'); # 173
-		ok($views[1]->{'language'}, 'En');                   # 174
-		ok($views[1]->{'country'}, 'US');                    # 175
-		ok($views[1]->{'size'}, 1200);                       # 176
+		ok($views[1]->{'type'}, 'application/gopher+-menu'); # 181
+		ok($views[1]->{'language'}, 'En');                   # 182
+		ok($views[1]->{'country'}, 'US');                    # 183
+		ok($views[1]->{'size'}, 1200);                       # 184
 
-		ok($views[2]->{'type'}, 'text/html'); # 177
-		ok(!defined $views[2]->{'language'}); # 178
-		ok(!defined $views[2]->{'country'});  # 179
-		ok($views[2]->{'size'}, 789);         # 180
+		ok($views[2]->{'type'}, 'text/html'); # 185
+		ok(!defined $views[2]->{'language'}); # 186
+		ok(!defined $views[2]->{'country'});  # 187
+		ok($views[2]->{'size'}, 789);         # 188
 
-		ok(scalar @views, 3); # 181
+		ok(scalar @views, 3); # 189
 	}
 
 	{
 		my @queries = $response->extract_queries;
 
-		ok($queries[0]->{'type'}, 'Ask');                    # 182
-		ok($queries[0]->{'question'}, 'What is your name?'); # 183
-		ok(!defined $queries[0]->{'value'});                 # 184
-		ok(!exists $queries[0]->{'choices'});                # 185
+		ok($queries[0]->{'type'}, 'Ask');                    # 190
+		ok($queries[0]->{'question'}, 'What is your name?'); # 191
+		ok(!defined $queries[0]->{'value'});                 # 192
+		ok(!exists $queries[0]->{'choices'});                # 193
 
-		ok($queries[1]->{'type'}, 'Ask');                     # 186
-		ok($queries[1]->{'question'}, 'Where are you from?'); # 187
-		ok($queries[1]->{'value'}, 'Montana');                # 188
-		ok(!exists $queries[1]->{'choices'});                 # 189
+		ok($queries[1]->{'type'}, 'Ask');                     # 194
+		ok($queries[1]->{'question'}, 'Where are you from?'); # 195
+		ok($queries[1]->{'value'}, 'Montana');                # 196
+		ok(!exists $queries[1]->{'choices'});                 # 197
 
-		ok($queries[2]->{'type'}, 'Choose');         # 190
+		ok($queries[2]->{'type'}, 'Choose');         # 198
 		ok($queries[2]->{'question'},
-			'What is your favorite color?');     # 191
-		ok(!exists $queries[2]->{'value'});          # 192
-		ok(ref $queries[2]->{'choices'}, 'ARRAY');   # 193
-		ok($queries[2]->{'choices'}->[0], 'red');    # 194
-		ok($queries[2]->{'choices'}->[1], 'green');  # 195
-		ok($queries[2]->{'choices'}->[2], 'blue');   # 196
-		ok(scalar @{ $queries[2]->{'choices'} }, 3); # 197
+			'What is your favorite color?');     # 199
+		ok(!exists $queries[2]->{'value'});          # 200
+		ok(ref $queries[2]->{'choices'}, 'ARRAY');   # 201
+		ok($queries[2]->{'choices'}->[0], 'red');    # 202
+		ok($queries[2]->{'choices'}->[1], 'green');  # 203
+		ok($queries[2]->{'choices'}->[2], 'blue');   # 204
+		ok(scalar @{ $queries[2]->{'choices'} }, 3); # 205
 
-		ok($queries[3]->{'type'}, 'Select');                   # 198
-		ok($queries[3]->{'question'}, 'Contact using Email:'); # 199
-		ok($queries[3]->{'value'}, '1');                       # 200
-		ok(!exists $queries[3]->{'choices'});                  # 201
+		ok($queries[3]->{'type'}, 'Select');                   # 206
+		ok($queries[3]->{'question'}, 'Contact using Email:'); # 207
+		ok($queries[3]->{'value'}, '1');                       # 208
+		ok(!exists $queries[3]->{'choices'});                  # 209
 
-		ok($queries[4]->{'type'}, 'Select');                               # 202
-		ok($queries[4]->{'question'}, 'Contact using Instant Messenger:'); # 203
-		ok($queries[4]->{'value'}, '1');                                   # 204
-		ok(!exists $queries[4]->{'choices'});                              # 205
+		ok($queries[4]->{'type'}, 'Select');                               # 210
+		ok($queries[4]->{'question'}, 'Contact using Instant Messenger:'); # 211
+		ok($queries[4]->{'value'}, '1');                                   # 212
+		ok(!exists $queries[4]->{'choices'});                              # 213
 
-		ok($queries[5]->{'type'}, 'Select');                 # 206
-		ok($queries[5]->{'question'}, 'Contact using IRC:'); # 207
-		ok($queries[5]->{'value'}, '0');                     # 208
-		ok(!exists $queries[5]->{'choices'});                # 209
+		ok($queries[5]->{'type'}, 'Select');                 # 214
+		ok($queries[5]->{'question'}, 'Contact using IRC:'); # 215
+		ok($queries[5]->{'value'}, '0');                     # 216
+		ok(!exists $queries[5]->{'choices'});                # 217
 
-		ok(scalar @queries, 6); # 210
+		ok(scalar @queries, 6); # 218
 	}
 }
 
@@ -466,13 +465,13 @@ ok(launch_item_server()); # 1
 
 	my $response = $ng->directory_attribute(
 		Host     => 'localhost',
-		Port     => SERVER_PORT,
+		Port     => $port,
 		Selector => '/directory_blocks'
 	);
 
 	if ($response->is_success)
 	{
-		ok(1); # 211
+		ok(1); # 219
 	}
 	else
 	{
@@ -482,31 +481,31 @@ ok(launch_item_server()); # 1
 
 
 	{
-		ok($response->has_block('ADMIN', Item => 1)); # 212
+		ok($response->has_block('ADMIN', Item => 1)); # 220
 
 		my $block = $response->get_block('+ADMIN', Item => 1);
 
-		ok($block->name, '+ADMIN');             # 213
+		ok($block->name, '+ADMIN');             # 221
 		ok($block->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20030728173012>");  # 214
+			"Mod-Date: <20030728173012>");  # 222
 		ok($block->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20030728173012>"); # 215
+			" Mod-Date: <20030728173012>"); # 223
 	}
 
 	{
-		ok($response->has_block('INFO', [Item => 2])); # 216
+		ok($response->has_block('INFO', [Item => 2])); # 224
 
 		my $block = $response->get_block('INFO', {Item => 2});
 
-		ok($block->name, '+INFO');           # 217
+		ok($block->name, '+INFO');           # 225
 		ok($block->value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 218
+			"localhost\t70\t+");         # 226
 		ok($block->raw_value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 219
+			"localhost\t70\t+");         # 227
 	}
 
 	{
@@ -514,19 +513,19 @@ ok(launch_item_server()); # 1
 			Item => {
 				Selector => '/gp_period_term'
 			}
-		])); # 220
+		])); # 228
 
 		my $block = $response->get_block('ADMIN',
 			[Item => [Display => 'Period terminated file']]
 		);
 
-		ok($block->name, '+ADMIN');             # 221
+		ok($block->name, '+ADMIN');             # 229
 		ok($block->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20040101070206>");  # 222
+			"Mod-Date: <20040101070206>");  # 230
 		ok($block->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20040101070206>"); # 223
+			" Mod-Date: <20040101070206>"); # 231
 
 	}
 
@@ -540,7 +539,7 @@ ok(launch_item_server()); # 1
 				Port       => 70,
 				GopherPlus => '+'
 			}
-		])); # 224
+		])); # 232
 
 		my $block = $response->get_block('ADMIN',
 			[Item => {
@@ -554,13 +553,13 @@ ok(launch_item_server()); # 1
 			]
 		);
 
-		ok($block->name, '+ADMIN');             # 225
+		ok($block->name, '+ADMIN');             # 233
 		ok($block->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20040201182005>");  # 226
+			"Mod-Date: <20040201182005>");  # 234
 		ok($block->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20040201182005>"); # 227
+			" Mod-Date: <20040201182005>"); # 235
 	}
 
 	{
@@ -570,7 +569,7 @@ ok(launch_item_server()); # 1
 				Display    => qr/Byte terminated/,
 				Selector   => '/gp_byte_term',
 			}
-		)); # 228
+		)); # 236
 
 		my $block = $response->get_block('ADMIN',
 			Item => {
@@ -580,18 +579,18 @@ ok(launch_item_server()); # 1
 			}
 		);
 
-		ok($block->name, '+ADMIN');             # 229
+		ok($block->name, '+ADMIN');             # 237
 		ok($block->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20031201123000>");  # 230
+			"Mod-Date: <20031201123000>");  # 238
 		ok($block->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20031201123000>"); # 231
+			" Mod-Date: <20031201123000>"); # 239
 	}
 
 	{
 		ok(!$response->has_block('ADMIN',
-			Item => {Display => 'bad display'})); # 232
+			Item => {Display => 'bad display'})); # 240
 
 		my $block = $response->get_block('ADMIN',
 			Item => {
@@ -599,113 +598,113 @@ ok(launch_item_server()); # 1
 			}
 		);
 
-		ok(!defined $block); # 233
+		ok(!defined $block); # 241
 	}
 
 	{
 		my @directory_information = $response->get_blocks;
 
-		ok(scalar @directory_information, 4); # 234
+		ok(scalar @directory_information, 4); # 242
 
 
 
 		my @gp_index = @{ shift @directory_information };
 
-		ok($gp_index[0]->name, '+INFO');                       # 235
+		ok($gp_index[0]->name, '+INFO');                       # 243
 		ok($gp_index[0]->value,
-			"1Gopher+ Index	/gp_index\tlocalhost\t70\t+"); # 236
+			"1Gopher+ Index	/gp_index\tlocalhost\t70\t+"); # 244
 		ok($gp_index[0]->raw_value,
-			"1Gopher+ Index	/gp_index\tlocalhost\t70\t+"); # 237
+			"1Gopher+ Index	/gp_index\tlocalhost\t70\t+"); # 245
 
-		ok($gp_index[1]->name, '+ADMIN');       # 238
+		ok($gp_index[1]->name, '+ADMIN');       # 246
 		ok($gp_index[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20030728173012>");  # 239
+			"Mod-Date: <20030728173012>");  # 247
 		ok($gp_index[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20030728173012>"); # 240
+			" Mod-Date: <20030728173012>"); # 248
 
 
 
 		my @gp_byte_term = @{ shift @directory_information };
 
-		ok($gp_byte_term[0]->name, '+INFO'); # 241
+		ok($gp_byte_term[0]->name, '+INFO'); # 249
 		ok($gp_byte_term[0]->value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 242
+			"localhost\t70\t+");         # 250
 		ok($gp_byte_term[0]->raw_value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 243
+			"localhost\t70\t+");         # 251
 
-		ok($gp_byte_term[1]->name, '+ADMIN');   # 244
+		ok($gp_byte_term[1]->name, '+ADMIN');   # 252
 		ok($gp_byte_term[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20031201123000>");  # 245
+			"Mod-Date: <20031201123000>");  # 253
 		ok($gp_byte_term[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20031201123000>"); # 246
+			" Mod-Date: <20031201123000>"); # 254
 
 
 
 		my @gp_period_term = @{ shift @directory_information };
 
-		ok($gp_period_term[0]->name, '+INFO'); # 247
+		ok($gp_period_term[0]->name, '+INFO'); # 255
 		ok($gp_period_term[0]->value,
 			"0Period terminated file\t/gp_period_term\t" .
-			"localhost\t70\t+");           # 248
+			"localhost\t70\t+");           # 256
 		ok($gp_period_term[0]->raw_value,
 			"0Period terminated file\t/gp_period_term\t" .
-			"localhost\t70\t+");           # 249
+			"localhost\t70\t+");           # 257
 
-		ok($gp_period_term[1]->name, '+ADMIN'); # 250
+		ok($gp_period_term[1]->name, '+ADMIN'); # 258
 		ok($gp_period_term[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20040101070206>");  # 251
+			"Mod-Date: <20040101070206>");  # 259
 		ok($gp_period_term[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20040101070206>"); # 252
+			" Mod-Date: <20040101070206>"); # 260
 
 
 
 		my @gp_no_term = @{ shift @directory_information };
 
-		ok($gp_no_term[0]->name, '+INFO'); # 253
+		ok($gp_no_term[0]->name, '+INFO'); # 261
 		ok($gp_no_term[0]->value,
 			"0Non-terminated file\t/gp_no_term\t" .
-			"localhost\t70\t+");       # 254
+			"localhost\t70\t+");       # 262
 		ok($gp_no_term[0]->raw_value,
 			"0Non-terminated file\t/gp_no_term\t" .
-			"localhost\t70\t+");        # 255
+			"localhost\t70\t+");        # 263
 
-		ok($gp_no_term[1]->name, '+ADMIN');     # 256
+		ok($gp_no_term[1]->name, '+ADMIN');     # 264
 		ok($gp_no_term[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20040201182005>");  # 257
+			"Mod-Date: <20040201182005>");  # 265
 		ok($gp_no_term[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20040201182005>"); # 258
+			" Mod-Date: <20040201182005>"); # 266
 	}
 
 	{
 		my @gp_byte_term = $response->get_blocks(Item => 2);
 
-		ok(scalar @gp_byte_term, 2); # 259
+		ok(scalar @gp_byte_term, 2); # 267
 
-		ok($gp_byte_term[0]->name, '+INFO'); # 260
+		ok($gp_byte_term[0]->name, '+INFO'); # 268
 		ok($gp_byte_term[0]->value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 261
+			"localhost\t70\t+");         # 269
 		ok($gp_byte_term[0]->raw_value,
 			"0Byte terminated file\t/gp_byte_term\t" .
-			"localhost\t70\t+");         # 262
+			"localhost\t70\t+");         # 270
 
-		ok($gp_byte_term[1]->name, '+ADMIN');   # 263
+		ok($gp_byte_term[1]->name, '+ADMIN');   # 271
 		ok($gp_byte_term[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20031201123000>");  # 264
+			"Mod-Date: <20031201123000>");  # 272
 		ok($gp_byte_term[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20031201123000>"); # 265
+			" Mod-Date: <20031201123000>"); # 273
 	}
 
 	{
@@ -716,23 +715,23 @@ ok(launch_item_server()); # 1
 			}
 		);
 
-		ok(scalar @gp_period_term, 2); # 266
+		ok(scalar @gp_period_term, 2); # 274
 
-		ok($gp_period_term[0]->name, '+INFO'); # 267
+		ok($gp_period_term[0]->name, '+INFO'); # 275
 		ok($gp_period_term[0]->value,
 			"0Period terminated file\t/gp_period_term\t" .
-			"localhost\t70\t+");           # 268
+			"localhost\t70\t+");           # 276
 		ok($gp_period_term[0]->raw_value,
 			"0Period terminated file\t/gp_period_term\t" .
-			"localhost\t70\t+");           # 269
+			"localhost\t70\t+");           # 277
 
-		ok($gp_period_term[1]->name, '+ADMIN'); # 270
+		ok($gp_period_term[1]->name, '+ADMIN'); # 278
 		ok($gp_period_term[1]->value,
 			"Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\n" .
-			"Mod-Date: <20040101070206>");  # 271
+			"Mod-Date: <20040101070206>");  # 279
 		ok($gp_period_term[1]->raw_value,
 			" Admin: John Q. Sixpack <j_q_sixpack\@yahoo.com>\012" .
-			" Mod-Date: <20040101070206>"); # 272
+			" Mod-Date: <20040101070206>"); # 280
 	}
 }
 
@@ -749,29 +748,486 @@ ok(launch_item_server()); # 1
 
 	my $response = $ng->gopher_plus(
 		Host     => 'localhost',
-		Port     => SERVER_PORT,
+		Port     => $port,
 		Selector => '/gp_index'
 	);
 
-	ok($response->is_success); # 273
+	ok($response->is_success); # 281
 
 	# there are no blocks, so we should get errors when we try to parse
 	# them:
-	ok(!$response->has_block('Something')); # 274
+	ok(!$response->has_block('Something')); # 282
 
-	ok(scalar @warnings, 1);     # 275
+	ok(scalar @warnings, 1);     # 283
 	ok($warnings[0], join(' ',
 		"You didn't send an item attribute or directory",
 		"attribute information request, so why would the",
 		"response contain attribute information blocks?"
-	));                          # 276
-	ok(scalar @fatal_errors, 1); # 277
+	));                          # 284
+	ok(scalar @fatal_errors, 1); # 285
 	ok($fatal_errors[0], join(' ',
 		'There was no leading "+" for the first block name at',
 		'the beginning of the response. The response either',
 		'does not contain any attribute information blocks or',
 		'contains malformed attribute information blocks.'
-	));                          # 278
+	));                          # 286
 }
 
-ok(kill_servers()); # 279
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/item_blocks'
+	);
+
+	ok($response->is_success); # 287
+
+	my $info = $response->get_block('+INFO');
+	ok($info);                 # 288
+	ok(!$info->get_attribute); # 289
+
+	ok(@warnings, 0);     # 290
+	ok(@fatal_errors, 1); # 291
+	ok($fatal_errors[0],
+		'The name of the attribute to retrieve was not supplied.'
+	);                    # 292
+}
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/item_blocks'
+	);
+
+	ok($response->is_success); # 293
+
+	my $info = $response->get_block('+INFO');
+	ok($info);                  # 294
+	ok(!$info->get_attributes); # 295
+
+	ok(@warnings, 0);     # 296
+	ok(@fatal_errors, 1); # 297
+	ok($fatal_errors[0],
+		'This +INFO block either does not contain ' .
+		'attributes or contains malformed attributes.'
+	);                    # 298
+}
+
+
+
+################################################################################
+# 
+# these tests ensure the +ADMIN block-specific methods raise proper errors:
+# 
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/bad_blocks'
+	);
+
+	ok($response->is_success); # 299
+
+	my $info = $response->get_block('INFO');
+	ok($info); # 300
+
+	ok(!$info->extract_admin); # 301
+	ok(@warnings, 1);          # 302
+	ok(@fatal_errors, 1);      # 303
+	ok($warnings[0],
+		"Are you sure there's administrator information to " .
+		"extract? The block object contains a +INFO block, not " .
+		"an +ADMIN block."
+	);                         # 304
+	ok($fatal_errors[0],
+		'This +INFO block either does not contain ' .
+		'attributes or contains malformed attributes.'
+	);                         # 305
+}
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/bad_blocks'
+	);
+
+	ok($response->is_success); # 306
+
+	my $admin = $response->get_block('+BAD-ADMIN1');
+	ok($admin); # 307
+
+	ok(!$admin->extract_admin); # 308
+	ok(@warnings, 1);           # 309
+	ok(@fatal_errors, 1);       # 310
+	ok($warnings[0],
+		"Are you sure there's administrator information to " .
+		"extract? The block object contains a +BAD-ADMIN1 block, not " .
+		"an +ADMIN block."
+	);                          # 311
+	ok($fatal_errors[0],
+		'The +BAD-ADMIN1 block has no Admin attribute to extract ' .
+		'item administrator information from.'
+	);                          # 312
+}
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/bad_blocks'
+	);
+
+	ok($response->is_success); # 313
+
+	my $admin = $response->get_block('+BAD-ADMIN2');
+	ok($admin); # 314
+
+	ok(!$admin->extract_admin); # 315
+	ok(@warnings, 1);           # 316
+	ok(@fatal_errors, 1);       # 317
+	ok($warnings[0],
+		"Are you sure there's administrator information to " .
+		"extract? The block object contains a +BAD-ADMIN2 block, not " .
+		"an +ADMIN block."
+	);                          # 318
+	ok($fatal_errors[0],
+		'The +BAD-ADMIN2 block contains a malformed Admin attribute.'
+	);                          # 319
+}
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/bad_blocks'
+	);
+
+	ok($response->is_success); # 320
+
+	my $admin = $response->get_block('+BAD-ADMIN1');
+	ok($admin); # 321
+
+	ok(!$admin->extract_date_modified); # 322
+	ok(@warnings, 1);                   # 323
+	ok(@fatal_errors, 1);               # 324
+	ok($warnings[0],
+		"Are you sure there's a modification date timestamp " .
+		"to extract? The block object contains a +BAD-ADMIN1 block, " .
+		"not an +ADMIN block."
+	);                                  # 325
+	ok($fatal_errors[0],
+		'The +BAD-ADMIN1 block has no Mod-Date attribute to extract ' .
+		'a modification date from.'
+	);                                  # 326
+}
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/bad_blocks'
+	);
+
+	ok($response->is_success); # 327
+
+	my $admin = $response->get_block('+BAD-ADMIN2');
+	ok($admin); # 328
+
+	ok(!$admin->extract_date_modified); # 329
+	ok(@warnings, 1);                   # 330
+	ok(@fatal_errors, 1);               # 331
+	ok($warnings[0],
+		"Are you sure there's a modification date timestamp " .
+		"to extract? The block object contains a +BAD-ADMIN2 block, " .
+		"not an +ADMIN block."
+	);                                  # 332
+	ok($fatal_errors[0],
+		'The Mod-Date attribute either does not contain a ' .
+		'timestamp or contains a malformed one.'
+	);                                  # 333
+}
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/bad_blocks'
+	);
+
+	ok($response->is_success); # 334
+
+	my $admin = $response->get_block('+BAD-ADMIN1');
+	ok($admin); # 335
+
+	ok(!$admin->extract_date_created); # 336
+	ok(@warnings, 1);                  # 337
+	ok(@fatal_errors, 1);              # 338
+	ok($warnings[0],
+		"Are you sure there's a creation date timestamp " .
+		"to extract? The block object contains a +BAD-ADMIN1 block, " .
+		"not an +ADMIN block."
+	);                                 # 339
+	ok($fatal_errors[0],
+		'The +BAD-ADMIN1 block has no Creation-Date attribute to ' .
+		'extract a creation date from.'
+	);                                 # 340
+}
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/bad_blocks'
+	);
+
+	ok($response->is_success); # 341
+
+	my $admin = $response->get_block('+BAD-ADMIN2');
+	ok($admin); # 342
+
+	ok(!$admin->extract_date_created); # 343
+	ok(@warnings, 1);                  # 344
+	ok(@fatal_errors, 1);              # 345
+	ok($warnings[0],
+		"Are you sure there's a creation date timestamp " .
+		"to extract? The block object contains a +BAD-ADMIN2 block, " .
+		"not an +ADMIN block.",
+	);                                 # 346
+	ok($fatal_errors[0],
+		'The Creation-Date attribute either does not contain a ' .
+		'timestamp or contains a malformed one.'
+	);                                 # 347
+}
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/bad_blocks'
+	);
+
+	ok($response->is_success); # 348
+
+	my $admin = $response->get_block('+BAD-ADMIN1');
+	ok($admin); # 349
+
+	ok(!$admin->extract_date_expires); # 350
+	ok(@warnings, 1);                  # 351
+	ok(@fatal_errors, 1);              # 352
+	ok($warnings[0],
+		"Are you sure there's an expiration date timestamp " .
+		"to extract? The block object contains a +BAD-ADMIN1 block, " .
+		"not an +ADMIN block.",
+	);                                 # 353
+	ok($fatal_errors[0],
+		'The +BAD-ADMIN1 block has no Expiration-Date attribute to ' .
+		'extract an expiration date from.'
+	);                                 # 354
+}
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/bad_blocks'
+	);
+
+	ok($response->is_success); # 355
+
+	my $admin = $response->get_block('+BAD-ADMIN2');
+	ok($admin); # 356
+
+	ok(!$admin->extract_date_expires); # 357
+	ok(@warnings, 1);                  # 358
+	ok(@fatal_errors, 1);              # 359
+	ok($warnings[0],
+		"Are you sure there's an expiration date timestamp " .
+		"to extract? The block object contains a +BAD-ADMIN2 block, " .
+		"not an +ADMIN block.",
+	);                                 # 360
+	ok($fatal_errors[0],
+		'The Expiration-Date attribute either does not contain a ' .
+		'timestamp or contains a malformed one.'
+	);                                 # 361
+}
+
+
+
+################################################################################
+#
+# These tests ensure +ASK block-specific methods raise proper errors:
+#
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/bad_blocks'
+	);
+
+	ok($response->is_success); # 362
+
+	my $info = $response->get_block('INFO');
+	ok($info); # 363
+
+	ok(!$info->extract_queries); # 364
+	ok(@warnings, 1);            # 365
+	ok(@fatal_errors, 1);        # 366
+	ok($warnings[0],
+		'Are you sure there are queries to extract? The block '.
+		'object contains a +INFO block, not an +ASK block.'
+	);                           # 367
+	ok($fatal_errors[0],
+		'This +INFO block either does not contain ' .
+		'any queries or it contains malformed queries.'
+	);                           # 368
+}
+
+
+
+################################################################################
+#
+# These tests ensure +INFO block-specific methods raise proper errors:
+#
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/item_blocks'
+	);
+
+	ok($response->is_success); # 369
+
+	my $admin = $response->get_block('ADMIN');
+	ok($admin); # 370
+
+	ok(!$admin->extract_descriptor); # 371
+	ok(@warnings, 0);                # 372
+	ok(@fatal_errors, 1);            # 373
+	ok($fatal_errors[0],
+		'The +ADMIN block either does not contain an item ' .
+		'descriptor or it contains a malformed one.'
+	);                               # 374
+}
+
+
+
+################################################################################
+#
+# These tests ensure +VIEWS block-specific methods raise proper errors:
+#
+
+{
+	my (@warnings, @fatal_errors);
+	my $ng = new Net::Gopher (
+		WarnHandler => sub { push(@warnings, shift) },
+		DieHandler  => sub { push(@fatal_errors, shift) }
+	);
+
+	my $response = $ng->item_attribute(
+		Host     => 'localhost',
+		Port     => $port,
+		Selector => '/item_blocks'
+	);
+
+	ok($response->is_success); # 375
+
+	my $info = $response->get_block('INFO');
+	ok($info); # 376
+
+	ok(!$info->extract_views); # 377
+	ok(@warnings, 1);          # 378
+	ok(@fatal_errors, 1);      # 379
+	ok($warnings[0],
+		'Are you sure there are views to extract? The block '.
+		'object contains a +INFO block, not a +VIEWS block.'
+	);                         # 380
+	ok($fatal_errors[0],
+		'This +INFO block either does not contain ' .
+		'any views or it contains malformed views.'
+	);                         # 381
+}
+
+ok(kill_servers()); # 382

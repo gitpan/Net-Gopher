@@ -1,5 +1,9 @@
 Revision history for Perl extension Net::Gopher.
 
+1.07 - Added dozens of new tests to information_blocks.t,  and  configured  the
+       test server to just listen on what ever  ports  the  OS  assigns  to  it
+       instead of requesting specific ports.
+
 1.06 - Deprecated  extract_description()  and  is_description()  in  favor   of
        extract_descriptor() and is_descriptor(),  as  well  as  deprecated  the
        internal check_params() function in  favor  of  get_named_params()  (the

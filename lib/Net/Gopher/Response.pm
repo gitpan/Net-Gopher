@@ -122,9 +122,14 @@ use Net::Gopher::Exception;
 use Net::Gopher::Response::InformationBlock;
 use Net::Gopher::Response::MenuItem;
 use Net::Gopher::Utility qw(
-	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN
+	$CRLF
+	$NEWLINE_PATTERN
+	$ITEM_PATTERN
 
-	get_named_params convert_newlines strip_status_line strip_terminator
+	get_named_params
+	convert_newlines
+	strip_status_line
+	strip_terminator
 );
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
@@ -797,7 +802,7 @@ sub get_block
 	# object and store them in $self if we haven't done so yet:
 	unless (defined $self->{'_blocks'})
 	{
-		$self->_extract_blocks() || return;
+		$self->_extract_blocks() or return;
 	}
 
 
@@ -933,7 +938,7 @@ sub get_blocks
 	# object and store them in $self if we haven't done so yet:
 	unless (defined $self->{'_blocks'})
 	{
-		$self->_extract_blocks() || return;
+		$self->_extract_blocks() or return;
 	}
 
 
@@ -1042,7 +1047,7 @@ sub has_block
 	# object and store them in $self if we haven't done so yet:
 	unless (defined $self->{'_blocks'})
 	{
-		$self->_extract_blocks() || return;
+		$self->_extract_blocks() or return;
 	}
 
 	my @blocks_to_check;
@@ -1315,7 +1320,7 @@ sub error_code
 
 	unless ($self->{'error_code'})
 	{
-		$self->_extract_error || return
+		$self->_extract_error or return
 	}
 
 	return $self->{'error_code'};
@@ -1343,7 +1348,7 @@ sub error_admin
 
 	unless ($self->{'error_admin'})
 	{
-		$self->_extract_error || return
+		$self->_extract_error or return
 	}
 
 	return @{ $self->{'error_admin'} } if (ref $self->{'error_admin'});
@@ -1369,7 +1374,7 @@ sub error_message
 
 	unless ($self->{'error_message'})
 	{
-		$self->_extract_error || return
+		$self->_extract_error or return
 	}
 
 	return $self->{'error_message'};
@@ -1641,8 +1646,8 @@ sub _find_item_blocks
 				Host
 				Port
 				GopherPlus
-			)], $item
-		);
+				)], $item
+			);
 
 
 

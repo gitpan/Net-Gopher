@@ -92,9 +92,11 @@ use Net::Gopher::Debugging;
 use Net::Gopher::Exception;
 use Net::Gopher::Request;
 use Net::Gopher::Utility qw(
-	$ITEM_PATTERN $NEWLINE_PATTERN
+	$ITEM_PATTERN
+	$NEWLINE_PATTERN
 	
-	get_named_params ceil
+	get_named_params
+	ceil
 );
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
@@ -258,7 +260,7 @@ sub get_attributes
 
 	unless (defined $self->{'attributes'})
 	{
-		$self->_extract_attributes || return;
+		$self->_extract_attributes or return;
 	}
 
 	if (@names)
@@ -315,7 +317,7 @@ sub has_attribute
 
 	unless (defined $self->{'attributes'})
 	{
-		$self->_extract_attributes || return;
+		$self->_extract_attributes or return;
 	}
 
 	return 1 if (exists $self->{'attributes'}->{$name});
@@ -515,6 +517,19 @@ sub extract_admin
 {
 	my $self = shift;
 
+	$self->call_warn(
+		sprintf("Are you sure there's administrator information to " .
+			"extract? The block object contains a %s block, not " .
+			"an +ADMIN block.",
+			$self->name
+		)
+	) unless ($self->name eq '+ADMIN');
+
+	unless (defined $self->{'attributes'})
+	{
+		$self->_extract_attributes or return;
+	}
+
 	return $self->call_die(
 		sprintf('The %s block has no Admin attribute to extract ' .
 		        'item administrator information from.',
@@ -522,14 +537,14 @@ sub extract_admin
 		)
 	) unless ($self->has_attribute('Admin'));
 
-
-
 	my $attribute = $self->get_attribute('Admin');
 
-	my ($admin_name, $admin_email) = $attribute =~ /(.+?)\s*<(.*?)>\s*/;
+	my ($admin_name, $admin_email) = $attribute =~ /(.+?)\s*<(.+?)>\s*/;
 
 	return $self->call_die(
-		'The block contains a malformed Admin attribute.'
+		sprintf('The %s block contains a malformed Admin attribute.',
+			$self->name
+		)
 	) unless (defined $admin_name and defined $admin_email);
 
 	return($admin_name, $admin_email);
@@ -556,6 +571,19 @@ supply to the built in C<localtime()> function (see <perldoc -f localtime>).
 sub extract_date_modified
 {
 	my $self = shift;
+
+	$self->call_warn(
+		sprintf("Are you sure there's a modification date timestamp " .
+			"to extract? The block object contains a %s block, " .
+			"not an +ADMIN block.",
+			$self->name
+		)
+	) unless ($self->name eq '+ADMIN');
+
+	unless (defined $self->{'attributes'})
+	{
+		$self->_extract_attributes or return;
+	}
 
 	return $self->call_die(
 		sprintf('The %s block has no Mod-Date attribute to extract ' .
@@ -589,6 +617,19 @@ sub extract_date_created
 {
 	my $self = shift;
 
+	$self->call_warn(
+		sprintf("Are you sure there's a creation date timestamp " .
+			"to extract? The block object contains a %s block, " .
+			"not an +ADMIN block.",
+			$self->name
+		)
+	) unless ($self->name eq '+ADMIN');
+
+	unless (defined $self->{'attributes'})
+	{
+		$self->_extract_attributes or return;
+	}
+
 	return $self->call_die(
 		sprintf('The %s block has no Creation-Date attribute to ' .
 		        'extract a creation date from.',
@@ -620,6 +661,19 @@ supply to the built in C<localtime()> function (see <perldoc -f localtime>).
 sub extract_date_expires
 {
 	my $self = shift;
+
+	$self->call_warn(
+		sprintf("Are you sure there's an expiration date timestamp " .
+			"to extract? The block object contains a %s block, " .
+			"not an +ADMIN block.",
+			$self->name
+		)
+	) unless ($self->name eq '+ADMIN');
+
+	unless (defined $self->{'attributes'})
+	{
+		$self->_extract_attributes or return;
+	}
 
 	return $self->call_die(
 		sprintf('The %s block has no Expiration-Date attribute to ' .
@@ -686,6 +740,13 @@ sub extract_queries
 		# choices:
 		my ($type, $question_and_fields) = split(/:\s?/, $query, 2);
 
+		return $self->call_die(
+			sprintf('This %s block either does not contain any ' .
+			        'queries or it contains malformed queries.',
+				$self->name
+			)
+		) unless (defined $type and defined $question_and_fields);
+
 		# the question and any value or choices are all tab separated:
 		my ($question, @fields) = split(/\t/, $question_and_fields);
 
@@ -705,6 +766,8 @@ sub extract_queries
 
 		push(@ask, $query);
 	}
+
+	
 
 	return @ask;
 }
@@ -838,7 +901,7 @@ sub extract_views
 
 	$self->call_warn(
 		sprintf('Are you sure there are views to extract? The block '.
-		        'object contains a %s block, not an +VIEWS block.',
+		        'object contains a %s block, not a +VIEWS block.',
 			$self->name
 		)
 	) unless ($self->name eq '+VIEWS');
@@ -853,6 +916,13 @@ sub extract_views
 		# separate the MIME type, language/country codes, and size:
 		my ($mime_type, $language_and_country, $size) =
 			$view =~ /^([^:]*?) (?: \s ([^:]{5}) )?:(.*)$/x;
+
+		return $self->call_die(
+			sprintf("This %s block either does not contain any " .
+			        "views or it contains malformed views.",
+				$self->name
+			)
+		) unless (defined $mime_type);
 
 		# get the size in bytes:
 		my $size_in_bytes;

@@ -85,7 +85,8 @@ sub new
 			Selector
 			Host
 			Port
-			GopherPlus)], \@_
+			GopherPlus
+			)], \@_
 		);
 
 	my $self = {

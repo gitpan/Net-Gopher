@@ -23,6 +23,7 @@ t/3-net_gopher_response.t
 t/4-menu_items.t
 t/5-information_blocks.t
 t/6-live.t
+t/items/bad_blocks
 t/items/directory_blocks
 t/items/error_multiline
 t/items/error_not_found

@@ -169,7 +169,7 @@ use warnings;
 use vars qw($VERSION @ISA);
 use Carp;
 use Errno 'EINTR';
-use IO::Socket qw(SHUT_WR);
+use IO::Socket qw(SOCK_STREAM SHUT_WR);
 use IO::Select;
 use Net::Gopher::Constants ':all';
 use Net::Gopher::Debugging;
@@ -177,7 +177,12 @@ use Net::Gopher::Exception;
 use Net::Gopher::Request;
 use Net::Gopher::Response;
 use Net::Gopher::Utility qw(
-	$CRLF get_named_params size_in_bytes strip_terminator
+	$CRLF
+	
+	get_named_params
+	size_in_bytes
+	strip_terminator
+	remove_error_prefix
 );
 
 use constant DEFAULT_GOPHER_PORT  => 70;
@@ -189,7 +194,7 @@ use constant MAX_STATUS_LINE_SIZE => 64;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '1.06';
+$VERSION = '1.07';
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
 
@@ -303,8 +308,8 @@ sub new
 			Silent
 			Debug
 			LogFile
-		)], \@_
-	);
+			)], \@_
+		);
 
 	# turn upward compatability on by default:
 	$upward_compatible = 1 unless (defined $upward_compatible);
@@ -464,33 +469,22 @@ sub request
 	# calls:
 	$self->_network_error(undef);
 
+	# try to connect to the Gopherspace:
 	my $socket = new IO::Socket::INET (
+		Type     => SOCK_STREAM,
 		Proto    => 'tcp',
 		PeerAddr => $request->host,
 		PeerPort => $request->port,
 		Timeout  => $self->timeout
+	) or return $response->error(
+		sprintf("Couldn't connect to \"%s\" at port %d: %s",
+			$request->host,
+			$request->port,
+			remove_error_prefix($@)
+		)
 	);
 
-	if ($socket)
-	{
-		$self->_socket($socket);
-	}
-	else
-	{
-		# (We pass the message returned by sprintf() through
-		# _network_error() rather than just adding it to $response
-		# outright so _network_error() can remove the
-		# "IO::Socket::INET: " prefix from the error message.)
-		$self->_network_error(
-			sprintf("Couldn't connect to \"%s\" at port %d: %s",
-				$request->host,
-				$request->port,
-				$@
-			)
-		);
-
-		return $response->error($self->_network_error);
-	}
+	$self->_socket($socket);
 
 	$self->debug_print(
 		sprintf("Connected to \"%s\" (%s) at port %d.",
@@ -511,7 +505,7 @@ sub request
 
 
 
-	# now we're ready to send the request:
+	# generate and send the request:
 	my $request_string = $request->as_string;
 
 	$self->_write_to_socket($request_string);
@@ -785,7 +779,7 @@ sub request
 	if ($file)
 	{
 		open(FILE, "> $file")
-			|| return $self->call_die(
+			or return $self->call_die(
 				"Couldn't open output file ($file): $!."
 			);
 
@@ -1405,7 +1399,7 @@ sub _read_status_line
 	my $response;
 	while (1)
 	{
-		$self->_read_from_socket(MAX_STATUS_LINE_SIZE) || return;
+		$self->_read_from_socket(MAX_STATUS_LINE_SIZE) or return;
 		return if ($self->_network_error);
 
 		$response .= $self->_buffer;
@@ -1476,10 +1470,9 @@ sub _read_status_line
 #		This method is used to set and retrieve the last network error.
 #		When you supply $error_message, it stores it in the Net::Gopher
 #		object and returns undef. (Allowing private methods to
-#		"return $self->_network_error('Something')"). It also removes
-#		any IO::Socket::* package prefixes from $error_message too (for
-#		example, "IO::Socket::INET: Bad hostname" becomes "Bad
-#		hostname"). If you don't supply $error_message, then it returns
+#		"return $self->_network_error('Something')").
+#
+#		If you don't supply $error_message, then it returns
 #		the last error message supplied to it.
 #
 #	Parameters
@@ -1494,10 +1487,6 @@ sub _network_error
 	if (@_)
 	{
 		my $error = shift;
-
-		# remove the socket class name from error messages
-		# (IO::Socket::* modules put them in):
-		$error =~ s/IO::Socket::\w+: //g if (defined $error);
 
 		$self->{'_network_error'} = $error;
 

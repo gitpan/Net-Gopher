@@ -54,11 +54,12 @@ sub convertNewlines
 	}
 
 	# make sure the status line is stil CRLF terminated:
-	$text =~ s/(?:\015\012|\015|\012)/\015\012/
+	$text =~ s/([\-\+a-zA-Z0-9]+?)(?:\015\012|\015|\012)/$1\015\012/
 		if ($filename =~ /^gp_/i
 			or $filename =~ /^error_/i
 			or $filename =~ /^item_/i
-			or $filename =~ /^directory_/i);
+			or $filename =~ /^directory_/i
+			or $filename =~ /_blocks$/i);
 
 	# now save it, and binmode so Perl doesn't mess the new line endings:
 	open(FILE, "> $filename")

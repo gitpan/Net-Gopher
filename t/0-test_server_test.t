@@ -7,7 +7,6 @@ use Test;
 
 use constant BUFFER_SIZE => 4096;
 use constant HOST        => 'localhost';
-use constant PORT        => 80;
 use constant TIMEOUT     => 30;
 
 BEGIN { plan(tests => 12) }
@@ -23,7 +22,7 @@ else
 {
 	die "Bad CWD: " . getcwd();
 }
-my $pid = open(PIPE, "perl ./t/testserver.pl -ep 80 |");
+my $pid = open(PIPE, "perl ./t/testserver.pl -e |");
 if ($pid)
 {
 	ok(1); # 2
@@ -34,12 +33,13 @@ else
 }
 
 chomp(my $line = <PIPE>);
-ok($line, "# Listening on port 80..."); # 3
+(my $port) = $line =~ /(\d+)/;
+ok($line, "# Listening on port $port..."); # 3
 
 
 my $socket = new IO::Socket::INET (
 	PeerAddr => HOST,
-	PeerPort => PORT,
+	PeerPort => $port,
 	Type     => SOCK_STREAM,
 	Proto    => 'tcp',
 	Timeout  => TIMEOUT

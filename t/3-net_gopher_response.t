@@ -11,8 +11,6 @@ use Net::Gopher::Utility qw(get_os_name $CRLF);
 
 use vars qw(%ITEMS_RAW %ITEMS_CONTENT); # filled by BEGIN towards the bottom
 
-use constant SERVER_PORT => 80;
-
 require './t/serverfunctions.pl';
 
 
@@ -21,7 +19,8 @@ require './t/serverfunctions.pl';
 
 
 {
-	ok(launch_item_server()); # 1
+	my $port = launch_item_server();
+	ok($port); # 1
 
 
 
@@ -36,7 +35,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/index'
 		);
 
@@ -64,7 +63,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/gp_index'
 		);
 
@@ -92,7 +91,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/gp_s_byte_term'
 		);
 
@@ -120,7 +119,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/gp_s_period_term'
 		);
 
@@ -150,7 +149,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/gp_s_no_term'
 		);
 
@@ -178,7 +177,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/gp_byte_term'
 		);
 
@@ -206,7 +205,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/gp_period_term'
 		);
 
@@ -234,7 +233,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/gp_no_term'
 		);
 
@@ -262,7 +261,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->item_attribute(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/item_blocks'
 		);
 
@@ -290,7 +289,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->directory_attribute(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/directory_blocks'
 		);
 
@@ -330,7 +329,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/error_not_found'
 		);
 
@@ -358,7 +357,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/error_multiline'
 		);
 
@@ -405,7 +404,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'this-is-not-a-valid-hostname.comic',
-			Port     => SERVER_PORT,
+			Port     => 70,
 			Selector => '/index'
 		);
 
@@ -413,7 +412,7 @@ require './t/serverfunctions.pl';
 		ok(!$response->is_success); # 129
 		ok($response->error,
 			"Couldn't connect to \"this-is-not-a-valid-" .
-			"hostname.comic\" at port 80: Bad hostname " .
+			"hostname.comic\" at port 70: Bad hostname " .
 			"'this-is-not-a-valid-hostname.comic'"
 		);                          # 130
 	}
@@ -423,7 +422,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/index'
 		);
 
@@ -440,7 +439,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/nothing'
 		);
 
@@ -457,7 +456,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/nothing'
 		);
 
@@ -474,7 +473,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host     => 'localhost',
-			Port     => SERVER_PORT,
+			Port     => $port,
 			Selector => '/gp_partial_response'
 		);
 

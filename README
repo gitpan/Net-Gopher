@@ -1,4 +1,4 @@
-Net::Gopher, version 1.06 (STABLE).
+Net::Gopher, version 1.07 (STABLE).
 ===============================================================================
 
 
@@ -36,6 +36,7 @@ PREREQUISITES
 
 
 Net::Gopher requires these modules:
+ IO::String (at least version 1.0);
  IO::Socket (not really sure on this one... 1.26 should be OK);
  IO::Socket::INET (again, not really sure. 1.25 and up);
  URI (at least version 1.27);
@@ -45,18 +46,18 @@ TESTING
 
 
 The new test suite that comes with Net::Gopher as of  0.92  has  its  own  test
-server. This server runs on ports 80 and 21, so  make  sure  you  have  nothing
-listening on them when you "make test". Also, live.t contains live  tests  that
-will be done using  real-world  Gopher  servers  if  you're  connected  to  the
-Internet.  If  these  sites  are  down  or  malfunctioning,  this  tests   will
-inexplicably fail.
+server. This server tries to listen on what ever ports  your  OS  will  let  it
+listen on. If you have some kind of firewall or port  blocking  enabled,  tests
+that require this server may inexplicably fail  when  you  "make  test".  Also,
+live.t contains live tests that will be done using real-world  Gopherspaces  if
+you're connected to the Internet. If these sites are  down  or  malfunctioning,
+this tests will inexplicably fail too.
 
 
 COPYRIGHT AND LICENSE
 
 
-Copyright 2004 by William G. Davis.
+Copyright 2003-2004 by William G. Davis.
 
 This code is free software released under the GNU General Public  License,  the
 full terms of which can be found in the "COPYING" file in this directory.
-
