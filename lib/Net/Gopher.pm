@@ -9,11 +9,7 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
 
  use Net::Gopher;
  
- my $ng = new Net::Gopher (
-	Timeout          => 60,
-	BufferSize       => 1024,
-	UpwardCompatible => 0
- );
+ my $ng = new Net::Gopher;
  
  # Create a new Gopher-type request:
  my $request = new Net::Gopher::Request ('Gopher',
@@ -56,9 +52,9 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  
  
  
- # Besides the Net::Gopher::Request object/request() method combination,
- # Net::Gopher has shortcut methods for each type of request, all of which
- # return Net::Gopher::Response objects. This creates and sends a Gopher
+ # Besides the request object/request() method combination, Net::Gopher
+ # has shortcut methods for each type of request, all of which return
+ # Net::Gopher::Response objects. This creates and sends a Gopher
  # request:
  $response = $ng->gopher(
  	Host     => 'gopher.host.com',
@@ -85,8 +81,7 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  $response = $ng->url('gopher.host.com');
  
  # you can use and store URL-derived request objects too:
- $request = new Net::Gopher::Request ('URL', 'gopher.host.com');
- 
+ $request  = new Net::Gopher::Request ('URL', 'gopher.host.com');
  $response = $ng->request($request); 
  
  
@@ -102,6 +97,8 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  
  # See Net::Gopher::Response for more methods you can use to manipulate
  # Gopher and Gopher+ responses.
+ # See the files in the /examples directory that came with the Net::Gopher
+ # distribution for more working examples of Net::Gopher scripts.
  ...
 
 =head1 DESCRIPTION
@@ -159,8 +156,10 @@ C<ParamName =E<gt> "value"> convention. The more common all lowercase,
 underscore spaced C<param_name =E<gt> "value"> convention can be used instead,
 because nether case nor underscores matter: "param_name", "Param_Name",
 "ParamName", "PaRaMnAmE", and "PARAM_name" will all be accepted and treated as
-the same thing--choose which ever style you prefer, but just make sure you
-stick with it.
+the same thing. You can even add leading dashes to parameter names a la Tk if
+you want, but please don't do that.
+
+Choose which ever style you prefer, but just make sure you stick with it.
 
 Please also remember that named parameters, for every method that takes them,
 can be sent optionally as either a hash or array reference--though few methods,
@@ -198,7 +197,7 @@ use constant MAX_STATUS_LINE_SIZE => 128;
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '0.93';
+$VERSION = '0.94';
 
 
 
@@ -248,9 +247,9 @@ turned on, if you send a Gopher+ request, item attribute information request,
 or directory attribute information request to a non-Gopher+ server (one that
 does not respond with a status line first), B<Net::Gopher> will try to receive
 the plain-old Gopher response and not raise any errors. When turned off,
-sending a Gopher+ request, item attribute information request, or directory
-attribute information request to a non-Gopher+ server will result in an error.
-By default, upward compatibility is turned on.
+sending a Gopher+ request or item attribute/directory attribute information
+request to a non-Gopher+ server will result in an error. By default, upward
+compatibility is turned on.
 
 =item WarnHandler
 
@@ -392,8 +391,8 @@ sub new
 
 =head2 request(REQUEST [, OPTIONS])
 
-This method connects to a Gopher/Gopher+ server, sends a request, receives the
-server's response, and disconnects from the server. It always returns a
+This method connects to a Gopherspace, sends a request, receives the response,
+and disconnects from the Gopherspace. It always returns a
 B<Net::Gopher::Response> object encapsulating the server's response.
 
 This method takes a B<Net::Gopher::Request> object encapsulating a Gopher or
@@ -401,10 +400,10 @@ Gopher+ request as its first argument. This is the only required argument.
 
 If you didn't specify the I<Port> parameter of your request object (and
 never set it using the C<port()> method), then the default IANA designated port
-of 70 will be used when connecting to the server. If you didn't specify the
-I<ItemType> parameter for I<Gopher> or I<GopherPlus> type requests (and never
-set it using the C<item_type()> method), then "1", Gopher menu type, will be
-assumed.
+of 70 will be used when connecting to the Gopherspace. If you didn't specify
+the I<ItemType> parameter for I<Gopher> or I<GopherPlus> type requests (and
+never set it using the C<item_type()> method), then "1", Gopher menu type,
+will be assumed.
 
 Some typical usage of request objects in conjunction with this method is
 illustrated in the L<SYNOPSIS|Net::Gopher/SYNOPSIS>. For a more detailed
@@ -417,16 +416,16 @@ parameters:
 
 =item File
 
-The first named parameter, I<File>, takes a filename. When supplied,
-B<Net::Gopher> will output the content of the response to the specified file,
-overwriting anything in it if it exists and creating it if it doesn't.
+I<File> takes the name of the file that, when supplied, B<Net::Gopher> will
+output the content of the response to, overwriting anything in it if it exists
+and creating it from scratch if it doesn't.
 
 =item Handler
 
-The second named parameter, I<Handler>, takes a reference to a subroutine that
-will be called as the response is collected, with the buffer sent as the first
-argument to the callback routine, the request object as the second, and the
-response object as the third.
+I<Handler> takes a reference to a subroutine that will be called as the
+response is collected, with the buffer sent as the first argument to the
+callback routine, the request object as the second, and the response object as
+the third.
 
 =back
 
@@ -765,7 +764,11 @@ sub request
 =head2 gopher(OPTIONS)
 
 This method is shortcut around the C<request()>/B<Net::Gopher::Request> object
-combination. This:
+combination for plain-old Gopher requests. It creates a Gopher-type
+B<Net::Gopher::Request> object, sends it, and then returns
+B<Net::Gopher::Response> object for the response.
+
+This:
 
  $ng->gopher(
  	Host     => 'gopher.host.com',
@@ -807,7 +810,11 @@ sub gopher
 =head2 gopher_plus(OPTIONS)
 
 This method is shortcut around the C<request()>/B<Net::Gopher::Request> object
-combination. This:
+combination for Gopher+ requests. It creates a Gopher+ B<Net::Gopher::Request>
+object, sends it, and then returns B<Net::Gopher::Response> object for the
+response.
+
+This:
 
  $ng->gopher_plus(
  	Host           => 'gopher.host.com',
@@ -849,12 +856,15 @@ sub gopher_plus
 =head2 item_attribute(OPTIONS)
 
 This method is shortcut around the C<request()>/B<Net::Gopher::Request> object
-combination. This:
+combination for item attribute information requests. It creates an item
+attribute information B<Net::Gopher::Request> object, sends it, and then
+returns B<Net::Gopher::Response> object for the response.
+
+This:
 
  $ng->item(
  	Host       => 'gopher.host.com',
- 	Selector   => '/file.txt',
- 	Attributes => ['+INFO', '+VIEWS']
+ 	Selector   => '/file.txt'
  );
 
 is roughly equivalent to this:
@@ -862,15 +872,14 @@ is roughly equivalent to this:
  $ng->request(
  	new Net::Gopher::Request ('ItemAttribute',
  		Host       => 'gopher.host.com',
- 		Selector   => '/file.txt',
- 		Attributes => ['+INFO', '+VIEWS']
+ 		Selector   => '/file.txt'
  	)
  );
 
 See the B<Net::Gopher::Request>
-L<new()|Net::Gopher::Request/new(TYPE [, OPTIONS | URL])> method for a
-complete list of named parameters you can supply for Gopher+ item attribute
-information-type requests.
+L<new()|Net::Gopher::Request/new(TYPE [, OPTIONS | URL])> method for a complete
+list of named parameters you can supply for item attribute information-type
+requests.
 
 =cut
 
@@ -892,12 +901,16 @@ sub item_attribute
 =head2 directory_attribute(OPTIONS)
 
 This method is shortcut around the C<request()>/B<Net::Gopher::Request> object
-combination. This:
+combination for directory attribute information requests. It creates a
+directory attribute information B<Net::Gopher::Request> object, sends it, and
+then returns B<Net::Gopher::Response> object for the response.
+
+This:
 
  $ng->directory_attribute(
  	Host       => 'gopher.host.com',
  	Selector   => '/menu',
- 	Attributes => ['+INFO']
+ 	Attributes => ['+INFO', '+ADMIN']
  );
 
 is roughly equivalent to this:
@@ -906,7 +919,7 @@ is roughly equivalent to this:
  	new Net::Gopher::Request ('DirectoryAttribute',
  		Host       => 'gopher.host.com',
  		Selector   => '/menu',
- 		Attributes => ['+INFO']
+ 		Attributes => ['+INFO', '+ADMIN']
  	)
  );
 
@@ -1059,20 +1072,20 @@ sub upward_compatible
 =head2 warn_handler([HANDLER])
 
 This is a get/set method that enables you to change the warn handler. The
-default warn handler calls L<Carp.pm|Carp>'s C<carp()> function and does a
-stack trace. You can change this behavior by supplying your own handler, a
-reference to a subroutine that will be called with the warnings as arguments.
-Not that if I<Silent> is on, then neither the warn handler nor the die handler
-will be called.
+default warn handler calls B<Carp.pm>'s C<carp()> function and does a stack
+trace. You can change this behavior by supplying your own handler, a reference
+to a subroutine that will be called with the warnings as arguments. Not that
+if I<Silent> is on, then neither the warn handler nor the die handler will be
+invoked.
 
 =head2 die_handler([HANDLER])
 
 This is a get/set method that enables you to change the die handler. The
-default die handler calls L<Carp.pm|Carp>'s C<croak()> function and does a
-stack trace. You can change this behavior by supplying your own handler, a
-reference to a subroutine that will be called with the fatal error messages as
-arguments. Not that if I<Silent> is on, then neither the die handler
-nor the warn handler will be invoked.
+default die handler calls B<Carp.pm>'s C<croak()> function and does a stack
+trace. You can change this behavior by supplying your own handler, a reference
+to a subroutine that will be called with the fatal error messages as
+arguments. Not that if I<Silent> is on, then neither the die handler nor the
+warn handler will be invoked.
 
 =head2 silent([BOOLEAN])
 
@@ -1114,9 +1127,9 @@ it will be created. If it does exist, anything in it will be overwritten.
 
 
 
-################################################################################
-# 
-# The following subroutines are private accessor methods. They are 'get' only:
+###############################################################################
+#
+# The following subroutines are private accessor methods. They are "get"only:
 #
 
 sub _socket    { return shift->{'_socket'} }

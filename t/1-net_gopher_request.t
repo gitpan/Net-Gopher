@@ -84,11 +84,11 @@ use Net::Gopher::Constants qw(:request :item_types);
 {
 	my $request = new Net::Gopher::Request (
 		gopher => {
-			Host        => 'gopher.hole.foo',
-			PORT        => 7777,
-			selector    => '/apps/a_search_engine',
-			SeARchWoRDs => ['red', 'blue', 'green'],
-			ItemType    => INDEX_SEARCH_SERVER_TYPE
+			Host          => 'gopher.hole.foo',
+			PORT          => 7777,
+			selector      => '/apps/a_search_engine',
+			-SeARch_WoRDs => ['red', 'blue', 'green'],
+			Item_Type     => INDEX_SEARCH_SERVER_TYPE
 		}
 	);
 
@@ -196,11 +196,11 @@ use Net::Gopher::Constants qw(:request :item_types);
 
 {
 	my $request = new Net::Gopher::Request ('GOPHERPLUS',
-		Host           => 'gopher.hole.bar',
-		PORT           => 7000,
-		selector       => '/some_pic.jpg',
-		RePReSEntATIon => 'image/jpeg',
-		ItemType       => IMAGE_FILE_TYPE
+		Host            => 'gopher.hole.bar',
+		PORT            => 7000,
+		selector        => '/some_pic.jpg',
+		-RePReSEntATIon => 'image/jpeg',
+		Item_Type       => IMAGE_FILE_TYPE
 	);
 
 	ok($request->as_string, "/some_pic.jpg	+image/jpeg$CRLF");               # 75
@@ -222,10 +222,10 @@ use Net::Gopher::Constants qw(:request :item_types);
 {
 	my $request = new Net::Gopher::Request (
 		gopherplus => {
-			Host        => 'gopher.hole.bar',
-			SELECTOR    => '/search',
-			searchwords => 'apple orange pear',
-			ITEmTyPE    => INDEX_SEARCH_SERVER_TYPE
+			Host          => 'gopher.hole.bar',
+			SELECTOR      => '/search',
+			-search_words => 'apple orange pear',
+			-ITEmTyPE     => INDEX_SEARCH_SERVER_TYPE
 		}
 	);
 
@@ -247,11 +247,11 @@ use Net::Gopher::Constants qw(:request :item_types);
 
 {
 	my $request = new Net::Gopher::Request ('GoPHeRPlus',
-		Host           => 'gopher.hole.bar',
-		SELECTOR       => '/search',
-		searchwords    => ['aaa'],
-		ReprESEntATIon => 'application/gopher+-menu',
-		ItemType       => INDEX_SEARCH_SERVER_TYPE
+		Host              => 'gopher.hole.bar',
+		SELECTOR          => '/search',
+		-_search_words    => ['aaa'],
+		-_ReprESEntATIon  => 'application/gopher+-menu',
+		_Item_Type        => INDEX_SEARCH_SERVER_TYPE
 	);
 
 	ok($request->as_string, "/search	aaa	+application/gopher+-menu$CRLF");  # 97
@@ -272,10 +272,10 @@ use Net::Gopher::Constants qw(:request :item_types);
 
 {
 	my $request = new Net::Gopher::Request ('GoPHeRPlus',
-		Host           => 'gopher.hole.bar',
-		SELECTOR       => '/something.cgi',
-		DataBlock      => "This is a single-line block",
-		ItemType       => GOPHER_MENU_TYPE
+		-Host           => 'gopher.hole.bar',
+		-SELECTOR       => '/something.cgi',
+		Data_Block      => "This is a single-line block",
+		Item_Type       => GOPHER_MENU_TYPE
 	);
 
 	ok($request->as_string,
@@ -352,11 +352,12 @@ use Net::Gopher::Constants qw(:request :item_types);
 
 
 {
-	my $request = new Net::Gopher::Request ('GoPHeRPlus',
-		Host      => 'gopher.hole.bar',
-		SELECTOR  => '/something.cgi',
-		DataBlock => "This\015\012is\012a\015\012multi-line\012block " x 2000,
-		ItemType  => GOPHER_MENU_TYPE
+	my $request = new Net::Gopher::Request ('GoPHeRPlus', [
+		Host       => 'gopher.hole.bar',
+		SELECTOR   => '/something.cgi',
+		Data_Block => "This\015\012is\012a\015\012multi-line\012block " x 2000,
+		Item_Type  => GOPHER_MENU_TYPE
+		]
 	);
 
 	ok($request->as_string,

@@ -149,9 +149,9 @@ CLIENT: while (my $client = $server->accept)
 		$selector =~ s{\\}{/}g;
 		$selector =  "/$selector" unless (substr($selector,0,1) eq '/');
 
-		my $path = (getcwd() =~ m|/tests$|)
+		my $path = (getcwd() =~ m|/t$|)
 				? './items'
-				: './tests/items';
+				: './t/items';
 
 		open(FILE, "< $path$selector")
 			|| die "Couldn't return file (.$path$selector): $!";

@@ -201,7 +201,7 @@ sub raw_value { return shift->{'raw_value'} };
 
 #==============================================================================#
 
-=head2 get_attribute($name)
+=head2 get_attribute(NAME)
 
 If the block value contains a series of C<Name: value> attributes on lines by
 themselves, then you can use this method to retrieve an attribute value by
@@ -607,7 +607,7 @@ the following key=value pairs:
 
  type     = The type of query (e.g, Ask, AskP, Select, Choose, etc.);
  question = The question;
- defaults = A reference to an array containing the default answers;
+ value    = A reference to an array containing the default answers;
 
 =cut
 
@@ -630,17 +630,28 @@ sub extract_queries
 
 	foreach my $query (split(/\n/, $self->value))
 	{
-		# get the query type and the question and default values:
-		my ($type, $question_and_defaults) = $query =~ /^(\S+)+:\s?(.*)/;
+		# get the query type and the question and default value or
+		# choices:
+		my ($type, $question_and_fields) = split(/:\s?/, $query, 2);
 
-		# the question and any default values are all tab separated:
-		my ($question, @defaults) = split(/\t/, $question_and_defaults);
+		# the question and any value or cchoices are all tab separated:
+		my ($question, @fields) = split(/\t/, $question_and_fields);
 
-		push(@ask, {
+		my $query = {
 			type     => $type,
-			question => $question,
-			defaults => \@defaults
-		});
+			question => $question
+		};
+
+		if ($type eq 'Select' or $type eq 'Choose')
+		{
+			$query->{'choices'} = \@fields;
+		}
+		else
+		{
+			$query->{'value'} = shift @fields;
+		}
+
+		push(@ask, $query);
 	}
 
 	return @ask;

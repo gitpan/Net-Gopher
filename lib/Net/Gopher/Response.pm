@@ -27,7 +27,8 @@ Net::Gopher::Response - Class encapsulating Gopher/Gopher+ responses
  			$item_obj->port
  		);
  
- 		$ng->request($item_obj->as_request, File => shift @file_names);
+		(my $filename = $item_obj->selector) =~ s/\W/_/g;
+ 		$ng->request($item_obj->as_request, File => $filename);
  	}
  
  	# See Net::Gopher::Response::MenuItem for more methods you
@@ -92,14 +93,14 @@ use Carp;
 use IO::File;
 use IO::String;
 use XML::Writer;
-use Net::Gopher::Constants qw(:request :response :item_types);
+use Net::Gopher::Constants qw(:all);
 use Net::Gopher::Debugging;
 use Net::Gopher::Exception;
 use Net::Gopher::Response::InformationBlock;
 use Net::Gopher::Response::MenuItem;
 use Net::Gopher::Response::XML qw(gen_block_xml gen_menu_xml gen_text_xml);
 use Net::Gopher::Utility qw(
-	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS 
+	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS
 	check_params get_os_name
 );
 
@@ -669,7 +670,7 @@ only be compared against this item.
 
 =item ItemType
 
-The item type character in the +INFO block, for example, "0", "1", or "g".
+The item type character in the C<+INFO> block, for example, "0", "1", or "g".
 B<Net::Gopher::Constants> contains constants you can use to specify an item
 type which are exported when you C<use()> B<Net::Gopher::Constants> with either
 the I<:item_types> or I<:all> export tags.
@@ -701,7 +702,7 @@ pattern compiled with the C<qr//> operator (it tells the difference using
 C<ref()>). The first item that matches every parameter in the template is the
 item the specified block object will be returned from.
 
-This, for example, tries to retrieve the +ADMIN block object from the second
+This, for example, tries to retrieve the C<+ADMIN> block object from the second
 item:
 
  my $block = $response->get_block('+ADMIN', Item => 2);
@@ -758,6 +759,8 @@ sub get_block
 		$self->_parse_blocks() || return;
 	}
 
+
+
 	my @item_wanted_from;
 	if (@_)
 	{
@@ -767,8 +770,10 @@ sub get_block
 	}
 	else
 	{
-		@item_wanted_from = @{ $self->{'_blocks'}->[0] };
+		@item_wanted_from = @{ $self->{'_blocks'}[0] };
 	}
+
+	return unless (@item_wanted_from);
 
 
 
@@ -912,46 +917,29 @@ sub get_blocks
 	# block object from the requested item (or from the *only* item if it
 	# was an item attribute information request) or nothing if no item was
 	# specified:
-	my @item_to_get_from;
+	my @item_wanted_from;
 
-	if (ref $item)
+	if ($item)
 	{
-		# If Item argument contains a reference to a hash or array,
-		# then it contains a template of named parameters that specify
-		# which item to get the blocks from. So we go through each
-		# item comparing its +INFO block against the template and
-		# when we find the first one that matches, we'll use its blocks:
-		@item_to_get_from = $self->_find_item_blocks($item);
-
-		return unless (@item_to_get_from);
-	}
-	elsif (defined $item)
-	{
-		# $item contains a number specifying the n'th item to get
-		# blocks from:
-		my $i = $item - 1;
-
-		my @item_to_get_from = @{ $self->{'_blocks'}->[$i] };
-
-		return unless (@item_to_get_from);
+		@item_wanted_from = $self->_find_item_blocks($item) or return;
 	}
 	elsif ($self->request->request_type == ITEM_ATTRIBUTE_REQUEST)
 	{
 		# it was an item attribute information request, so we'll get
 		# blocks from the first and only item:
-		@item_to_get_from = @{ $self->{'_blocks'}->[0] };
+		@item_wanted_from = @{ $self->{'_blocks'}[0] };
 	}
 
 
 
 	my @blocks_to_return;
-	if (@item_to_get_from)
+	if (@item_wanted_from)
 	{
 		# get only the requested blocks, or, if none we're request,
 		# get all of them from the specified item:
 		if (%blocks_to_get)
 		{
-			foreach my $block (@item_to_get_from)
+			foreach my $block (@item_wanted_from)
 			{
 				push(@blocks_to_return, $block)
 					if ($blocks_to_get{$block->name});
@@ -959,7 +947,7 @@ sub get_blocks
 		}
 		else
 		{
-			@blocks_to_return = @item_to_get_from;
+			@blocks_to_return = @item_wanted_from;
 		}
 	}
 	else
@@ -970,6 +958,70 @@ sub get_blocks
 
 
 	return wantarray ? @blocks_to_return : shift @blocks_to_return;
+}
+
+
+
+
+
+#==============================================================================#
+
+=head2 has_block(NAME [, OPTIONS])
+
+This method is used to check whether or not the response contains a particular
+B<Net::Gopher::Response::InformationBlock> object. The calling conventions for
+this method are *exactly* the same as they are for the C<get_block()> method
+described above, except rather than returning a block object, this method
+just returns true if the block object exists.
+
+Call this method before calling C<get_block()>.
+
+See L<get_block()|Net::Gopher::Response/get_block(NAME [, OPTIONS])>.
+
+=cut
+
+sub has_block
+{
+	my $self = shift;
+	my $name = shift;
+
+	$self->call_warn(
+		join(' ',
+			"You didn't send an item attribute or directory",
+			"attribute information request, so why would the",
+			"response contain attribute information blocks?"
+		)
+	) unless ($self->request->request_type == ITEM_ATTRIBUTE_REQUEST
+		or $self->request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
+
+	# parse each block into a Net::Gopher::Response::InformationBlock
+	# object and store them in $self if we haven't done so yet:
+	unless (defined $self->{'_blocks'})
+	{
+		$self->_parse_blocks() || return;
+	}
+
+	my @blocks_to_check;
+	if (@_)
+	{
+		my $item = check_params(['Item'], \@_);
+
+		@blocks_to_check = $self->_find_item_blocks($item);
+	}
+	else
+	{
+		@blocks_to_check = @{ $self->{'_blocks'}[0] };
+	}
+
+	return unless @blocks_to_check;
+
+
+
+	$name = '+' . $name unless (substr($name, 0, 1) eq '+');
+	foreach my $block (@blocks_to_check)
+	{
+		return 1 if ($block->name eq $name);
+	}
 }
 
 
@@ -1130,10 +1182,7 @@ sub is_success
 {
 	my $self = shift;
 
-	if (!$self->is_error)
-	{
-		return 1;
-	}
+	return 1 if (!$self->is_error);
 }
 
 
@@ -1182,12 +1231,8 @@ sub is_blocks
 
 	my $block = qr/\+\S+ .*?/s;
 
-	if (defined $self->content
-		and $self->content =~ /^$block(?:\n$block)*$/so)
-	{
-		return 1;
-	}
-	
+	return 1 if (defined $self->content
+		and $self->content =~ /^$block(?:\n$block)*$/so);	
 }
 
 
@@ -1207,10 +1252,7 @@ sub is_gopher_plus
 {
 	my $self = shift;
 
-	if (defined $self->status_line and defined $self->status)
-	{
-		return 1;
-	}
+	return 1 if (defined $self->status_line and defined $self->status);
 }
 
 
@@ -1230,12 +1272,9 @@ sub is_menu
 {
 	my $self = shift;
 
-	if (defined $self->content
+	return 1 if (defined $self->content
 		and $self->content =~ /^$ITEM_PATTERN (?:\n $ITEM_PATTERN)*
-		                       (?:\n\.\n|\n\.|\n|)$/xo)
-	{
-		return 1;
-	}
+		                       (?:\n\.\n|\n\.|\n|)$/xo);
 }
 
 
@@ -1257,13 +1296,10 @@ sub is_terminated
 
 	# Since raw_response() returns the unmodified response, it will always
 	# have the period on a line by itself in it; but that also means the
-	# line endings weren't converted to LF, so we can't use \n to match the
-	# period on a line by itself:
-	if (defined $self->raw_response
-		and $self->raw_response =~ /$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$/o)
-	{
-		return 1;
-	}
+	# line endings weren't converted to LF on Unix and Windows or CR on
+	# MacOS, so we can't use \n to match the period on a line by itself:
+	return 1 if (defined $self->raw_response
+		and $self->raw_response =~ /$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$/o);
 }
 
 
@@ -1501,10 +1537,10 @@ sub _convert_newlines
 #
 #	Purpose
 #		This method parses the information blocks in $self->content
-#		and stores them in $self->{'_blocks'}, where
-#		$self->{'_blocks'} is a reference to an array and each
-#		element in the array is reference to a array containing the 
-#		Net::Gopher::Response::InformationBlock objects for a single
+#		into Net::Gopher::Response::InformationBlock objects and stores
+#		them in $self->{'_blocks'}, where $self->{'_blocks'} is a
+#		reference to an array and each element in the array is a
+#		reference to a array containing the block objects for a single
 #		item.
 #
 #	Parameters
@@ -1553,7 +1589,7 @@ sub _parse_blocks
 	# the start of block is denoted by a + at the beginning of a line:
 	foreach my $name_and_value (split(/$NEWLINE_PATTERN\+/, $raw_response))
 	{
-		# get the space separated name and value:
+		# get the newline/space separated name and value:
 		my ($name, $raw_value) =
 			split(/ |\015\012|\015|\012/, $name_and_value, 2);
 
@@ -1618,86 +1654,158 @@ sub _parse_blocks
 
 
 
+################################################################################
+#
+#	Method
+#		_find_item_blocks($item)
+#
+#	Purpose
+#		This method searchs $self->{'_blocks'} for an item either by
+#		number (e.g., "2" for the second item) or by a template
+#		describing the item, and returns an array containing every
+#		single block object from the specified item. The template
+#		parameters are described above in the POD for get_block().
+#
+#	Parameters
+#		$item - Either a number specifying the n'th item or a reference
+#		        to a hash or an array contaiing named parameters
+#		        describing the item wanted (see get_block()).
+#
+
 sub _find_item_blocks
 {
 	my $self = shift;
+	my $item = shift;
 
-	my ($n, %template);
-	($n,
-	 $template{'item_type'}, $template{'display'}, $template{'selector'},
-	 $template{'host'}, $template{'port'}, $template{'gopher_plus'}) =
-	 	check_params(
-			[qw(N ItemType Display Selector Host Port GopherPlus)],
-			\@_
+
+	my $item_wanted_from;
+	if (ref $item)
+	{
+		my ($n, %template);
+		($n,
+		 $template{'item_type'}, $template{'display'},
+		 $template{'selector'}, $template{'host'},
+		 $template{'port'}, $template{'gopher_plus'}) =
+		 	check_params([qw(
+				N
+				ItemType
+				Display
+				Selector
+				Host
+				Port
+				GopherPlus
+			)], $item
 		);
 
 
 
-	# If an item number was specified, then we'll only check that
-	# item against the template. Otherwise, we'll check each item
-	# against the template looking for one that matches:
-	my @items_to_search = (defined $n)
-				? $self->{'_blocks'}->[$n - 1]
-				: @{ $self->{'_blocks'} };
-
-	# now search the items looking for the first item that
-	# matches:
-	foreach my $item (@items_to_search)
-	{
-		my $info_block = $item->[0];
-
-		# skip it if there was no +INFO block:
-		next unless ($info_block and $info_block->name eq '+INFO');
-
-		# parse the item's +INFO block:
-		my @values = $info_block->extract_description or next;
-
-		# we'll use these keys to build a hash containing
-		# values from the +INFO block, then use them again to
-		# compare the values hash against the template hash:
-		my @keys = qw(item_type display selector host port gopher_plus);
-
-		my %values;
-		foreach my $key (@keys)
+		# If an item number was specified, then we'll only check that
+		# item against the template. Otherwise, we'll check each item
+		# against the template looking for one that matches:
+		my @items_to_search;
+		if ($n)
 		{
-			$values{$key} = shift @values;
+			my $number_of_items = scalar @{ $self->{'_blocks'} };
+			return $self->call_die(
+				sprintf('There %s only %d %s in the ' .
+				        'response.You specified item %d, ' .
+					'which does not exist.',
+					($number_of_items == 1) ? 'is' : 'are',
+					$number_of_items,
+					($number_of_items == 1) ?'item':'items',
+					$n
+				)
+			) if ($n > $number_of_items);
+
+			@items_to_search = $self->{'_blocks'}[$n - 1];	
+		}
+		else
+		{
+			@items_to_search = @{ $self->{'_blocks'} };
 		}
 
-		# We assume the item matches. It's only when user
-		# specifies certain parameters in the template and
-		# those parameters don't match the corresponding fields
-		# in the +INFO block that the item doesn't match:
-		my $does_not_match;
-		foreach my $key (@keys)
+		# now search the items looking for the first item that
+		# matches:
+		foreach my $item (@items_to_search)
 		{
-			next unless (defined $template{$key});
+			my $info_block = $$item[0];
 
-			# check the value against the template:
-			if (ref $template{$key} eq 'Regexp')
+			# skip it if there was no +INFO block:
+			next unless ($info_block and $info_block->name eq '+INFO');
+
+			# parse the item's +INFO block:
+			my @values = $info_block->extract_description or next;
+
+			# we'll use these keys to build a hash containing
+			# values from the +INFO block, then use them again to
+			# compare the values hash against the template hash:
+			my @keys = qw(
+				item_type display selector host port gopher_plus
+			);
+
+			my %values;
+			foreach my $key (@keys)
 			{
-				unless ($values{$key} =~ $template{$key})
+				$values{$key} = shift @values;
+			}
+
+			# We assume the item matches. It's only when user
+			# specifies certain parameters in the template and
+			# those parameters don't match the corresponding fields
+			# in the +INFO block that the item doesn't match:
+			my $does_not_match;
+			foreach my $key (@keys)
+			{
+				next unless (defined $template{$key});
+
+				# check the value against the template:
+				if (ref $template{$key} eq 'Regexp')
 				{
-					$does_not_match++;
-					last;
+					unless ($values{$key} =~ $template{$key})
+					{
+						$does_not_match++;
+						last;
+					}
+				}
+				else
+				{
+					unless ($values{$key} eq $template{$key})
+					{
+						$does_not_match++;
+						last;
+					}
 				}
 			}
-			else
-			{
-				unless ($values{$key} eq $template{$key})
-				{
-					$does_not_match++;
-					last;
-				}
-			}
+
+			# check the next item if this one didn't match the
+			# template:
+			next if ($does_not_match);
+
+			# we found one that matches:
+			$item_wanted_from = $item;
+			last;
 		}
-
-		# check the next item if this one didn't match the
-		# template:
-		next if ($does_not_match);
-
-		# we found one that matches:
-		return @$item;
 	}
+	else
+	{
+		my $number_of_items = scalar @{ $self->{'_blocks'} };
+		return $self->call_die(
+			sprintf('There %s only %d %s in the response. You ' .
+			        'specified item %d, which does not exist.',
+				($number_of_items == 1) ? 'is' : 'are',
+				$number_of_items,
+				($number_of_items == 1) ? 'item' : 'items',
+				$item
+			)
+		) if ($item > $number_of_items);
+
+		my $i = $item - 1;
+		$item_wanted_from = $self->{'_blocks'}[$i]; 
+	}
+
+	return unless ($item_wanted_from);
+
+	return @$item_wanted_from;
 }
 
 

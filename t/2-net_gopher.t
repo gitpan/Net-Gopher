@@ -8,7 +8,7 @@ use Net::Gopher;
 use Net::Gopher::Request;
 use Net::Gopher::Constants qw(:item_types);
 
-require './tests/serverfunctions.pl';
+require './t/serverfunctions.pl';
 
 
 
@@ -395,7 +395,7 @@ require './tests/serverfunctions.pl';
 	#
 
 	{
-		# see the "index" file in the ./tests/items directory:
+		# see the "index" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			Gopher => {
 				Host        => 'localhost',
@@ -425,7 +425,7 @@ require './tests/serverfunctions.pl';
 	}
 
 	{
-		# see the "gp_period_term" file in the ./tests/items directory:
+		# see the "gp_period_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host        => 'localhost',
@@ -455,7 +455,7 @@ require './tests/serverfunctions.pl';
 	}
 
 	{
-		# see the "gp_no_term" file in the ./tests/items directory:
+		# see the "gp_no_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host        => 'localhost',
@@ -485,7 +485,7 @@ require './tests/serverfunctions.pl';
 	}
 
 	{
-		# see the "gp_byte_term" file in the ./tests/items directory:
+		# see the "gp_byte_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host        => 'localhost',
@@ -515,7 +515,7 @@ require './tests/serverfunctions.pl';
 	}
 
 	{
-		# see the "gp_s_period_term" file in the ./tests/items directory:
+		# see the "gp_s_period_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host        => 'localhost',
@@ -545,7 +545,7 @@ require './tests/serverfunctions.pl';
 	}
 
 	{
-		# see the "gp_s_no_term" file in the ./tests/items directory:
+		# see the "gp_s_no_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host        => 'localhost',
@@ -575,7 +575,7 @@ require './tests/serverfunctions.pl';
 	}
 
 	{
-		# see the "gp_s_byte_term" file in the ./tests/items directory:
+		# see the "gp_s_byte_term" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host        => 'localhost',
@@ -605,7 +605,7 @@ require './tests/serverfunctions.pl';
 	}
 
 	{
-		# see the "index" file in the ./tests/items directory:
+		# see the "index" file in the ./t/items directory:
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host        => 'localhost',

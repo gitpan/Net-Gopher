@@ -19,17 +19,24 @@ die $response->error if ($response->is_error);
 foreach my $item ($response->extract_items)
 {
 	(my $filename = $item->selector) =~ s{.*[:\\/]}{};
-	$filename = './screenshots/' . $filename;
 
-	print "Requesting \"$filename\"...\n";
-	my $response = $ng->request($item->as_request, File => $filename);
+	printf("Requesting \"%s\" from %s...\n",
+		$filename,
+		$item->host
+	);
+
+	my $response = $ng->request($item->as_request,
+		File => './screenshots/' . $filename
+	);
 
 	if ($response->is_error)
 	{
 		warn $response->error . "... Retry?\n";
 		chomp(my $redo = <STDIN>);
-		redo if ($redo =~ /^y/i);
+		redo if ($redo =~ /^y(?:es)?$/i);
 	}
 
 	print "Saved \"$filename\" to disk.\n\n";
 }
+
+print "Now go look in ./screenshots for your images.\n";

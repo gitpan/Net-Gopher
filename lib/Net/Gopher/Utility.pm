@@ -162,7 +162,7 @@ sub check_params
 	{
 		my $real_name = lc $name;
 		   $real_name =~ s/^-//;
-		   $real_name =~ tr/_//;
+		   $real_name =~ s/_//g;
 
 		push(@params_wanted, $real_name);
 
@@ -176,7 +176,7 @@ sub check_params
 	{
 		my $real_name = lc $name;
 		   $real_name =~ s/^-//;
-		   $real_name =~ tr/_//;
+		   $real_name =~ s/_//g;
 
 		if (exists $values{$real_name})
 		{

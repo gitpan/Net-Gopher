@@ -1,4 +1,4 @@
-Net::Gopher, version 0.93 (BETA).
+Net::Gopher, version 0.94 (BETA).
 ===============================================================================
 
 
@@ -47,7 +47,7 @@ TESTING
 
 
 The new test suite that comes with Net::Gopher as of  0.92  has  its  own  test
-server. This server runs on ports 70 and 80, so  make  sure  you  have  nothing
+server. This server runs on ports 70 and 7070, so make sure  you  have  nothing
 listening on them when you "make test". Also, live.t contains live  tests  that
 will be done using  real-world  Gopher  servers  if  you're  connected  to  the
 Internet.  If  these  sites  are  down  or  malfunctioning,  this  tests   will

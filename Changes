@@ -1,5 +1,23 @@
 Revision history for Perl extension Net::Gopher.
 
+0.94 -
+
+       (1) 
+           The Net::Gopher::MenuItem accessor methods are now  get/set  instead
+           of just being get.
+
+       (2) 
+           Added the Net::Gopher::Response  has_block()  method  to  see  if  a
+           particular block is in the response.
+
+       (3) 
+           You can now prepend dashes to the front of all named parameters  and
+           put underscores in them too.
+
+       (4) 
+           The test  suite  tests  the  Net::Gopher::Response::InformationBlock
+           methods much better.
+
 0.93 -
 
        (1) 
@@ -13,14 +31,9 @@ Revision history for Perl extension Net::Gopher.
 
        (3) 
            Added the Net::Gopher::Response get_block()  method  to  retrieve  a
-           single block, and has_block() method to see if  a  particular  block
-           is in the response.
+           single block.
 
        (4) 
-           The Net::Gopher::MenuItem methods are now get/set  instead  of  just
-           being get.
-
-       (5) 
            Infromation block methods warn and die much more.
 
 0.92 - (Gone from CPAN?)
@@ -44,25 +57,28 @@ Revision history for Perl extension Net::Gopher.
            can be controlled with the options listed next).
 
        (5) 
+           Named parameters are now case-insensitive.
+
+       (6) 
            The   Net::Gopher   constructor   takes   several   new   arguments:
            WarnHandler, DieHandler, Silent, and LogFile.
 
-       (6) 
+       (7) 
            The request() method option "Callback" has been renamed "Handler".
 
-       (7) 
+       (8) 
            User-defined response handler subs  for  the  request()  method  now
            receive the following arguments in this order: the  raw,  unmodified
            buffer; the request object; the response object.
 
-       (8) 
+       (9) 
            Net::Gopher::Response   has   three   new   methods:   error_code(),
            error_admin(), and error_message() to parse Gopher+ errors.
 
-       (9) 
+       (10) 
            The extract_menu_items() method has been renamed extract_items().
 
-       (10) 
+       (11) 
            The    extract_administrator()    method    has     been     renamed
            extract_admin(),  and   extract_ask_queries()   has   been   renamed
            extract_queries().

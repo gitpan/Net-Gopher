@@ -10,7 +10,7 @@ use Net::Gopher::Request qw(:all);
 use Net::Gopher::Utility qw(get_os_name $CRLF);
 use vars qw(%ITEMS_RAW %ITEMS_CONTENT); # filled by BEGIN towards the bottom
 
-require './tests/serverfunctions.pl';
+require './t/serverfunctions.pl';
 
 
 
@@ -858,6 +858,7 @@ BEGIN
 			" multiple lines.\015",
 			"+ASK\015",
 			" Ask: What is your name?\015",
+			" Ask: Where are you from?	Montana\015",
 			" Choose: What is your favorite color?	red	green	blue\015",
 			" Select: Contact using:	Email	Instant messages	IRC\015",
 			".\015"
@@ -1357,6 +1358,7 @@ BEGIN
 			" multiple lines.\n",
 			"+ASK\n",
 			" Ask: What is your name?\n",
+			" Ask: Where are you from?	Montana\n",
 			" Choose: What is your favorite color?	red	green	blue\n",
 			" Select: Contact using:	Email	Instant messages	IRC\n",
 			".\n"

@@ -7,10 +7,7 @@ use strict;
 use Net::Gopher;
 use Net::Gopher::Constants ':item_types';
 
-my $ng = new Net::Gopher (
-	timeout     => 60,
-	buffer_size => 4096
-);
+my $ng = new Net::Gopher;
 
 my $request = new Net::Gopher::Request (
 	Gopher => {

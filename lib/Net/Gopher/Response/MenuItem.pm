@@ -249,7 +249,19 @@ This method returns the item type character of the menu item.
 
 =cut
 
-sub item_type { return shift->{'item_type'} }
+sub item_type
+{
+	my $self = shift;
+
+	if (@_)
+	{
+		$self->{'item_type'} = shift;
+	}
+	else
+	{
+		return $self->{'item_type'};
+	}
+}
 
 
 
@@ -263,7 +275,19 @@ This method returns the display string of the menu item.
 
 =cut
 
-sub display { return shift->{'display'} }
+sub display
+{
+	my $self = shift;
+
+	if (@_)
+	{
+		$self->{'display'} = shift;
+	}
+	else
+	{
+		return $self->{'display'};
+	}
+}
 
 
 
@@ -277,7 +301,19 @@ This method returns the selector string of the menu item.
 
 =cut
 
-sub selector { return shift->{'selector'} }
+sub selector
+{
+	my $self = shift;
+
+	if (@_)
+	{
+		$self->{'selector'} = shift;
+	}
+	else
+	{
+		return $self->{'selector'};
+	}
+}
 
 
 
@@ -291,7 +327,19 @@ This method returns the host field of the menu item.
 
 =cut
 
-sub host { return shift->{'host'} }
+sub host
+{
+	my $self = shift;
+
+	if (@_)
+	{
+		$self->{'host'} = shift;
+	}
+	else
+	{
+		return $self->{'host'};
+	}
+}
 
 
 
@@ -305,7 +353,19 @@ This method returns the port field of the menu item.
 
 =cut
 
-sub port { return shift->{'port'} }
+sub port
+{
+	my $self = shift;
+
+	if (@_)
+	{
+		$self->{'port'} = shift;
+	}
+	else
+	{
+		return $self->{'port'};
+	}
+}
 
 
 
@@ -320,7 +380,19 @@ With Gopher items it will just return undef.
 
 =cut
 
-sub gopher_plus { return shift->{'gopher_plus'} }
+sub gopher_plus
+{
+	my $self = shift;
+
+	if (@_)
+	{
+		$self->{'gopher_plus'} = shift;
+	}
+	else
+	{
+		return $self->{'gopher_plus'};
+	}
+}
 
 1;
 
