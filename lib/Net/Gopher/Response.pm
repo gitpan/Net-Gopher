@@ -46,14 +46,14 @@ Net::Gopher::Response - Class encapsulating Gopher responses
 
 =head1 DESCRIPTION
 
-Both the Net::Gopher request() and request_url() methods return
-Net::Gopher::Response objects. These objects encapsulate responses from
+Both the L<Net::Gopher> C<request()> and C<request_url()> methods return
+B<Net::Gopher::Response> objects. These objects encapsulate responses from
 Gopher and Gopher+ servers.
 
 In Gopher, a response is just a series of bytes terminated by a period on a
 line by itself. In Gopher+, a response consist of a status line (the first
 line) of which the first character is the status (success or failure (+ or -)),
-followed by a newline (CRLF), and the content of the request which is a series
+followed by a newline (CRLF), and the content of the response which is a series
 of bytes terminated by a period on a line by itself. This class contains
 methods to help you manipulate both Gopher as well as Gopher+ responses.
 
@@ -71,7 +71,7 @@ use Carp;
 use Time::Local;
 use Net::Gopher::Utility qw($CRLF $NEWLINE);
 
-$VERSION = '0.35';
+$VERSION = '0.37';
 
 
 
@@ -162,19 +162,21 @@ sub status { return shift->{'status'} }
 
 =head2 content()
 
-Both content() and as_string() can be used to retrieve the strings containing
-the server's response. With content(), however, if the item requested was a
-text file then escaped periods are unescaped (i.e., '..' at the start of a
-line becomes '.'). Also, if response was terminated by a period on a line by
-itself but it isn't a text file or menu, then the period on a line by itself
-will be removed from the content (though you can still check to see if it was
-period terminated using the L<is_terminated()> method). This is because if you
-were requesting an image or some other binary file (especially in Gopher+),
-odds are you don't want the newline and period at the end the content. Note
-that Net::Gopher will only attempt the aforementioned modifications if you
-supply the Type argument to request(). Also note that in Gopher+, besides the
-modifications listed above, content() does not include the status line (first
-line) of the response (since the status line isn't content).
+Both C<content()> and C<as_string()> can be used to retrieve the strings
+containing the server's response. With C<content()>, however, if the item
+requested was a text file, then escaped periods are unescaped (i.e., '..' at
+the start of a line becomes '.'). Also, if response was terminated by a period
+on a line by itself but it isn't a text file or menu, then the period on a line
+by itself will be removed from the content (though you can still check to see
+if it was period terminated using the L<is_terminated()|is_terminated()>
+method). This is because if you were requesting an image or some other non-text
+file (especially in Gopher+), odds are you don't want the newline and period at
+the end the content.
+
+Note that B<Net::Gopher> will only attempt the aforementioned modifications if
+you supply the I<Type> argument to C<request()>. Also note that in Gopher+,
+besides the modifications listed above, C<content()> does not include the
+status line (first line) of the response (since the status line isn't content).
 
 =cut
 
@@ -206,7 +208,7 @@ sub as_string { return shift->{'response'} }
 
 If you got a Gopher menu as your response from the server, then you can use
 this method to parse it and return its values. When called, this method will
-parse the content returned by content() and return either an array (in list
+parse the content returned by C<content()> and return either an array (in list
 context) or a reference to an array (in scalar context) containing hash refs as
 its elements. Each hash contains the data for one menu item, and has the
 following keys:
@@ -263,21 +265,21 @@ sub as_menu
 
 =head2 item_blocks([@block_names])
 
-item_blocks(), directory_blocks(), and as_blocks() allow you to parse
+C<item_blocks()>, C<directory_blocks()>, and C<as_blocks()> allow you to parse
 information blocks.
 
 If the request was a Gopher+ item attribute information request, then you can
 use method to parse the attribute information blocks in the server's response.
-This method is a more simple alternative to the directory_blocks() method. Use
-this method when you issue item attribute information requests ('!') and use
-directory_blocks() when you issue directory attribute information requests
-('$').
+This method is a more simple alternative to the C<directory_blocks()> method.
+Use this method when you issue item attribute information requests ('!') and
+use C<directory_blocks()> when you issue directory attribute information
+requests ('$').
 
-Please note that with this method, with the directory_blocks() method, and with
-the as_blocks() method, the blocks in the server's response are only parsed
-once, the first time you call either of these methods, and stored in the
-response object, so multiple calls to any of these three methods will not result
-in performance degradation.
+Please note that with this method, with the C<directory_blocks()> method, and
+with the C<as_blocks()> method, the blocks in the server's response are only
+parsed once, the first time you call either of these methods, and stored in the
+response object, so multiple calls to any of these three methods will not
+result in performance degradation.
  
 This method can be used to retrieve the value of an item information block by
 specifying the block name or block names as arguments. If you don't supply any
@@ -296,8 +298,8 @@ block values will be returned. Now, since the format of INFO, ADMIN, and VIEWS
 block values have been officially defined, what do these methods do to them?
 Well, since INFO blocks contain tab separated item information just like you
 find in a menu, they will parse INFO block values and create hash refs in the
-same format as the ones described above (L<as_menu()>), so you can use it like
-this:
+same format as the ones described above (L<as_menu()|as_menu()>), so you can
+use it like this:
 
  my $info = $response->item_blocks('INFO');
  
@@ -318,9 +320,9 @@ containing the name and email in that order.
 
 Mod-Date is a timestamp of when the item was last modified. These methods will
 convert the timestamp into an array containing values in the same format as
-those returned by Perl's localtime() function corresponding with the Mod-Date
-timestamp (to find out exactly what the array will contain, see perldoc -f
-localtime):
+those returned by Perl's C<localtime()> function corresponding with the
+Mod-Date timestamp (to find out exactly what the array will contain, see
+C<perldoc -f localtime>):
 
  my $admin = $response->item_blocks('ADMIN');
  
@@ -375,7 +377,7 @@ sub item_blocks
 
 If the request was a Gopher+ directory attribute information request, then you
 can use method to parse the attribute information blocks for each item in the
-server's response. This method works like the item_blocks() method,
+server's response. This method works like the C<item_blocks()> method,
 allowing you to specify the block values you want; however, with this method
 you must also specify which item you want the block values from. So to get the
 VIEWS block value from the first item, you'd do this:
@@ -514,10 +516,11 @@ any network errors occurred. Beyond that, in Gopher+, for a request to be a
 Basically, since Gopher has no built-in uniform error-handling, as long as
 some response was received from the server (even "An error has occurred" or
 "The item you requested does not exist"), this method will return true. For
-more accuracy with Gopher requests you can use the is_terminated() method. If
-is_success() returns false, meaning an error has occurred, then you can obtain
-the error message by calling the error() method on the Net::Gopher::Response
-object.
+more accuracy with Gopher requests you can use the C<is_terminated()> method.
+
+If C<is_success()> returns false, meaning an error has occurred, then you can
+obtain the error message by calling the C<error()> method on the
+B<Net::Gopher::Response> object.
 
 =cut
 
@@ -555,7 +558,8 @@ sub is_success
 =head2 is_error()
 
 This method will return true if the request was unsuccessful; false otherwise.
-Success and failure are the same as described above (L<is_success()>).
+Success and failure are the same as described above
+(see L<is_success()|is_success()>).
 
 =cut
 

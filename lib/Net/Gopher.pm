@@ -43,8 +43,8 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
 
 =head1 DESCRIPTION
 
-Net::Gopher is a Gopher/Gopher+ client API for Perl. Net::Gopher implements the
-Gopher and Gopher+ protocols as desbribed in
+B<Net::Gopher> is a Gopher/Gopher+ client API for Perl. B<Net::Gopher>
+implements the Gopher and Gopher+ protocols as desbribed in
 I<RFC 1436: The Internet Gopher Protocol>, Anklesaria et al., and in
 I<Gopher+: Upward Compatible Enhancements to the Internet Gopher Protocol>,
 Anklesaria et al., bringing Gopher and Gopher+ support to Perl and enabling
@@ -70,7 +70,7 @@ use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE %GOPHER_ITEM_TYPES %GOPHER_PLUS_ITEM_TYPES
 );
 
-$VERSION = '0.35';
+$VERSION = '0.37';
 
 
 
@@ -78,9 +78,20 @@ $VERSION = '0.35';
 
 #==============================================================================#
 
-=head2 new()
+=head2 new([BufferSize => $num_bytes, GopherPlus => $boolean, Debug => $boolean])
 
-The constructor method. Returns a reference to a Net::Gopher object.
+This is the constructor method. It creates a new B<Net::Gopher> object and
+returns a reference to it. This method takes several optional named parameters.
+I<BufferSize> is the size (in bytes) of the buffer to use when reading data
+from the socket. If you don't specify I<BufferSize>, then the default of 1024
+will be used instead. I<GopherPlus> allows you to turn on or turn off support
+for Gopher+. When turned off, B<Net::Gopher> will never make Gopher+ requests,
+only Gopher requests. By default, support for Gopher+ is on. Finally, I<Debug>
+allows you turn on or turn of debugging information, which by default is off.
+
+Also see the corresponding get/set L<buffer_size()|buffer_size($size)>,
+L<gopher_plus()|gopher_plus($boolean)>, and L<debug()|debug($boolean)> methods
+below.
 
 =cut
 
@@ -88,6 +99,7 @@ sub new
 {
 	my $invo  = shift;
 	my $class = ref $invo || $invo;
+	my %args  = @_;
 
 	my $self = {
 		# the IO::Socket::INET socket:
@@ -96,26 +108,36 @@ sub new
 		# theIO::Select object for the socket stored in io_socket:
 		io_select     => undef,
 
-		# every single byte read from the socket:
-		socket_data   => undef,
-
-		# we'll read from the socket in a series buffer. Each buffer
-		# is stored here before getting added to socket_data:
-		socket_buffer => undef,
-
-		# the size of socket_buffer:
-		buffer_size   => 1024,
-
 		# the number of seconds before a timeout occurs (when
 		# connecting, trying to read, trying to write, etc.):
 		timeout       => undef,
 
+		# every single byte read from the socket:
+		socket_data   => undef,
+
+		# When we read from the socket, we'll do so using a series of
+		# buffers. Each buffer is stored here before getting added to
+		# socket_data:
+		socket_buffer => undef,
+
+		# the size of socket_buffer:
+		buffer_size   => (defined $args{'BufferSize'})
+					? $args{'BufferSize'}
+					: 1024,
+
 		# support Gopher+?
-		gopher_plus   => 1,
+		gopher_plus   => (defined $args{'GopherPlus'})
+					? $args{'GopherPlus'}
+					: 1,
+
+		# enable debugging?
+		debug         => (defined $args{'Debug'})
+					? $args{'Debug'}
+					: 0,
 
 		# stores an error message to be retrieved by the user with
 		# the error() method:
-		error         => undef
+		error         => undef,
 	};
 
 	bless($self, $class);
@@ -130,14 +152,15 @@ sub new
 
 =head2 connect($host [, Port => $port_num, Timeout => $seconds])
 
-This method attempts to connect to a Gopher server. If connect() is able to
-connect it returns true; false otherwise (call error() to find out why). As
-its first argument it takes a mandatory hostname (e.g., gopher.host.com). In
-addition to the hostname, it takes two optional named paramters. The first,
-Port, takes an optional port number. If you don't supply this then the default
-of 70 will be used instead. The second, Timeout, takes the number of seconds at
-which a timeout will occur when attempting to connect to a Gopher server. If
-you don't supply this then the default of 60 seconds will be used instead.
+This method attempts to connect to a Gopher server. If C<connect()> is able to
+connect, it returns true; false otherwise (call L<error()|error()> to find out
+why). As its first argument it takes a mandatory hostname (e.g.,
+gopher.host.com). In addition to the hostname, it takes two optional named
+paramters. The first, I<Port>, takes an optional port number. If you don't
+supply this, then the default of 70 will be used instead. The second,
+I<Timeout>, takes the number of seconds at which a timeout will occur when
+attempting to connect to a Gopher server. If you don't supply this, then the
+default of 60 seconds will be used instead.
 
 =cut
 
@@ -180,6 +203,15 @@ sub connect
 		"Couldn't connect to $host at port ${port}: $@"
 	);
 
+	# show the hostname, IP address, and port number for debugging:
+	if ($self->{'debug'})
+	{
+		print '#' x 79, "\nConnected to $host, ",
+		      inet_ntoa($self->{'io_socket'}->peeraddr),
+		      " at port $port.\n",
+		      '-' x (79), "\n";
+	}
+
 	# we'll need the timeout value for later:
 	$self->{'timeout'} = $timeout;
 
@@ -198,23 +230,27 @@ sub connect
 =head2 request($selector [, Representation => $mime_type, DataBlock => $data |, Attributes => $attributes] [, Type => $type])
 
 This method sends a request to the Gopher/Gopher+ server you've connected to
-with connect(), and returns a Net::Gopher::Response object for the server's
-response. The first argument is the selector string to send to the server. This
-method also takes four optional named parameters. The first, Representation,
-is used for Gopher+ requests to ask a Gopher+ server to return an item in a
-specified format (MIME type):
+with C<connect()>, and returns a L<Net::Gopher::Response|Net::Gopher::Response>
+object for the server's response. The first argument is the selector string to
+send to the server. This method also takes four optional named parameters. The
+first, I<Representation>, is used for Gopher+ requests to ask a Gopher+ server
+to return an item in a specified format (MIME type):
 
  $gopher->request($selector,
  	Representation => 'text/plain'
  	Type           => $type
  );
 
-The second named parameter, DataBlock, is for Gopher+ requests and enables you
-to send data from a Gopher+ Ask form to a Gopher+ server. The third named
-parameter, Attributes, is for Gopher+ item attribute information requests and
-enables you to request only certain info blocks (e.g., "+INFO+ADMIN" to only
-retrieve the INFO and ADMIN blocks). You can either specify each block name
-for 'Attributes' in one big string:
+The second named parameter, I<DataBlock>, is for Gopher+ requests and enables
+you to send data from a Gopher+ Ask form to a Gopher+ server. This method
+will take care of the rest, including adding the dataflag to the request to
+tell the Gopher+ server that there's a data block.
+
+The third named parameter, I<Attributes>, is for Gopher+ item
+attribute/directory attribute information requests, and enables you to request
+only certain info blocks (e.g., "+INFO+ADMIN" to only retrieve the INFO and
+ADMIN blocks). You can either specify each block name for I<Attributes> in one
+big string:
 
  $gopher->request($selector,
  	Attributes => '+NAME+NAME2+NAME3',
@@ -231,22 +267,22 @@ or you can put them in an array ref:
 Also note that when using the array ref format, you don't have to prefix each
 block name with a plus; this method will do it for you if you don't.
 
-The fourth named parameter, Type, helps Net::Gopher determine how exactly it
-should handle the response from the Gopher server, and what (if any)
+The fourth named parameter, I<Type>, helps B<Net::Gopher> determine how exactly
+it should handle the response from the Gopher server, and what (if any)
 modifications it should make to the response content (see the
-Net::Gopher::Response content() method). You don't have to supply this, but I'd
-advise that you do.
+L<Net::Gopher::Response content()|Net::Gopher::Response/content()> method). You
+don't have to supply this, but I'd advise that you do.
 
 For Gopher+ requests, while you'll usually need to add a trailing tab and plus
-to the selector string, it's not always necessary; if either the Representation
-or DataBlock parameters are defined, then this method will realize that this is
-a Gopher+ request and will add the trailing tab and plus to your selector
-string for you if they are not already present. The same holds true for Gopher+
-item attribute information requests; if the Attributes parameter is defined
-then this method will realize this is a Gopher+ item attribute information
-request and will add the trailing tab and exclamation point to your selector
-string for you if there isn't already either a tab and exclamation point or tab
-and dollar sign at the end of your selector.
+to the selector string, it's not always necessary; if either the
+I<Representation> or I<DataBlock> parameters are defined, then this method will
+realize that this is a Gopher+ request and will add the trailing tab and plus
+to your selector string for you if they are not already present. The same holds
+true for Gopher+ item attribute information requests; if the I<Attributes>
+parameter is defined then this method will realize this is a Gopher+ item
+attribute information request and will add the trailing tab and exclamation
+point to your selector string for you if there isn't already either a tab and
+exclamation point or tab and dollar sign at the end of your selector.
 
 =cut
 
@@ -262,7 +298,7 @@ sub request
 	$self->{'socket_buffer'} = undef;
 	$self->{'socket_data'}   = undef;
 
-	# remove the trailing newline from the selector:
+	# remove any trailing newline from the selector:
 	$selector = '' unless (defined $selector);
 	$selector =~ s/$NEWLINE$//;
 
@@ -271,55 +307,45 @@ sub request
 	# attribute information request or directory attribute information
 	# request):
 	my $request_type;
-	if (defined $args{'Representation'} || defined $args{'DataBlock'})
+	if (defined $args{'Representation'} or defined $args{'DataBlock'}
+		or $selector =~ /\t\+$/)
 	{
-		# if there's a data block or representation then this is a a
-		# Gopher+ request:
+		# if there's a data block or representation, or if the selector
+		# has a tab and + at the end of it, then this is a Gopher+
+		# request:
 		$request_type = 2;
 	}
-	elsif ($selector =~ /\t\+$/)
+	elsif (defined $args{'Attributes'} or $selector =~ /\t(?:\!|\$)$/)
 	{
-		# if the selector has a tab and + at the end of it, then it's a
-		# Gopher+ selector:
-		$request_type = 2;
-	}
-	elsif (defined $args{'Attributes'})
-	{
-		# if there are attributes then this is a Gopher+ item attribute
-		# information request:
-		$request_type = 3;
-	}
-	elsif ($selector =~ /\t(?:\!|\$)$/)
-	{
-		# if the selector has a tab and ! at the end of it or a tab and
-		# a $ at the end of it, then it's a Gopher+ item attribute or
-		# directory attribute information request:
+		# if there are block names, or if the selector has a tab and 
+		# either a '!' or '$' at the end of it, then this is a Gopher+
+		# item or directory attribute information request:
 		$request_type = 3;
 	}
 	else
 	{
-		# default to Gopher request:
+		# otherwise, it's just a plain old Gopher request:
 		$request_type = 1;
 	}
 
-	# even if it's a Gopher+ request, we won't act like a Gopher+ client
-	# if the user has told us not to:
+	# even if it's a Gopher+ request or an attribute information request,
+	# we won't act like a Gopher+ client if the user has told us not to:
 	$request_type = 1 unless ($self->{'gopher_plus'});
 
 
 
-	# the request string to send to the server:
+	# the string containig the request to send to the server:
 	my $request;
 
 	if ($request_type == 2)
 	{
 		$request .= $selector;
 
-		# add the trailing tab and plus for this Gopher+ request if the
+		# add the trailing tab and '+' for this Gopher+ request if the
 		# user hasn't done so:
 		$request .= "\t+" unless ($request =~ /\t\+$/);
 
-		# add the representation (MIME type):
+		# add the specified representation (MIME type):
 		$request .= $args{'Representation'}
 			if (defined $args{'Representation'});
 
@@ -343,16 +369,17 @@ sub request
 	{
 		$request .= $selector;
 
-		# this is either an item attribute information request ('!') or
-		# a directory attribute information request ('$'), so we need
-		# to add the trailing tab and '!' if there isn't already a
-		# trailing tab and '!' or '$':
+		# This is either an item attribute information request ('!') or
+		# a directory attribute information request ('$'). If there
+		# isn't already trailing tab and '!' or '$', then we'll default
+		# to item attribute information request and add the trailing
+		# tab and '!' for the user:
 		$request .= "\t!" unless ($request =~ /\t(?:\!|\$)$/);
 
 		if (defined $args{'Attributes'})
 		{
 			# the block names can be sent as either one big string
-			# or as an array of strings:
+			# or as an array of strings (with optional leading '+'):
 			if (ref $args{'Attributes'})
 			{
 				foreach my $name (@{$args{'Attributes'}})
@@ -366,9 +393,7 @@ sub request
 				$request .= $args{'Attributes'};
 			}
 		}
-		
-		# add a newline to terminate the item attribute information
-		# request:
+
 		$request .= $CRLF unless ($request =~ /$NEWLINE$/);
 	}
 	else
@@ -389,6 +414,12 @@ sub request
 	my $num_bytes_written =
 		syswrite($self->{'io_socket'}, $request, length $request);
 
+	# show the request we just sent for debugging:
+	if ($self->{'debug'})
+	{
+		print "Sent this request:\n$request\n", '-' x 79, "\n";
+	}
+
 	# make sure *something* was sent:
 	return new Net::Gopher::Response (Error => "Nothing was sent: $!")
 		unless (defined $num_bytes_written);
@@ -405,14 +436,12 @@ sub request
 	# Now we need to get the server's response. First, make sure we can
 	# read the socket:
 	return new Net::Gopher::Response (
-		Error => "Can't read response from socket."
+		Error => "Can't read response from server"
 	) unless ($self->{'io_select'}->can_read($self->{'timeout'}));
 
 	# this variable stores any errors encountered while receiving the
 	# response:
 	my $response_error;
-
-
 
 	# if we sent a Gopher+ request or item/directory attribute information
 	# request, we need to get the status line (the first line) of the
@@ -420,10 +449,16 @@ sub request
 	if ($request_type > 1
 		and my $status_line = $self->_get_status_line(\$response_error))
 	{
+		# show the status line for debugging:
+		if ($self->{'debug'})
+		{
+			print "Got this status line:\n$status_line\n",
+			      '-' x 79, "\n";
+		}
+
 		# get the status (+ or -) and the length of the response
 		# (either -1, -2, or the number of bytes):
-		my ($status, $response_length) =
-			$status_line =~ /^(.)(\-?\d+)/;
+		my ($status, $response_length) = $status_line =~ /^(.)(\-?\d+)/;
 
 		# this will store the content of the response, everything after
 		# the status line:
@@ -437,12 +472,14 @@ sub request
 
 		if ($response_length < 0)
 		{
+			# A length of -1 or -2 means the server is going to
+			# send a series of bytes which may (-1) or may not (-2)
+			# be terminated by a period on a line by itself, and
+			# then close the connection. So we'll read the server's
+			# response as a series of buffers using _get_buffer(),
+			# and add each buffer to the response content:
 			while ($self->_get_buffer(\$response_error))
 			{
-				# break if we ran into any errors getting the
-				# last buffer:
-				last if ($response_error);
-
 				$content .= $self->{'socket_buffer'};
 			}
 
@@ -486,13 +523,11 @@ sub request
 					my $bytes_read =
 					$self->_get_buffer(\$response_error);
 
-					# break if we read everything and
-					# the server's closed the connction:
+					# break if we read everything and the
+					# server's closed the connction or if
+					# we ran into any errors getting the
+					# last buffer:
 					last unless ($bytes_read);
-
-					# break if we ran into any errors
-					# getting the last buffer:
-					last if ($response_error);
 				}
 
 				# try to read all of the remaining bytes of the
@@ -509,6 +544,15 @@ sub request
 			return new Net::Gopher::Response (
 				Error => $response_error
 			) if ($response_error);
+		}
+
+		# show the length of the response we got for debugging:
+		if ($self->{'debug'})
+		{
+			print length($self->{'socket_data'}),
+			      ' bytes (total) in response, with ',
+			      length($content), " bytes of content.\n",
+			      '#' x 79, "\n\n";
 		}
 
 		if ((defined $args{'Type'} and $args{'Type'} eq 1)
@@ -550,23 +594,29 @@ sub request
 			) if ($response_error);
 		}
 
+		# the content of the response:
+		my $content = '';
+
 		# now, read the server's response as a series of buffers,
 		# storing each buffer one at a time in
-		# $self->{'socket_buffer'}, adding each buffer to the end of
-		# $self->{'socket_data'}:
+		# $self->{'socket_buffer'}:
 		while ($self->_get_buffer(\$response_error))
 		{
-			# break if we ran into any errors getting the last
-			# buffer:
-			last if ($response_error);
+			$content .= $self->{'socket_buffer'};
 		}
 	
 		# exit if we ran into any errors receiving the response:
 		return new Net::Gopher::Response (Error => $response_error)
 			if ($response_error);
 
-		# the content of the response:
-		my $content = $self->{'socket_data'};
+		# show the length of the response we got for debugging:
+		if ($self->{'debug'})
+		{
+			print length($self->{'socket_data'}),
+			      ' bytes (total) in response, with ',
+			      length($content), " bytes of content.\n",
+			      '#' x 79, "\n\n";
+		}
 
 		# For Gopher, we need to find out if the server's response will
 		# be terminatred by a perioid on a line by itself. With types 5
@@ -769,10 +819,11 @@ sub disconnect
 
 =head2 request_url($url)
 
-This method allows you to bypass the connect(), request(), and disconnect()
-methods. If you have a Gopher URL you can just supply it to this method and it
-will connect to the server and request it for you. This method will return a
-Net::Gopher::Response object just like request() does.
+This method allows you to bypass the C<connect()>, C<request()>, and
+C<disconnect()> sequence. If you have a Gopher URL you can just supply it to
+this method and it will connect to the server and request it for you. This
+method will return a B<Net::Gopher::Response> object just like C<request()>
+does.
 
 =cut
 
@@ -840,10 +891,38 @@ sub request_url
 
 #==============================================================================#
 
+=head2 buffer_size($size)
+
+This is a get/set method that enables you to change the buffer sized used. (The
+default is 1024).
+
+=cut
+
+sub buffer_size
+{
+	my $self = shift;
+	my $size = shift;
+
+	if (defined $size)
+	{
+		$self->{'buffer_size'} = $size;
+	}
+	else
+	{
+		return $self->{'buffer_size'};
+	}
+}
+
+
+
+
+
+#==============================================================================#
+
 =head2 gopher_plus($boolean)
 
 This is a get/set method that enables you to turn on or turn off support for
-Gopher+ (default is on). Just supply a true value for on or a false value for
+Gopher+ (default is on). Just supply a true value for on, or a false value for
 off.
 
 =cut
@@ -869,25 +948,26 @@ sub gopher_plus
 
 #==============================================================================#
 
-=head2 buffer_size($size)
+=head2 debug($boolean)
 
-This is a get/set method that enables you to change the buffer sized used. (The
-default is 1024).
+This is a get/set method that enables you to turn on or turn off B<Net::Gopher>
+debugging (default is off). Just supply a true value for on, or a false value
+for off.
 
 =cut
 
-sub buffer_size
+sub debug
 {
-	my $self = shift;
-	my $size = shift;
+	my $self  = shift;
+	my $debug = shift;
 
-	if (defined $size)
+	if (defined $debug)
 	{
-		$self->{'buffer_size'} = $size;
+		$self->{'debug'} = $debug ? 1 : 0;
 	}
 	else
 	{
-		return $self->{'buffer_size'};
+		return $self->{'debug'};
 	}
 }
 

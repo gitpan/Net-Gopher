@@ -1,3 +1,4 @@
+
 package Net::Gopher::Utility;
 
 =head1 NAME
@@ -75,24 +76,24 @@ description of that type.
 =cut
 
 %GOPHER_ITEM_TYPES = (
-	0   => 'Text File',
-	1   => 'Directory',
-	2   => 'CCSO Phone Book Server',
-	3   => 'Error',
-	4   => 'BinHexed Macintosh File',
-	5   => 'DOS Binary Archive',
-	6   => 'UNIX uuencoded File',
-	7   => 'Index-Search Server',
-	8   => 'Text-based Telnet Session',
-	9   => 'Binary File',
-	'+' => 'Redundant Server',
-	s   => 'Sound File',
-	g   => 'GIF File',
-	M   => 'MIME File',
-	h   => 'HTML File',
-	i   => 'Inline Text',
-	I   => 'Image File',
-	T   => 'Text-Based tn3270 Session',
+	0   => 'text file',
+	1   => 'directory',
+	2   => 'CCSO phone book server',
+	3   => 'error',
+	4   => 'binhexed Macintosh file',
+	5   => 'DOS binary archive',
+	6   => 'UNIX uuencoded file',
+	7   => 'index-search server',
+	8   => 'text-based telnet session',
+	9   => 'binary file',
+	'+' => 'redundant server',
+	s   => 'sound file',
+	g   => 'GIF file',
+	M   => 'MIME file',
+	h   => 'HTML file',
+	i   => 'inline text',
+	I   => 'image file',
+	T   => 'text-based tn3270 session',
 );
 
 
@@ -107,24 +108,24 @@ and each value is a description of that type.
 =cut
 
 %GOPHER_PLUS_ITEM_TYPES = (
-	0   => 'Text File',
-	1   => 'Directory',
-	2   => 'CCSO Phone Book Server',
-	3   => 'Error',
-	4   => 'BinHexed Macintosh File',
-	5   => 'DOS Binary Archive',
-	6   => 'UNIX uuencoded File',
-	7   => 'Index-Search Server',
-	8   => 'Text-based Telnet Session',
-	9   => 'Binary File',
-	'+' => 'Redundant Server',
-	M   => 'MIME File',
-	i   => 'Inline Text',
-	h   => 'HTML File',
-	T   => 'Text-Based tn3270 Session',
-	':' => 'Bitmap Image',
-	';' => 'Movie',
-	'<' => 'Sound'
+	0   => 'text file',
+	1   => 'directory',
+	2   => 'CCSO phone book server',
+	3   => 'error',
+	4   => 'binhexed Macintosh file',
+	5   => 'DOS binary archive',
+	6   => 'UNIX uuencoded file',
+	7   => 'index-search server',
+	8   => 'text-based telnet session',
+	9   => 'binary file',
+	'+' => 'redundant server',
+	M   => 'MIME file',
+	h   => 'HTML file',
+	i   => 'inline text',
+	T   => 'text-based tn3270 session',
+	':' => 'bitmap image',
+	';' => 'movie',
+	'<' => 'sound'
 );
 
 1;

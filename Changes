@@ -1,5 +1,11 @@
 Revision history for Perl extension Net::Gopher.
 
+0.37 - Added  named  parameters  to  the  Net::Gopher  constructor: BufferSize,
+       GopherPlus, and Debug. Added  debugging,  which  causes  Net::Gopher  to
+       print out various diagnostic messages at different times. Also  added  a
+       corresponding  debug()  method.  The  POD  has  also  been substantially
+       improved. Also refractored request(), and improved the error checking.
+
 0.35 - Improved the error checking  in  request().  Also,  request()  now  more
        efficiently handles Gopher+ responses  with  content  lengths (a  number
        denoting the length of the response in bytes as opposed to -1 or -2).
