@@ -411,7 +411,7 @@ sub extract_abstract
 			"abstract to extract?",
 			$self->name
 		)
-	) unless ($self->has_attribute('Admin'));
+	) unless ($self->name eq '+ABSTRACT');
 
 	if ($self->value =~ $ITEM_PATTERN)
 	{
@@ -607,7 +607,10 @@ the following key=value pairs:
 
  type     = The type of query (e.g, Ask, AskP, Select, Choose, etc.);
  question = The question;
- value    = A reference to an array containing the default answers;
+ value    = Any default answer;
+
+For C<Choose> query types, the hash contains an additional "choices" element
+that contains a reference to an array of strings for each possible choice.
 
 =cut
 
@@ -630,11 +633,11 @@ sub extract_queries
 
 	foreach my $query (split(/\n/, $self->value))
 	{
-		# get the query type and the question and default value or
+		# get the query type, question, and default value or
 		# choices:
 		my ($type, $question_and_fields) = split(/:\s?/, $query, 2);
 
-		# the question and any value or cchoices are all tab separated:
+		# the question and any value or choices are all tab separated:
 		my ($question, @fields) = split(/\t/, $question_and_fields);
 
 		my $query = {
@@ -642,7 +645,7 @@ sub extract_queries
 			question => $question
 		};
 
-		if ($type eq 'Select' or $type eq 'Choose')
+		if ($type eq 'Choose')
 		{
 			$query->{'choices'} = \@fields;
 		}
@@ -682,7 +685,7 @@ selector string, host, port, and Gopher+ string:
 
 Note that this method is inherited by B<Net::Gopher::Response>. You can call
 this method directly on a B<Net::Gopher::Response> object, in which case
-this method will call C<$response-E<gt>get_blocks('+INFO')> and use that
+this method will call C<$response-E<gt>get_block('+INFO')> and use that
 block object. Thus this:
 
  my ($type, $display, $selector, $host, $port) =
@@ -691,7 +694,7 @@ block object. Thus this:
 is the same as this:
 
  my ($type, $display, $selector, $host, $port) =
- 	$response->get_blocks(Blocks => '+INFO')->extract_description;
+ 	$response->get_block('+INFO')->extract_description;
 
 =cut
 
@@ -744,9 +747,9 @@ to hashes for each view with the following key=value pairs:
 
 Note that this method will convert the <\dk?> size format used in Gopher+ to
 an integer; the total size in bytes (e.g., <80> becomes 80, <40K> becomes
-40000, <.4K> becomes 400, <400B> becomes 400):
+40960, <.4K> becomes 410, <400B> becomes 400):
 
- my @views = $response->get_blocks(Blocks => '+VIEWS')->as_views;
+ my @views = $response->get_block('+VIEWS')->as_views;
  
  foreach my $view (@views) {
  	print "$view->{'type'} ($view->{'size'} bytes)\n";

@@ -18,26 +18,17 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  	ItemType => 1
  );
  
- # you can also send parameters as a hash reference; which ever style you
- # prefer:
- $request = new Net::Gopher::Request (
- 	Gopher => {
- 		Host     => 'gopher.host.com',
- 		Selector => '/menu',
- 		ItemType => 1
- 	}
- );
- 
  
  
  # Now send the request to the server and get the Net::Gopher::Response
  # object for the server's response:
  my $response = $ng->request($request);
  
- # ...or store the content of the response in a separate file:
+ # ...or send the request and store the content of the response in a
+ # separate file:
  $ng->request($request, File => 'somefile.txt');
  
- # ...or process the response as it's received:
+ # ...or send the request and process the response as it's received:
  $ng->request($request, Handler => \&response_callback);
  
  sub response_callback {
@@ -46,9 +37,6 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
 	# do something with $buffer, $request_obj, and
 	# $response_obj...	
  }
- 
- # See Net::Gopher::Request to find out how to create request objects for
- # any type of request as well as for methods to manipulate them.
  
  
  
@@ -72,17 +60,13 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  
  
  
- # for any Gopher request, item/directorty attribute information request,
+ # For any Gopher request, item/directorty attribute information request,
  # or simple Gopher+ request, if you wish, you can use a URL to describe
  # your request instead of named parameters:
  $response = $ng->url('gopher://gopher.host.com/');
  
  # ...it can be partial too:
  $response = $ng->url('gopher.host.com');
- 
- # you can use and store URL-derived request objects too:
- $request  = new Net::Gopher::Request ('URL', 'gopher.host.com');
- $response = $ng->request($request); 
  
  
  
@@ -94,7 +78,11 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
  # or use the raw_response() method to get the entire (unmodified)
  # response as a string:
  my $raw_response = $response->raw_response;
- 
+
+
+
+ # See Net::Gopher::Request to find out how to create request objects for
+ # any type of request as well as for methods to manipulate them.
  # See Net::Gopher::Response for more methods you can use to manipulate
  # Gopher and Gopher+ responses.
  # See the files in the /examples directory that came with the Net::Gopher
@@ -105,11 +93,10 @@ Net::Gopher - The Perl Gopher/Gopher+ client API
 
 B<Net::Gopher> is the Gopher/Gopher+ client API for Perl. B<Net::Gopher>
 implements the Gopher and Gopher+ protocols as described in
-I<RFC 1436: The Internet Gopher Protocol>, Anklesaria et al., and in
-I<Gopher+: Upward Compatible Enhancements to the Internet Gopher Protocol>,
-Anklesaria et al.; bringing Gopher and Gopher+ support to Perl, enabling
-Perl 5 applications to easily interact with both Gopher and Gopher+
-Gopherspaces.
+I<RFC 1436: The Internet Gopher Protocol>,[1] and in
+I<Gopher+: Upward Compatible Enhancements to the Internet Gopher Protocol>;[2]
+bringing Gopher and Gopher+ support to Perl, enabling Perl 5 applications to
+easily interact with both Gopher and Gopher+ Gopherspaces.
 
 B<Net::Gopher> works in conjunction with several other modules. This diagram
 shows the package hierarchy:
@@ -133,38 +120,39 @@ Gopher and Gopher+ responses. B<Net::Gopher::Response> also has two sub
 classes, L<Net::Gopher::Response::MenuItem|Net::Gopher::Response::MenuItem> to
 manipulate menu items in Gopher and Gopher+ menus, and
 L<Net::Gopher::Response::InformationBlock|Net::Gopher::Response::InformationBlock>
-to manipulate item/directory attribute information blocks.
+to manipulate Gopher+ item/directory attribute information blocks.
 Finaly, there's L<Net::Gopher::Constants|Net::Gopher::Constants>, which
 defines and exports on demand one-to-three sets of constants.
 
 The Gopher request/response cycle as implemented by B<Net::Gopher> is as
 follows: you create a B<Net::Gopher::Request> object encapsulating your
-request; you pass it on to the B<Net::Gopher> C<request()> method, which
-sends the request to the server and then receives the response; the response is
-then returned as a B<Net::Gopher::Response> object for you to manipulate.
+request; you pass it on to the B<Net::Gopher> C<request()> method; the
+C<request()> method sends the request to the server and then receives the
+response; the response is then returned to you as a B<Net::Gopher::Response>
+object for you to manipulate.
 
-B<Net::Gopher::Request> has methods and functions to make creating request
-objects easier and more flexible. In addition, this class has shortcut methods
-that create the request object for you, send the request, and return the
-response object.
+As far as requests go, there are four different kinds you can send using this
+module: Gopher requests,[3] Gopher+ requests,[4] item attribute information
+requests,[5] and directory attribute information requests.[6] This class also
+has shortcut methods for each type of request (for example, C<gopher()>,
+C<gopher_plus()>) which create the request object for you, send the request,
+and return the response object.
 
 Just like the modules in I<libnet> (e.g., L<Net::NNTP|Net::NNTP>,
 L<Net::FTP|Net::FTP>), many of the methods in the B<Net::Gopher> distribution
 take named parameters. However, B<Net::Gopher> does not require usage of the
-non-spaced, first letter uppercased libnet style
-C<ParamName =E<gt> "value"> convention. The more common all lowercase,
-underscore spaced C<param_name =E<gt> "value"> convention can be used instead,
-because nether case nor underscores matter: "param_name", "Param_Name",
-"ParamName", "PaRaMnAmE", and "PARAM_name" will all be accepted and treated as
-the same thing. You can even add leading dashes to parameter names a la Tk if
-you want, but please don't do that.
+non-spaced, first letter uppercased libnet style C<ParamName =E<gt> "value">
+convention. The more common all lowercase, underscore spaced
+C<param_name =E<gt> "value"> style can be used instead; nether case nor
+underscores matter: "param_name", "Param_Name", "ParamName", "PaRaMnAmE", and
+"PARAM_name" will all be accepted and treated as the same thing. You can even
+add leading dashes to parameter names a la Tk if you want, but please don't do
+that. Choose which ever style you prefer, but make sure you stick with it.
 
-Choose which ever style you prefer, but just make sure you stick with it.
-
-Please also remember that named parameters, for every method that takes them,
-can be sent optionally as either a hash or array reference--though few methods,
-like B<Net::Gopher::Request> C<new()> or B<Net::Gopher::Response>
-C<get_blocks()>, will actually advocate this behavior.
+The named parameters, for every method that takes them, can be sent optionally
+as either a hash or array reference--though few methods, like
+B<Net::Gopher::Request> C<new()> or B<Net::Gopher::Response> C<get_blocks()>,
+will actually advocate this behavior.
 
 =head1 METHODS
 
@@ -187,17 +175,19 @@ use Net::Gopher::Request;
 use Net::Gopher::Response;
 use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE_PATTERN
-	check_params size_in_bytes remove_bytes
+	check_params size_in_bytes remove_bytes strip_terminator
 );
 
 use constant DEFAULT_GOPHER_PORT  => 70;
 use constant DEFAULT_TIMEOUT      => 30;
 use constant DEFAULT_BUFFER_SIZE  => 4096;
-use constant MAX_STATUS_LINE_SIZE => 128;
+
+use constant MAX_STATUS_LINE_SIZE => 64;
+
 use constant PERIOD_TERMINATED    => -1;
 use constant NOT_TERMINATED       => -2;
 
-$VERSION = '0.94';
+$VERSION = '0.95';
 
 
 
@@ -328,12 +318,12 @@ sub new
 					? $buffer_size
 					: DEFAULT_BUFFER_SIZE,
 
-		# the number seconds before timeout occurs:
+		# the number seconds before a timeout occurs:
 		timeout           => (defined $timeout)
 					? $timeout
 					: DEFAULT_TIMEOUT,
 
-		# enable upward compatability?
+		# silently handle Gopher responses to Gopher+ requests?
 		upward_compatible => ($upward_compatible) ? 1 : 0,
 
 		# When we read from the socket, we'll do so using a series of
@@ -446,8 +436,6 @@ sub request
 
 	my ($file, $handler) = check_params(['File', 'Handler'], \@_);
 
-
-
 	my $response = new Net::Gopher::Response;
 	   $response->ng($self);
 	   $response->request($request);
@@ -455,34 +443,41 @@ sub request
 	# First, we need to connect to the Gopher server. To connect, at the
 	# very least, we need a hostname:
 	return $self->call_die(
-		join(' ',
-			"You never specified a hostname; it's impossible to",
-			"send your request without one. Specify it during",
-			"object creation or later on with the host() method."
-		)
+		"You never specified a hostname; it's impossible to send " .
+		"your request without one. Specify it during object " .
+		"creation or later on with the host() method."
 	) unless (defined $request->host and length $request->host);
 
 	# we also need a port, but we can use the default IANA designated
 	# Gopher port if none was specified:
 	$request->port(DEFAULT_GOPHER_PORT) unless ($request->port);
 
-	# default to Gopher menu type:
+	# if no item type was specified and it's not an item
+	# attribute/directory attribute request, we'll just assume it's a
+	# request for a Gopher menu:
 	$request->item_type(GOPHER_MENU_TYPE)
-		unless (defined $request->item_type);
+		unless (defined $request->item_type
+			or $request->request_type == ITEM_ATTRIBUTE_REQUEST
+			or $request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
 
-	# now try connect to the Gopher server and store the IO::Socket::INET
-	# socket in our Net::Gopher object:
-	$self->{'_socket'} = new IO::Socket::INET (
-		PeerAddr => $request->host,
-		PeerPort => $request->port,
-		Timeout  => $self->timeout,
-		Proto    => 'tcp',
-		Type     => SOCK_STREAM
+	# now try to connect to the Gopher server:
+	$self->_socket(
+		new IO::Socket::INET (
+			PeerAddr => $request->host,
+			PeerPort => $request->port,
+			Timeout  => $self->timeout,
+			Proto    => 'tcp',
+			Type     => SOCK_STREAM
+		)
 	);
 
 	# make sure we connected successfully:
 	if ($@)
 	{
+		# (we pass the message returned by sprintf() through
+		# _network_error() rather than just adding it to $response
+		# outright so _network_error() can remove the
+		# "IO::Socket::INET: " prefix from the message)
 		$self->_network_error(
 			sprintf("Couldn't connect to \"%s\" at port %d: %s",
 				$request->host,
@@ -503,12 +498,15 @@ sub request
 		)
 	);
 
-	# we want non-buffering, non-blocking IO:
+	# we want non-buffering, non-blocking (*especially* non-blocking) IO:
 	$self->_socket->autoflush(1);
 	$self->_socket->blocking(0);
 
-	# now initialize the IO::Select object for our socket:
-	$self->{'_select'} = new IO::Select ($self->_socket);
+	# the IO::Select object for our socket (we'll use this to check for
+	# timeouts):
+	$self->_select(
+		new IO::Select ($self->_socket)
+	);
 
 
 
@@ -522,7 +520,8 @@ sub request
 
 	$self->debug_print("Sent this request:\n[$request_string]");
 
-	# we sent the request, so we're finished writing:
+	# we sent the request and we have nothing else to send, so we're
+	# finished writing:
 	$self->_socket->shutdown(SHUT_WR);
 
 
@@ -532,7 +531,9 @@ sub request
 	# the socket during any previous request:
 	$self->_clear;
 
-	# is this a Gopher+ style request/response cycle?
+	# is this a Gopher+ style request/response cycle? (Complete with
+	# additional tab delimited fields in the request and a status line in
+	# the response.)
 	my $is_gopher_plus;
 	if ($request->request_type == GOPHER_PLUS_REQUEST
 		or $request->request_type == ITEM_ATTRIBUTE_REQUEST
@@ -541,11 +542,12 @@ sub request
 		$is_gopher_plus = 1;
 	}
 
-	# this sub is used to store the received response. It takes a buffer as
-	# its only argument, adds it the response object, and calls any
-	# user-defined response handler with the buffer as its first argument,
-	# the request object as its second, and the response object as its
-	# third:
+	# this sub is used to store the received response inside of the
+	# response object and make sure any user-defined response handler is
+	# called. It takes a buffer as its only argument, adds it the response
+	# object, and calls any user-defined response handler with the buffer
+	# as its first argument, the request object as its second, and the
+	# response object as its third:
 	my $store_response = sub {
 		my $buffer = shift;
 
@@ -587,10 +589,10 @@ sub request
 		{
 			# A -1 or -2 transfer type means the server is going to
 			# send a series of bytes, which may (-1) or may not
-			# (-2) be terminated by a period on a line by itself
+			# (-2) be terminated by a period on a line by itself,
 			# and then close the connection. So we'll read the
 			# server's response as a series of buffers using
-			# _read() and add each buffer to the response object:
+			# _read() and then store each buffer:
 			while ($self->_read)
 			{
 				$store_response->($self->_buffer);
@@ -650,8 +652,9 @@ sub request
 		if ($status eq NOT_OK)
 		{
 			my $error = $response->content;
-			   $error =~ s/$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$//
-			   	if ($transfer_type == -1);
+
+			strip_terminator($error)
+				if ($transfer_type == PERIOD_TERMINATED);
 
 			$response->error($error);
 		}
@@ -763,10 +766,10 @@ sub request
 
 =head2 gopher(OPTIONS)
 
-This method is shortcut around the C<request()>/B<Net::Gopher::Request> object
-combination for plain-old Gopher requests. It creates a Gopher-type
-B<Net::Gopher::Request> object, sends it, and then returns
-B<Net::Gopher::Response> object for the response.
+This method is a shortcut around the B<Net::Gopher::Request>
+object/C<request()> method combination for plain-old Gopher requests.[7] It
+creates a Gopher-type B<Net::Gopher::Request> object, sends it, and then
+returns B<Net::Gopher::Response> object for the response.
 
 This:
 
@@ -809,10 +812,10 @@ sub gopher
 
 =head2 gopher_plus(OPTIONS)
 
-This method is shortcut around the C<request()>/B<Net::Gopher::Request> object
-combination for Gopher+ requests. It creates a Gopher+ B<Net::Gopher::Request>
-object, sends it, and then returns B<Net::Gopher::Response> object for the
-response.
+This method is a shortcut around the B<Net::Gopher::Request>
+object/C<request()> method combination for Gopher+ requests.[8] It creates a
+Gopher+ B<Net::Gopher::Request> object, sends it, and then returns
+B<Net::Gopher::Response> object for the response.
 
 This:
 
@@ -855,10 +858,11 @@ sub gopher_plus
 
 =head2 item_attribute(OPTIONS)
 
-This method is shortcut around the C<request()>/B<Net::Gopher::Request> object
-combination for item attribute information requests. It creates an item
-attribute information B<Net::Gopher::Request> object, sends it, and then
-returns B<Net::Gopher::Response> object for the response.
+This method is a shortcut around the B<Net::Gopher::Request>
+object/C<request()> method combination for item attribute information
+requests.[9] It creates an item attribute information B<Net::Gopher::Request>
+object, sends it, and then returns B<Net::Gopher::Response> object for the
+response.
 
 This:
 
@@ -900,10 +904,11 @@ sub item_attribute
 
 =head2 directory_attribute(OPTIONS)
 
-This method is shortcut around the C<request()>/B<Net::Gopher::Request> object
-combination for directory attribute information requests. It creates a
-directory attribute information B<Net::Gopher::Request> object, sends it, and
-then returns B<Net::Gopher::Response> object for the response.
+This method is a shortcut around the B<Net::Gopher::Request>
+object/C<request()> method combination for directory attribute information
+requests.[10] It creates a directory attribute information
+B<Net::Gopher::Request> object, sends it, and then returns
+B<Net::Gopher::Response> object for the response.
 
 This:
 
@@ -947,8 +952,12 @@ sub directory_attribute
 
 =head2 url(URL)
 
-This method is shortcut around the C<request()>/B<Net::Gopher::Request> object
-combination. This:
+This method is a shortcut around the B<Net::Gopher::Request>
+object/C<request()> method for URLs.[11] It takes a URL, generates the
+appropriate type of B<Net::Gopher::Request> object from it, sends the request,
+then returns the server's response as a B<Net::Gopher::Response> object.
+
+This:
 
  $ng->url('gopher.host.com/1/menu');
 
@@ -958,8 +967,8 @@ is roughly equivalent to this:
  	new Net::Gopher::Request (URL => 'gopher.host.com/1/menu')
  );
 
-Note that partial URLs are acceptable; the scheme will be added for you, as
-will the item type.
+Note that partial URLs are acceptable; you can leave out the scheme, port, item
+type, or selector string.
 
 =cut
 
@@ -1129,13 +1138,40 @@ it will be created. If it does exist, anything in it will be overwritten.
 
 ###############################################################################
 #
-# The following subroutines are private accessor methods. They are "get"only:
-#
+# The following subroutines are private accessor methods.
 
-sub _socket    { return shift->{'_socket'} }
-sub _select    { return shift->{'_select'} }
-sub _buffer    { return shift->{'_buffer'} }
-sub _data_read { return shift->{'_data_read'} }
+sub _socket {
+	my $self = shift;
+	if (@_) {
+		$self->{'_socket'} = shift
+	} else {
+		return $self->{'_socket'}
+	}
+}
+sub _select {
+	my $self = shift;
+	if (@_) {
+		$self->{'_select'} = shift
+	} else {
+		return $self->{'_select'}
+	}
+}
+sub _buffer {
+	my $self = shift;
+	if (@_) {
+		$self->{'_buffer'} = shift
+	} else {
+		return $self->{'_buffer'}
+	}
+}
+sub _data_read {
+	my $self = shift;
+	if (@_) {
+		$self->{'_data_read'} = shift
+	} else {
+		return $self->{'_data_read'}
+	}
+}
 
 
 
@@ -1166,8 +1202,8 @@ sub _clear
 {
 	my $self = shift;
 
-	$self->{'_buffer'}    = undef;
-	$self->{'_data_read'} = undef;
+	$self->_buffer(undef);
+	$self->_data_read(undef);
 }
 
 
@@ -1242,7 +1278,7 @@ sub _read
 #		then call $self->_network_error to find out why.
 #
 #	Parameters
-#		$data - A string of bytes to send to the server.
+#		$data - A scalar containing bytes to send to the server.
 #
 
 sub _write
@@ -1398,6 +1434,36 @@ sub _network_error
 1;
 
 __END__
+
+=head1 FOOTNOTES
+
+[1] Anklesaria et al., I<RFC 1436: The Internet Gopher Protocol>, available at
+gopher://gopher.floodgap.com/0/gopher/tech/RFC-1436 (Mar. 1993) [hereinafter
+I<RFC 1436>].
+
+[2] Anklesaria et al.,
+I<Gopher+: Upward Compatible Enhancements to the Internet Gopher Protocol>,
+available at gopher://gopher.floodgap.com/0/gopher/tech/Gopher+ (Jul. 1993)
+[hereinafter I<Gopher+>].
+
+[3] I<See RFC 1436>, supra note 1, at 3-5.
+
+[4] I<See Gopher+>, supra note 2, § 2.3.
+
+[5] I<See Gopher+>, supra note 2, § 2.5.
+
+[6] I<See Gopher+>, supra note 2, § 2.7.
+
+[7] I<See> note 3.
+
+[8] I<See> note 4.
+
+[9] I<See> note 5.
+
+[10] I<See> note 6.
+
+[11] I<See> Berners-Lee et al., I<RFC 1738: Uniform Resource Locators (URL)>,
+available at http://www.w3.org/Addressing/rfc1738.txt (Dec. 1994).
 
 =head1 BUGS
 

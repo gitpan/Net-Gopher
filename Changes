@@ -1,5 +1,6 @@
 Revision history for Perl extension Net::Gopher.
 
+0.95 - Fixed the test server and added some major POD updates.
 0.94 -
 
        (1) 

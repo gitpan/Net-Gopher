@@ -243,11 +243,9 @@ sub new
 	) unless ($type);
 
 	return Net::Gopher::Request->call_die(
-		join(' ',
-			"Type \"$type\" is not a valid request type. Supply",
-			'either "Gopher", "GopherPlus", "ItemAttribute",',
-			'"DirectoryAttribute", or "URL" instead.'
-		)
+		"Type \"$type\" is not a valid request type. Supply " .
+		'either "Gopher", "GopherPlus", "ItemAttribute", ' .
+		'"DirectoryAttribute", or "URL" instead.'
 	) unless (lc $type eq 'gopher'
 		or lc $type eq 'gopherplus'
 		or lc $type eq 'itemattribute'

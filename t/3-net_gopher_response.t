@@ -860,7 +860,9 @@ BEGIN
 			" Ask: What is your name?\015",
 			" Ask: Where are you from?	Montana\015",
 			" Choose: What is your favorite color?	red	green	blue\015",
-			" Select: Contact using:	Email	Instant messages	IRC\015",
+			" Select: Contact using Email:	1\015",
+			" Select: Contact using Instant Messenger:	1\015",
+			" Select: Contact using IRC:	0\015",
 			".\015"
 		),
 		directory_blocks => join('',
@@ -1360,7 +1362,9 @@ BEGIN
 			" Ask: What is your name?\n",
 			" Ask: Where are you from?	Montana\n",
 			" Choose: What is your favorite color?	red	green	blue\n",
-			" Select: Contact using:	Email	Instant messages	IRC\n",
+			" Select: Contact using Email:	1\n",
+			" Select: Contact using Instant Messenger:	1\n",
+			" Select: Contact using IRC:	0\n",
 			".\n"
 		),
 		directory_blocks => join('',

@@ -26,20 +26,20 @@ require './t/serverfunctions.pl';
 {
 	my $ng = new Net::Gopher;
 
-	ok($ng->buffer_size, 4096);                                 # 1
-	ok($ng->timeout, 30);                                       # 2
-	ok($ng->upward_compatible, 1);                              # 3
-	ok(ref $ng->warn_handler,
-		ref $Net::Gopher::Exception::DEFAULT_WARN_HANDLER); # 4
-	ok(ref $ng->die_handler,
-		ref $Net::Gopher::Exception::DEFAULT_DIE_HANDLER);  # 5
-	ok($ng->silent, 0);                                         # 6
-	ok($ng->debug, 0);                                          # 7
-	ok(!defined $ng->log_file);                                 # 8
-	ok(!defined $ng->_data_read);                               # 9
-	ok(!defined $ng->_buffer);                                  # 10
-	ok(!defined $ng->_socket);                                  # 11
-	ok(!defined $ng->_select);                                  # 12
+	ok($ng->buffer_size, 4096);                             # 1
+	ok($ng->timeout, 30);                                   # 2
+	ok($ng->upward_compatible, 1);                          # 3
+	ok($ng->warn_handler ==
+		$Net::Gopher::Exception::DEFAULT_WARN_HANDLER); # 4
+	ok($ng->die_handler == 
+		$Net::Gopher::Exception::DEFAULT_DIE_HANDLER);  # 5
+	ok($ng->silent, 0);                                     # 6
+	ok($ng->debug, 0);                                      # 7
+	ok(!defined $ng->log_file);                             # 8
+	ok(!defined $ng->_data_read);                           # 9
+	ok(!defined $ng->_buffer);                              # 10
+	ok(!defined $ng->_socket);                              # 11
+	ok(!defined $ng->_select);                              # 12
 }
 
 {
@@ -60,8 +60,8 @@ require './t/serverfunctions.pl';
 	ok($ng->buffer_size, 777777);         # 13
 	ok($ng->timeout, 60);                 # 14
 	ok($ng->upward_compatible, 1);        # 15
-	ok(ref $ng->warn_handler, ref $warn); # 16
-	ok(ref $ng->die_handler, ref $die);   # 17
+	ok($ng->warn_handler == $warn);       # 16
+	ok($ng->die_handler  == $die);        # 17
 	ok($ng->silent, 0);                   # 18
 	ok($ng->debug, 1);                    # 19
 	ok($ng->log_file, 'a_filename.txt');  # 20
@@ -418,10 +418,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);                 # 60
-		ok(ref $request, ref $last_request_obj);   # 61
-		ok(ref $response, ref $last_response_obj); # 62
-		ok($content_matches);                      # 63
+		ok($response->is_success);          # 60
+		ok($request == $last_request_obj);  # 61
+		ok($response== $last_response_obj); # 62
+		ok($content_matches);               # 63
 	}
 
 	{
@@ -448,10 +448,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);                 # 64
-		ok(ref $request, ref $last_request_obj);   # 65
-		ok(ref $response, ref $last_response_obj); # 66
-		ok($content_matches);                      # 67
+		ok($response->is_success);           # 64
+		ok($request == $last_request_obj);   # 65
+		ok($response == $last_response_obj); # 66
+		ok($content_matches);                # 67
 	}
 
 	{
@@ -478,10 +478,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);                 # 68
-		ok(ref $request, ref $last_request_obj);   # 69
-		ok(ref $response, ref $last_response_obj); # 70
-		ok($content_matches);                      # 71
+		ok($response->is_success);         # 68
+		ok($request, $last_request_obj);   # 69
+		ok($response, $last_response_obj); # 70
+		ok($content_matches);              # 71
 	}
 
 	{
@@ -508,10 +508,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);                 # 72
-		ok(ref $request, ref $last_request_obj);   # 73
-		ok(ref $response, ref $last_response_obj); # 74
-		ok($content_matches);                      # 75
+		ok($response->is_success);           # 72
+		ok($request == $last_request_obj);   # 73
+		ok($response == $last_response_obj); # 74
+		ok($content_matches);                # 75
 	}
 
 	{
@@ -538,10 +538,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);                 # 76
-		ok(ref $request, ref $last_request_obj);   # 77
-		ok(ref $response, ref $last_response_obj); # 78
-		ok($content_matches);                      # 79
+		ok($response->is_success);           # 76
+		ok($request == $last_request_obj);   # 77
+		ok($response == $last_response_obj); # 78
+		ok($content_matches);                # 79
 	}
 
 	{
@@ -568,10 +568,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);                 # 80
-		ok(ref $request, ref $last_request_obj);   # 81
-		ok(ref $response, ref $last_response_obj); # 82
-		ok($content_matches);                      # 83
+		ok($response->is_success);           # 80
+		ok($request == $last_request_obj);   # 81
+		ok($response == $last_response_obj); # 82
+		ok($content_matches);                # 83
 	}
 
 	{
@@ -598,10 +598,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);                 # 84
-		ok(ref $request, ref $last_request_obj);   # 85
-		ok(ref $response, ref $last_response_obj); # 86
-		ok($content_matches);                      # 87
+		ok($response->is_success);           # 84
+		ok($request == $last_request_obj);   # 85
+		ok($response == $last_response_obj); # 86
+		ok($content_matches);                # 87
 	}
 
 	{
@@ -628,10 +628,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);                 # 88
-		ok(ref $request, ref $last_request_obj);   # 89
-		ok(ref $response, ref $last_response_obj); # 90
-		ok($content_matches);                      # 91
+		ok($response->is_success);           # 88
+		ok($request == $last_request_obj);   # 89
+		ok($response == $last_response_obj); # 90
+		ok($content_matches);                # 91
 	}
 
 

@@ -35,10 +35,10 @@ Net::Gopher::Response - Class encapsulating Gopher/Gopher+ responses
  	# can you can call on these objects.
  } elsif ($response->is_blocks) {
  	# When issuing item/directory attribute information
- 	# requests, use get_block() to retrieve the
- 	# Net::Gopher::Response::InformationBlock objects for each
- 	# block, which you can call methods like
- 	# extract_description() and extract_adminstrator() on:
+ 	# requests, use get_block() to retrieve a
+	# Net::Gopher::Response::InformationBlock object for a particular
+ 	# block, which you can call methods like extract_description() and
+	# extract_adminstrator() on:
  	my ($type, $display, $selector, $host, $port, $plus) =
  		$response->extract_description;
  
@@ -60,24 +60,23 @@ Net::Gopher::Response - Class encapsulating Gopher/Gopher+ responses
 The L<Net::Gopher|Net::Gopher> C<request()>, C<gopher()>, C<gopher_plus()>,
 C<item_attribute()>, C<directory_attribute()>, and C<url()> methods all return
 B<Net::Gopher::Response> objects. These objects encapsulate responses from
-Gopher and Gopher+ servers.
+Gopher and Gopher+ Gopherspaces.
 
 In Gopher, a response consists of a series of bytes terminated by a period on a
-line by itself. In Gopher+, a response consists of a status line (the first
+line by itself.[1] In Gopher+, a response consists of a status line (the first
 line), of which the first character is the status (success or failure; + or -)
 followed by either -1 (meaning the content is terminated by a period on a line
 by itself), -2 (meaning the content isn't terminated), or a positive number
 indicating the length of the content in bytes, followed by a newline (CRLF) and
-the content of the response.
+the content of the response.[2]
 
 This class contains methods to help you manipulate both Gopher as well as
 Gopher+ responses. In addition, there are two sub classes called
 L<Net::Gopher::Response::InformationBlock|Net::Gopher::Response::InformationBlock>
-and
-L<Net::Gopher::Response::MenuItem|Net::Gopher::Response::MenuItem>
-that can be used in conjunction with methods in this class to parse and
-manipulate item/directory attribute information blocks and parse and manipulate
-Gopher menu items.
+and L<Net::Gopher::Response::MenuItem|Net::Gopher::Response::MenuItem> that can
+be used in conjunction with methods in this class to parse and manipulate
+item/directory attribute information blocks and parse and manipulate Gopher
+menu items.
 
 =head1 METHODS
 
@@ -101,7 +100,7 @@ use Net::Gopher::Response::MenuItem;
 use Net::Gopher::Response::XML qw(gen_block_xml gen_menu_xml gen_text_xml);
 use Net::Gopher::Utility qw(
 	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS
-	check_params get_os_name
+	check_params get_os_name strip_status_line strip_terminator
 );
 
 push(@ISA, qw(Net::Gopher::Debugging Net::Gopher::Exception));
@@ -263,7 +262,9 @@ sub new
 
 		# if this was a Gopher+ item/directory attribute information
 		# request, then this will be used to store the parsed
-		# information block objects for each item:
+		# information blocks as an array where each item is a reference
+		# to an array containing the Net::Gopher::InformationBlock
+		# objects:
 		_blocks       => undef
 	};
 
@@ -355,8 +356,8 @@ sub raw_response
 =head2 status_line()
 
 For a Gopher+ request, this method will return the status line (the first line)
-of the response, including the newline (CRLF) character. For a Gopher request,
-this will return undef.
+of the response, including the newline (CRLF) character.[3] For a Gopher
+request, this will return undef.
 
 =cut
 
@@ -384,7 +385,7 @@ sub status_line
 
 For a Gopher+ request, this method will return the status (the first character
 of the status line) of the response, either a "+" or a "-", indicating success
-or failure. For a Gopher request, this will return undef.
+or failure.[4] For a Gopher request, this will return undef.
 B<Net::Gopher::Constants> contains two constants, C<OK> and C<NOT_OK>, you can
 compare this value against. You can import them by C<use()>ing
 B<Net::Gopher::Constants> with either the I<:response> or I<:all> export tags,
@@ -429,8 +430,8 @@ anyway--it's short)). Also, if the request was period terminated then any
 escaped periods are unescaped (".." at the start of a line becomes ".")
 
 The modifications listed above should go largely unnoticed by you, however, if
-you try to download a non-text file like, for example, a JPEG but instead tell
-B<Net::Gopher> you're downloading a text item like a Gopher menu (probably
+you try to download a non-text file--like, for example, a JPEG--but instead
+tell B<Net::Gopher> you're downloading a text item like a Gopher menu (probably
 because you forgot set the I<ItemType> parameter for your request object so it
 defaulted to type "1", Gopher menu) it'll probably make changes to the content
 it shouldn't. Just remember you can always get the entire, original, unmodified
@@ -464,7 +465,7 @@ sub content
 
 =head2 extract_items([OPTIONS])
 
-If you got a Gopher menu as your response from the server, then you can use
+If you got a Gopher menu as your response from the server,[5] then you can use
 this method to parse it. When called, this method will parse the content
 returned by C<content()> and return an array containing
 B<Net::Gopher::Response::MenuItem> objects for the items in the menu.
@@ -534,7 +535,7 @@ sub extract_items
 	# we need the response content, minus the period on a line by itself
 	# if the content is period terminated:
 	my $content = $self->content;
-	   $content =~ s/\n\.\n?$// if ($self->is_terminated);
+	strip_terminator($content) if ($self->is_terminated);
 
 	# To compare the item type of each item in the menu with
 	# the ones we were told to get, or alternately, the ones we were told
@@ -650,10 +651,10 @@ sub extract_items
 This method is used to retrieve an individual
 I<Net::Gopher::Response::InformationBlock> object. The first argument this
 method always takes is the name of the block to retrieve. The leading "+"
-character in the block name is optional. If you made a directory attribute
-information request, than you'll have to be more specific as to which item
-you want the block from; use the I<Item> parameter to specify which item you
-want the block from.
+character in the block name is optional, but block names are case sensitive.[6]
+If you made a directory attribute information request, than you'll have to be
+more specific as to which item you want the block from; use the I<Item>
+parameter to specify which item you want the block from.
 
 I<Item> can be either a number indicating the N'th item in the response or it
 can be a reference to a hash (or array) containing one or more named parameters
@@ -666,13 +667,13 @@ I<Item> are:
 =item N
 
 The N'th item in the response. If specified, then the rest of the template will
-only be compared against this item.
+only be compared against this specific item.
 
 =item ItemType
 
 The item type character in the C<+INFO> block, for example, "0", "1", or "g".
 B<Net::Gopher::Constants> contains constants you can use to specify an item
-type which are exported when you C<use()> B<Net::Gopher::Constants> with either
+type that are exported when you C<use()> B<Net::Gopher::Constants> with either
 the I<:item_types> or I<:all> export tags.
 
 =item Display
@@ -728,13 +729,13 @@ Specify more options for more accuracy:
  	}
  );
 
-Which means the fourth item in the response, which must be a text file, must
+which means the fourth item in the response, which must be a text file, must
 have a display string of "My big essay" or "My big article," must have a
 selector string of "/stuff/essay.txt" or "/stuff/essay", and must be on
-gopher.host.com and port 70.
+gopher.host.com at port 70.
 
 See L<Net::Gopher::Response::InformationBlock|Net::Gopher::Response::InformationBlock>
-for methods you can call on these objects.
+for methods you can call on the object returned by this method.
 
 =cut
 
@@ -744,11 +745,9 @@ sub get_block
 	my $name = shift;
 
 	$self->call_warn(
-		join(' ',
-			"You didn't send an item attribute or directory",
-			"attribute information request, so why would the",
-			"response contain attribute information blocks?"
-		)
+		"You didn't send an item attribute or directory attribute " .
+		"information request, so why would the response contain " .
+		"attribute information blocks?"
 	) unless ($self->request->request_type == ITEM_ATTRIBUTE_REQUEST
 		or $self->request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
 
@@ -880,11 +879,9 @@ sub get_blocks
 	my $self = shift;
 
 	$self->call_warn(
-		join(' ',
-			"You didn't send an item attribute or directory",
-			"attribute information request, so why would the",
-			"response contain attribute information blocks?"
-		)
+		"You didn't send an item attribute or directory attribute " .
+		"information request, so why would the response contain " .
+		"attribute information blocks?"
 	) unless ($self->request->request_type == ITEM_ATTRIBUTE_REQUEST
 		or $self->request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
 
@@ -986,11 +983,9 @@ sub has_block
 	my $name = shift;
 
 	$self->call_warn(
-		join(' ',
-			"You didn't send an item attribute or directory",
-			"attribute information request, so why would the",
-			"response contain attribute information blocks?"
-		)
+		"You didn't send an item attribute or directory attribute " .
+		"information request, so why would the response contain " .
+		"attribute information blocks?"
 	) unless ($self->request->request_type == ITEM_ATTRIBUTE_REQUEST
 		or $self->request->request_type == DIRECTORY_ATTRIBUTE_REQUEST);
 
@@ -1274,7 +1269,7 @@ sub is_menu
 
 	return 1 if (defined $self->content
 		and $self->content =~ /^$ITEM_PATTERN (?:\n $ITEM_PATTERN)*
-		                       (?:\n\.\n|\n\.|\n|)$/xo);
+		                       (?:\n\.\n|\n\.|\n)?$/xo);
 }
 
 
@@ -1323,19 +1318,23 @@ sub is_text
 			return 1;
 		}
 		elsif ($self->request->item_type eq TEXT_FILE_TYPE
-			or $self->request->item_type eq GOPHER_MENU_TYPE
-			or (defined $self->request->representation
-				and $self->request->representation =~
-					/^(?:text\/.*|
-					     directory\/.*|
-					     application\/gopher\+?\-menu)/ix))
+			or $self->request->item_type eq GOPHER_MENU_TYPE)
 		{
 			return 1;
 		}
-			
+		else
+		{
+			my $mime_type = $self->request->representation;
+
+			return 1 if (defined $mime_type
+				and ($mime_type =~ /^text\/.*/i
+					or $mime_type =~ /^directory\/.*/i
+					or $mime_type =~ /^application\/gopher\+?\-menu/i));
+		}
 	}
-	elsif ($self->request->item_type eq TEXT_FILE_TYPE
-		or $self->request->item_type eq GOPHER_MENU_TYPE)
+	elsif (defined $self->request->item_type
+		and $self->request->item_type eq TEXT_FILE_TYPE
+			|| $self->request->item_type eq GOPHER_MENU_TYPE)
 	{
 		return 1;
 	}
@@ -1361,9 +1360,9 @@ With Gopher+, this may also return, in addition to network errors, server-side
 errors, indicated by a status code of "-" at the start of the status line
 followed by the error in the content of the response. The content itself
 typically contains an error code, followed by contact information for the
-administrator, followed by the error message itself on the following lines, all
-of which are returned by this method as a single string. To get the individual
-elements of a Gopher+ error, use C<error_code()>, C<error_admin()>,
+administrator, followed by the error message itself on the following lines,[7]
+all of which are returned by this method as a single string. To get the
+individual elements of a Gopher+ error, use C<error_code()>, C<error_admin()>,
 and C<error_message()> respectively.
 
 =cut
@@ -1516,13 +1515,13 @@ sub _convert_newlines
 	{
 		# convert Windows CRLF and Unix LF line endings to MacOS CR:
 		$self->{'content'} =~ s/\015\012/\015/g;
-		$self->{'content'} =~ tr/\012/\015/;
+		$self->{'content'} =~ s/\012/\015/g;
 	}
 	else
 	{
 		# convert Windows CRLF and MacOS CR line endings to Unix LF:
 		$self->{'content'} =~ s/\015\012/\012/g;
-		$self->{'content'} =~ tr/\015/\012/;
+		$self->{'content'} =~ s/\015/\012/g;
 	}
 }
 
@@ -1562,21 +1561,17 @@ sub _parse_blocks
 	my $raw_response = $self->raw_response;
 
 	# remove the status line:
-	$raw_response =~ s/.+?$CRLF//s if ($self->is_gopher_plus);
+	strip_status_line($raw_response) if ($self->is_gopher_plus);
 
-	# remove the terminating period on a line by itself if it's period
-	# terminated:
-	$raw_response =~ s/$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$//
-		if ($self->is_terminated);
+	# remove the terminating period on a line by itself:
+	strip_terminator($raw_response) if ($self->is_terminated);
 
 	# remove the leading + for the first block name:
 	$raw_response =~ s/^\+// or return $self->call_die(
-		join(' ',
-			'There was no leading "+" for the first block name at',
-			'the beginning of the response. The response either',
-			'does not contain any attribute information blocks or',
-			'contains malformed attribute information blocks.'
-		)
+		'There was no leading "+" for the first block name at the ' .
+		'beginning of the response. The response either does not ' .
+		'contain any attribute information blocks or contains ' .
+		'malformed attribute information blocks.'
 	);
 
 	# this will store the Net::Gopher::Response::InformationBlock objects
@@ -1825,11 +1820,8 @@ sub _parse_error
 	else
 	{
 		return $self->call_die(
-			join(' ',
-				'The response either does not a contain a',
-				'Gopher+ error or it contains a malformed',
-				'Gopher+ error.'
-			)
+			'The response either does not a contain a Gopher+ ' .
+			'error or it contains a malformed Gopher+ error.'
 		)
 	}
 }
@@ -1837,6 +1829,27 @@ sub _parse_error
 1;
 
 __END__
+
+=head1 FOOTNOTES
+
+[1] I<See> Anklesaria et al., I<RFC 1436: The Internet Gopher Protocol> 3,
+available at gopher://gopher.floodgap.com/0/gopher/tech/RFC-1436 (Mar. 1993)
+[hereinafter I<RFC 1436>].
+
+[2] I<See> Anklesaria et al.,
+I<Gopher+: Upward Compatible Enhancements to the Internet Gopher Protocol> §
+2.3, available at gopher://gopher.floodgap.com/0/gopher/tech/Gopher+ (Jul.
+1993) [hereinafter I<Gopher+>].
+
+[3] I<Id>.
+
+[4] I<Id>.
+
+[5] I<See RFC 1436>, supra note 1, at 4-5 and 13.
+
+[6] I<See Gopher+>, supra note 2, § 2.5.
+
+[7] I<See Gopher+>, supra note 2, § 2.3.
 
 =head1 BUGS
 
@@ -1849,7 +1862,7 @@ If you wish to report bugs to me directly, you can reach me via email at
 =head1 SEE ALSO
 
 L<Net::Gopher|Net::Gopher>,
-L<Net::Gopher::Response::MenuItem|Net::Gopher::Response::MenuItem>
+L<Net::Gopher::Response::MenuItem|Net::Gopher::Response::MenuItem>,
 L<Net::Gopher::Response::InformationBlock|Net::Gopher::Response::InformationBlock>
 
 =head1 COPYRIGHT

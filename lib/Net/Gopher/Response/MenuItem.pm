@@ -149,11 +149,9 @@ sub as_request
 	my $self = shift;
 
 	$self->call_warn(
-		join(' ',
-			"You're trying to convert an inline text (\"i\" item",
-			"type) menu item into a Net::Gopher::Request object.",
-			"Inline text items are not supposed to be downloadable."
-		)
+		"You're trying to convert an inline text (\"i\" item type) " .
+		"menu item into a Net::Gopher::Request object. Inline text " .
+		"items are not supposed to be downloadable."
 	) if ($self->item_type eq INLINE_TEXT_TYPE);
 
 	my $request;
@@ -173,13 +171,11 @@ sub as_request
 		else
 		{
 			return $self->call_die(
-				join(' ',
-					"Can't convert malformed menu item",
-					"into a request object: the Gopher+",
-					"string contains an invalid request",
-					'type character ("$request_char"). It',
-					'should be "+" or "?".'
-				)
+				"Can't convert malformed menu item into a " .
+				"request object: the Gopher+ string contains " .
+				"an invalid request type character " .
+				"(\"$request_char\"). It should be \"+\" or " .
+				'"?".'
 			);
 		}
 	}
@@ -219,11 +215,9 @@ sub as_url
 	) unless (defined $self->host and length $self->host);
 
 	$self->call_warn(
-		join(' ',
-			"You're trying to convert an inline text (\"i\" item",
-			"type) menu item into a Gopher URL. Inline text items",
-			"are not supposed to be downloadable."
-		)
+		"You're trying to convert an inline text (\"i\" item type) " .
+		"menu item into a Gopher URL. Inline text items are not " .
+		"supposed to be downloadable."
 	) if ($self->item_type eq INLINE_TEXT_TYPE);
 
 	my $uri = new URI (undef, 'gopher');

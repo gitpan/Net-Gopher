@@ -7,3 +7,4 @@ my $response = $ng->url(shift);
 die $response->error if ($response->is_error);
 
 print $response->content;
+

@@ -37,6 +37,7 @@ BEGIN
 	$CRLF $NEWLINE_PATTERN $ITEM_PATTERN %ITEM_DESCRIPTIONS
 
 	check_params size_in_bytes remove_bytes get_os_name chars_to_entities
+	strip_status_line strip_terminator
 );
 
 
@@ -142,9 +143,9 @@ sub check_params
 		}
 		else
 		{
-			croak join(' ',
-				"Bad reference type \"$ref_type\" for",
-				"parameters. Use either a hash or array",
+			croak(
+				"Bad reference type \"$ref_type\" for " .
+				"parameters. Use either a hash or array " .
 				"reference instead."
 			);
 		}
@@ -210,50 +211,28 @@ sub check_params
 ################################################################################
 #
 #	Function
-#		size_in_bytes($string)
+#		chars_to_entities($text)
 #
 #	Purpose
-#		This function returns the size of a scalar value in bytes. Use
-#		this instead of the built-in length() function (that, as of
-#		5.6.1, returns the length in characters as opposed to bytes)
-#		when you need the length of a scalar in bytes, not characters.
+#		This method converts &, <, >, ", and ' to their XML/XHTML
+#		entity equivalents. The text with the escaped characters is
+#		returned
 #
 #	Parameters
-#		$string - The string you want the size of.
+#		$text - Text containing XHTML metasymbols to escape.
 #
 
-sub size_in_bytes ($)
+sub chars_to_entities
 {
-	use bytes;
+	my $text = shift;
 
-	return length shift;
-}
+	   $text =~ s/&/&amp;/g;
+	   $text =~ s/</&lt;/g;
+	   $text =~ s/>/&gt;/g;
+	   $text =~ s/"/&quot;/g;
+	   $text =~ s/'/&apos;/g;
 
-
-
-
-
-################################################################################
-#
-#	Function
-#		remove_bytes($string, $bytes)
-#
-#	Purpose
-#		This function removes one or more bytes from the beginning of
-#		of string. Use this instead of the built-in substr() function
-#		(that, as of 5.6.1, is used to retrieve or remove one or more
-#		characters from a string as opposed to bytes) when you need to
-#		remove bytes, not characters, from a string.
-#
-#	Parameters
-#		None.
-#
-
-sub remove_bytes ($$)
-{
-	use bytes;
-
-	return substr($_[0], 0, $_[1], '');
+	return $text;
 }
 
 
@@ -295,28 +274,99 @@ sub get_os_name
 ################################################################################
 #
 #	Function
-#		chars_to_entities($text)
+#		remove_bytes($string, $bytes)
 #
 #	Purpose
-#		This method converts &, <, >, ", and ' to their XML/XHTML
-#		entity equivalents. The text with the escaped characters is
-#		returned
+#		This function removes one or more bytes from the beginning of
+#		of string. Use this instead of the built-in substr() function
+#		(that, as of 5.6.1, is used to retrieve or remove one or more
+#		characters from a string as opposed to bytes) when you need to
+#		remove bytes specifically, not characters, from a string.
 #
 #	Parameters
-#		$text - Text containing XHTML metasymbols to escape.
+#		None.
 #
 
-sub chars_to_entities
+sub remove_bytes ($$)
 {
-	my $text = shift;
+	use bytes;
 
-	   $text =~ s/&/&amp;/gx;
-	   $text =~ s/</&lt;/gx;
-	   $text =~ s/>/&gt;/gx;
-	   $text =~ s/"/&quot;/gx;
-	   $text =~ s/'/&apos;/gx;
+	return substr($_[0], 0, $_[1], '');
+}
 
-	return $text;
+
+
+
+
+################################################################################
+#
+#	Function
+#		size_in_bytes($scalar)
+#
+#	Purpose
+#		This function returns the size of a scalar value in bytes. Use
+#		this instead of the built-in length() function (which, as of
+#		5.6.1, returns the length in characters as opposed to bytes)
+#		when you need to find out out the number of bytes in a scalar,
+#		not the number of characters.
+#
+#	Parameters
+#		$scalar - The scalar you want the size of.
+#
+
+sub size_in_bytes ($)
+{
+	use bytes;
+
+	return length shift;
+}
+
+
+
+
+
+################################################################################
+#
+#	Function
+#		strip_status_line($string)
+#
+#	Purpose
+#		This function strips the status line (first line) from $string.
+#		Note that it modifies $string directly.
+#
+#	Parameters
+#		$string - The string you want the status line removed from.
+#
+
+sub strip_status_line
+{
+	$_[0] =~ s/^.+?$CRLF//o;
+}
+
+
+
+
+
+################################################################################
+#
+#	Function
+#		strip_terminator($string)
+#
+#	Purpose
+#		This function strips any period on a line by itself from
+#		$string. The newline before the period and the newline after it
+#		can be either a carriage return, a line feed, or a carriage
+#		return/line feed combination. Note that this function modifies
+#		$string directly.
+#
+#	Parameters
+#		$string - The string you want the period terminator removed
+#		          from.
+#
+
+sub strip_terminator
+{
+	$_[0] =~ s/$NEWLINE_PATTERN\.$NEWLINE_PATTERN?$//o;
 }
 
 1;
