@@ -1,6 +1,6 @@
-#!/usr/bin/perl -w
 use strict;
-use vars qw($PERL $PATH $TEST_SERVER_PID);
+use warnings;
+use vars qw($PERL $PATH $ITEM_SERVER_PID $ECHO_SERVER_PID);
 
 use Config;
 use Cwd;
@@ -15,42 +15,64 @@ $PATH = (cwd() =~ m|/t$|)
 		? 'testserver.pl'
 		: './t/testserver.pl';
 
-$TEST_SERVER_PID = undef;
+$ITEM_SERVER_PID = undef;
+$ECHO_SERVER_PID = undef;
 
 
 
 
 
-sub run_server
+sub launch_item_server
 {
-	my $port = shift || DEFAULT_PORT;
+	my $pid = open(ITEM_SERVER, "$PERL $PATH -p 70 |")
+		or die "Couldn't launch the item server: $!.\n";
 
-	my $pid = open(SERVER, "$PERL $PATH -p $port |")
-		or die "Couldn't launch the test server: $!.\n";
+	my $line = <ITEM_SERVER>;
 
-	return $TEST_SERVER_PID = $pid;
+	die "Server isn't listening."
+		unless ($line =~ /^# Listening on port 70\.{3}/);
+
+	$ITEM_SERVER_PID = $pid;
+
+	return $ITEM_SERVER_PID;
 }
 
-sub run_echo_server
+sub launch_echo_server
 {
-	my $port = shift || DEFAULT_PORT;
-
-	my $pid = open(SERVER, "$PERL $PATH -ep $port |")
+	my $pid = open(ECHO_SERVER, "$PERL $PATH -ep 7070 |")
 		or die "Couldn't launch the test server: $!.\n";
 
-	return $TEST_SERVER_PID = $pid;
+	my $line = <ECHO_SERVER>;
+
+	die "Server isn't listening."
+		unless ($line =~ /^# Listening on port 7070\.{3}/);
+
+	return $ECHO_SERVER_PID = $pid;
 }
 
-sub kill_server
+sub kill_servers
 {
-	return unless ($TEST_SERVER_PID);
+	return 1 unless ($ITEM_SERVER_PID || $ECHO_SERVER_PID);
 
-	kill(INT => $TEST_SERVER_PID);
-	waitpid($TEST_SERVER_PID, 0);
+	if ($ITEM_SERVER_PID)
+	{
+		kill(INT => $ITEM_SERVER_PID);
+		waitpid($ITEM_SERVER_PID, 0);
 
-	$TEST_SERVER_PID = undef;
+		$ITEM_SERVER_PID = undef;
 
-	close SERVER;
+		close ITEM_SERVER;
+	}
+
+	if ($ECHO_SERVER_PID)
+	{
+		kill(INT => $ECHO_SERVER_PID);
+		waitpid($ECHO_SERVER_PID, 0);
+
+		$ECHO_SERVER_PID = undef;
+
+		close ECHO_SERVER;
+	}
 
 	return 1;
 }

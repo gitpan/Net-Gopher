@@ -14,7 +14,7 @@ require './t/serverfunctions.pl';
 
 
 
-ok(run_server()); # 1
+ok(launch_item_server()); # 1
 
 {
 	my $ng = new Net::Gopher;
@@ -729,4 +729,4 @@ ok(run_server()); # 1
 	));                          # 278
 }
 
-ok(kill_server()); # 279
+ok(kill_servers()); # 279

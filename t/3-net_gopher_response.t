@@ -18,7 +18,7 @@ require './t/serverfunctions.pl';
 
 
 {
-	ok(run_server()); # 1
+	ok(launch_item_server()); # 1
 
 
 
@@ -397,7 +397,7 @@ require './t/serverfunctions.pl';
 
 
 
-	ok(kill_server()); # 143
+	ok(kill_servers()); # 143
 }
 
 

@@ -46,7 +46,7 @@ ok($item->gopher_plus, 'A Gopher+ string.'); # 12
 # menus.
 #
 
-ok(run_server()); # 13
+ok(launch_item_server()); # 13
 
 {
 	my $ng = new Net::Gopher (WarnHandler => sub {});
@@ -985,4 +985,4 @@ ok(run_server()); # 13
 
 
 
-ok(kill_server()); # 559
+ok(kill_servers()); # 559

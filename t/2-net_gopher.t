@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test;
 
-BEGIN { plan(tests => 111) }
+BEGIN { plan(tests => 107) }
 
 use Net::Gopher;
 use Net::Gopher::Request;
@@ -99,7 +99,7 @@ require './t/serverfunctions.pl';
 
 {
 	# this runs testserver.pl with -e to echo back each request:
-	ok(run_echo_server()); # 29
+	ok(launch_echo_server()); # 29
 
 	my $ng = new Net::Gopher;
 
@@ -116,7 +116,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			Gopher => {
 				Host        => 'localhost',
-				Port        => 70,
+				Port        => 7070,
 				Selector    => '/something',
 				SearchWords => ['red', 'green', 'blue']
 			}
@@ -132,7 +132,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 70,
+				Port           => 7070,
 				Selector       => '/something_else',
 				Representation => 'text/plain'
 			}
@@ -148,7 +148,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 70,
+				Port           => 7070,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      => 'This is a single-line block'
@@ -165,7 +165,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 70,
+				Port           => 7070,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      => 'This is a big single-line block ' x 2000
@@ -182,7 +182,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 70,
+				Port           => 7070,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      =>
@@ -200,7 +200,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 70,
+				Port           => 7070,
 				Selector       => '/something_else',
 				Representation => 'text/plain',
 				DataBlock      =>
@@ -218,7 +218,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			ItemAttribute => {
 				Host           => 'localhost',
-				Port           => 70,
+				Port           => 7070,
 				Selector       => '/some_item',
 				Attributes     => '+ATTR'
 			}
@@ -234,7 +234,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			DirectoryAttribute => {
 				Host           => 'localhost',
-				Port           => 70,
+				Port           => 7070,
 				Selector       => '/some_dir',
 				Attributes     => '+ATTR'
 			}
@@ -262,7 +262,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			Gopher => {
 				Host        => 'localhost',
-				Port        => 70,
+				Port        => 7070,
 				Selector    => '/something',
 				SearchWords => ['red', 'green', 'blue']
 			}
@@ -270,7 +270,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher(
 			Host        => 'localhost',
-			Port        => 70,
+			Port        => 7070,
 			Selector    => '/something',
 			SearchWords => ['red', 'green', 'blue']
 		);
@@ -284,7 +284,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			GopherPlus => {
 				Host           => 'localhost',
-				Port           => 70,
+				Port           => 7070,
 				Selector       => '/something_else',
 				Representation => 'text/plain'
 			}
@@ -292,7 +292,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->gopher_plus(
 			Host           => 'localhost',
-			Port           => 70,
+			Port           => 7070,
 			Selector       => '/something_else',
 			Representation => 'text/plain'
 		);
@@ -306,7 +306,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			ItemAttribute => {
 				Host           => 'localhost',
-				Port           => 70,
+				Port           => 7070,
 				Selector       => '/some_dir',
 				Attributes     => '+ATTR'
 			}
@@ -314,7 +314,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->item_attribute(
 			Host           => 'localhost',
-			Port           => 70,
+			Port           => 7070,
 			Selector       => '/some_dir',
 			Attributes     => '+ATTR'
 		);
@@ -328,7 +328,7 @@ require './t/serverfunctions.pl';
 		my $request = new Net::Gopher::Request (
 			DirectoryAttribute => {
 				Host           => 'localhost',
-				Port           => 70,
+				Port           => 7070,
 				Selector       => '/some_dir',
 				Attributes     => '+ATTR'
 			}
@@ -336,7 +336,7 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->directory_attribute(
 			Host           => 'localhost',
-			Port           => 70,
+			Port           => 7070,
 			Selector       => '/some_dir',
 			Attributes     => '+ATTR'
 		);
@@ -345,32 +345,6 @@ require './t/serverfunctions.pl';
 		ok($response->request->request_type, $request->request_type); # 56
 		ok($response->request->as_string, $request->as_string);       # 57
 	}
-
-	ok(kill_server()); # 58
-
-
-
-
-
-	########################################################################
-	# 
-	# This test makes sure Net::Gopher can connect to a server on a port
-	# other than 70:
-	#
-
-	ok(run_server(7070)); # 59
-
-	{
-		my $response = $ng->gopher(
-			Host     => 'localhost',
-			Port     => 7070,
-			Selector => '/index'
-		);
-
-		ok($response->is_success); # 60
-	}
-
-	ok(kill_server()); # 61
 }
 
 
@@ -380,7 +354,7 @@ require './t/serverfunctions.pl';
 
 
 {
-	ok(run_server()); # 62
+	ok(launch_item_server()); # 58
 
 	my $ng = new Net::Gopher;
 
@@ -416,10 +390,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);          # 63
-		ok($request == $last_request_obj);  # 64
-		ok($response== $last_response_obj); # 65
-		ok($content_matches);               # 66
+		ok($response->is_success);          # 59
+		ok($request == $last_request_obj);  # 60
+		ok($response== $last_response_obj); # 61
+		ok($content_matches);               # 62
 	}
 
 	{
@@ -446,10 +420,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 67
-		ok($request == $last_request_obj);   # 68
-		ok($response == $last_response_obj); # 69
-		ok($content_matches);                # 70
+		ok($response->is_success);           # 63
+		ok($request == $last_request_obj);   # 64
+		ok($response == $last_response_obj); # 65
+		ok($content_matches);                # 66
 	}
 
 	{
@@ -476,10 +450,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);         # 71
-		ok($request, $last_request_obj);   # 72
-		ok($response, $last_response_obj); # 73
-		ok($content_matches);              # 74
+		ok($response->is_success);         # 67
+		ok($request, $last_request_obj);   # 68
+		ok($response, $last_response_obj); # 69
+		ok($content_matches);              # 70
 	}
 
 	{
@@ -506,10 +480,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 75
-		ok($request == $last_request_obj);   # 76
-		ok($response == $last_response_obj); # 77
-		ok($content_matches);                # 78
+		ok($response->is_success);           # 71
+		ok($request == $last_request_obj);   # 72
+		ok($response == $last_response_obj); # 73
+		ok($content_matches);                # 74
 	}
 
 	{
@@ -536,10 +510,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 79
-		ok($request == $last_request_obj);   # 80
-		ok($response == $last_response_obj); # 81
-		ok($content_matches);                # 82
+		ok($response->is_success);           # 75
+		ok($request == $last_request_obj);   # 76
+		ok($response == $last_response_obj); # 77
+		ok($content_matches);                # 78
 	}
 
 	{
@@ -566,10 +540,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 83
-		ok($request == $last_request_obj);   # 84
-		ok($response == $last_response_obj); # 85
-		ok($content_matches);                # 86
+		ok($response->is_success);           # 79
+		ok($request == $last_request_obj);   # 80
+		ok($response == $last_response_obj); # 81
+		ok($content_matches);                # 82
 	}
 
 	{
@@ -596,10 +570,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 87
-		ok($request == $last_request_obj);   # 88
-		ok($response == $last_response_obj); # 89
-		ok($content_matches);                # 90
+		ok($response->is_success);           # 83
+		ok($request == $last_request_obj);   # 84
+		ok($response == $last_response_obj); # 85
+		ok($content_matches);                # 86
 	}
 
 	{
@@ -626,10 +600,10 @@ require './t/serverfunctions.pl';
 			}
 		);
 
-		ok($response->is_success);           # 91
-		ok($request == $last_request_obj);   # 92
-		ok($response == $last_response_obj); # 93
-		ok($content_matches);                # 94
+		ok($response->is_success);           # 87
+		ok($request == $last_request_obj);   # 88
+		ok($response == $last_response_obj); # 89
+		ok($content_matches);                # 90
 	}
 
 
@@ -647,12 +621,12 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request, File => 'test.txt');
 
-		ok($response->is_success);                # 95
-		ok(open(TEST, 'test.txt'));               # 96
-		ok(join('', <TEST>), $response->content); # 97
+		ok($response->is_success);                # 91
+		ok(open(TEST, 'test.txt'));               # 92
+		ok(join('', <TEST>), $response->content); # 93
 		close TEST;
-		ok(unlink('test.txt'));                   # 98
-		ok(!-e 'test.txt');                       # 99
+		ok(unlink('test.txt'));                   # 94
+		ok(!-e 'test.txt');                       # 95
 	}
 
 	{
@@ -665,12 +639,12 @@ require './t/serverfunctions.pl';
 
 		my $response = $ng->request($request, File => 'test2.txt');
 
-		ok($response->is_success);                 # 100
-		ok(open(TEST2, 'test2.txt'));              # 101
-		ok(join('', <TEST2>), $response->content); # 102
+		ok($response->is_success);                 # 96
+		ok(open(TEST2, 'test2.txt'));              # 97
+		ok(join('', <TEST2>), $response->content); # 98
 		close TEST2;
-		ok(unlink('test2.txt'));                   # 103
-		ok(!-e 'test2.txt');                       # 104
+		ok(unlink('test2.txt'));                   # 99
+		ok(!-e 'test2.txt');                       # 100
 	}
 
 
@@ -695,11 +669,11 @@ require './t/serverfunctions.pl';
 
 		$ng->request();
 
-		ok(scalar @warnings, 0);        # 105
-		ok(scalar @fatal_errors, 1);    # 106
+		ok(scalar @warnings, 0);        # 101
+		ok(scalar @fatal_errors, 1);    # 102
 		ok($fatal_errors[0],
 			'A Net::Gopher::Request object was not supplied as ' .
-			'the first argument.'); # 107
+			'the first argument.'); # 103
 	}
 
 	{
@@ -712,18 +686,18 @@ require './t/serverfunctions.pl';
 
 		$ng->request(new Net::Gopher::Request('Gopher') );
 
-		ok(@warnings, 0);     # 108
-		ok(@fatal_errors, 1); # 109
+		ok(@warnings, 0);     # 104
+		ok(@fatal_errors, 1); # 105
 		ok($fatal_errors[0],
 			join(' ',
 				"You never specified a hostname; it's",
 				"impossible to send your request without one.",
 				"Specify it during object creation or later on",
 				"with the host() method."
-			));           # 110
+			));           # 106
 	}
 
 
 
-	ok(kill_server()); # 111
+	ok(kill_servers()); # 107
 }

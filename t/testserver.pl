@@ -6,6 +6,7 @@ use Cwd;
 use Errno 'EINTR';
 use Getopt::Std;
 use IO::Socket qw(SOCK_STREAM SOMAXCONN);
+use IO::Select;
 
 use constant DEFAULT_PORT => 70;
 use constant BUFFER_SIZE  => 4096;
@@ -40,23 +41,25 @@ getopts('ep:', \%opts);
 
 
 my $error;
-my $port = $opts{'p'} || DEFAULT_PORT;
+
+die "(Test server) No port specified." unless ($opts{'p'});
+
 my $server = new IO::Socket::INET (
 	Type      => SOCK_STREAM,
 	Proto     => 'tcp',
-	LocalPort => $port,
+	LocalPort => $opts{'p'},
 	Timeout   => TIMEOUT,
 	Listen    => SOMAXCONN,
 	Reuse     => 1,
-) or die "(Test server) Couldn't listen on localhost at port $port: $@";
+) or die "(Test server) Couldn't listen on localhost at port $opts{'p'}: $@";
 
-
-
+print "# Listening on port $opts{'p'}...\n";
+close STDOUT;
 
 
 while (my $client = $server->accept)
 {
-	my $select;
+	my $select = new IO::Select ($client);
 
 	my $request = '';
 	my $buffer;
