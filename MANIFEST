@@ -14,9 +14,9 @@ lib/Net/Gopher/Debugging.pm
 lib/Net/Gopher/Exception.pm
 lib/Net/Gopher/Request.pm
 lib/Net/Gopher/Response.pm
-lib/Net/Gopher/Response/HTML.pm
 lib/Net/Gopher/Response/InformationBlock.pm
 lib/Net/Gopher/Response/MenuItem.pm
+lib/Net/Gopher/Response/XML.pm
 lib/Net/Gopher/Utility.pm
 t/1-net_gopher_request.t
 t/2-net_gopher.t
